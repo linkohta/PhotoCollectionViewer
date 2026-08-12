@@ -1,0 +1,34 @@
+{
+  "name": "photocollectionviewer",
+  "version": "1.0.0",
+  "description": "PhotoCollectionViewer - 画像フォルダを管理・表示するデスクトップアプリ",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "preview": "electron-vite preview",
+    "start": "electron-vite preview",
+    "build": "electron-vite build && electron-packager . PhotoCollectionViewer --overwrite",
+    "build:vite": "electron-vite build"
+  },
+  "keywords": [
+    "electron",
+    "image-viewer",
+    "photo"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  },
+  "dependencies": {
+    "electron-packager": "^17.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
