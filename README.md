@@ -99,3 +99,27 @@ npm start
 | `src/renderer/src/App.tsx` | タブ状態管理 |
 | `src/renderer/src/components/TabBar.tsx` | タブバー UI（ドラッグ&ドロップ並び替え） |
 | `src/renderer/src/components/ImageViewer.tsx` | 画像ビューワー |
+
+## ライセンス
+
+本プロジェクト本体は [MIT License](./LICENSE) の下で提供されます。
+
+利用しているオープンソースパッケージのライセンス情報は [THIRD-PARTY-NOTICES.md](./THIRD-PARTY-NOTICES.md) を参照してください。主な直接依存は次のとおりです。
+
+| パッケージ | ライセンス |
+|-----------|-----------|
+| react / react-dom | MIT |
+| electron | MIT |
+| electron-vite / vite | MIT |
+| electron-packager | BSD-2-Clause |
+| typescript | Apache-2.0 |
+
+配布ビルドには Electron / Chromium が同梱され、配布フォルダ内の `LICENSE` および `LICENSES.chromium.html` に詳細が含まれます。
+
+## 免責事項
+
+本ツールは **AI（人工知能）を用いて生成・開発された** コードおよびドキュメントを含みます。
+
+本ツールの利用、または利用できないことに起因して生じた一切の不利益（データの消失、ファイルの破損、業務の中断、利益の損失等を含みますが、これらに限られません）について、作者および提供者は**一切の責任を負いません**。本ツールは「現状有姿（AS IS）」で提供され、いかなる保証も行いません。利用者は自己の責任において本ツールを使用するものとします。
+
+詳細は [DISCLAIMER.md](./DISCLAIMER.md) を参照してください。
