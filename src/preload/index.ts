@@ -12,11 +12,21 @@ export interface Subfolder {
   name: string
 }
 
+export interface ZipArchive {
+  path: string
+  name: string
+  size: number
+  modified: number
+  extractPath: string
+  isExtracted: boolean
+}
+
 export interface FolderCollection {
   path: string
   name: string
   parentPath: string | null
   subfolders: Subfolder[]
+  zipFiles: ZipArchive[]
   images: ImageFile[]
 }
 
@@ -44,6 +54,13 @@ const api = {
   openFolderDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:openFolder'),
   scanFolder: (folderPath: string, rootPath?: string): Promise<FolderCollection> =>
     ipcRenderer.invoke('folder:scan', folderPath, rootPath),
+  extractZip: (zipPath: string): Promise<string> => ipcRenderer.invoke('zip:extract', zipPath),
+  confirmExtractZip: (
+    zipName: string,
+    extractPath: string,
+    isExtracted: boolean
+  ): Promise<boolean> =>
+    ipcRenderer.invoke('zip:confirmExtract', zipName, extractPath, isExtracted),
   getThumbnailPath: (
     filePath: string,
     maxSize: number,

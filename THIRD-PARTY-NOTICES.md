@@ -9,6 +9,7 @@ PhotoCollectionViewer は、以下のオープンソースソフトウェアを�
 |------|------|
 | プロジェクト名 | PhotoCollectionViewer |
 | ライセンス | [MIT License](./LICENSE) |
+| 免責事項 | [DISCLAIMER.md](./DISCLAIMER.md) |
 
 ## 直接依存パッケージ（`package.json`）
 
@@ -16,6 +17,7 @@ PhotoCollectionViewer は、以下のオープンソースソフトウェアを�
 
 | パッケージ | バージョン | ライセンス | リポジトリ |
 |-----------|-----------|-----------|-----------|
+| [adm-zip](https://www.npmjs.com/package/adm-zip) | 0.6.0 | MIT | https://github.com/cthackers/adm-zip |
 | [react](https://www.npmjs.com/package/react) | 18.3.1 | MIT | https://github.com/facebook/react |
 | [react-dom](https://www.npmjs.com/package/react-dom) | 18.3.1 | MIT | https://github.com/facebook/react |
 | [electron-packager](https://www.npmjs.com/package/electron-packager) | 17.1.2 | BSD-2-Clause | https://github.com/electron/electron-packager |
@@ -24,6 +26,7 @@ PhotoCollectionViewer は、以下のオープンソースソフトウェアを�
 
 | パッケージ | バージョン | ライセンス | リポジトリ |
 |-----------|-----------|-----------|-----------|
+| [@types/adm-zip](https://www.npmjs.com/package/@types/adm-zip) | 0.5.8 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped |
 | [@types/react](https://www.npmjs.com/package/@types/react) | 18.3.31 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped |
 | [@types/react-dom](https://www.npmjs.com/package/@types/react-dom) | 18.3.7 | MIT | https://github.com/DefinitelyTyped/DefinitelyTyped |
 | [@vitejs/plugin-react](https://www.npmjs.com/package/@vitejs/plugin-react) | 4.7.0 | MIT | https://github.com/vitejs/vite-plugin-react |
@@ -46,11 +49,11 @@ PhotoCollectionViewer は、以下のオープンソースソフトウェアを�
 ## 間接依存（transitive dependencies）
 
 上記以外にも、`npm install` により多数の間接依存パッケージが導入されます。
-主なライセンス種別は次のとおりです（2026年3月時点）。
+主なライセンス種別は次のとおりです（2026年8月時点）。
 
 | ライセンス | 件数（概算） |
 |-----------|-------------|
-| MIT | 185 |
+| MIT | 187 |
 | ISC | 21 |
 | Apache-2.0 | 7 |
 | BSD-2-Clause | 5 |
@@ -73,7 +76,7 @@ npx license-checker --csv > licenses.csv
 
 ### MIT License
 
-react, react-dom, @types/react, @types/react-dom, @vitejs/plugin-react, electron, electron-vite, vite 等
+adm-zip, react, react-dom, @types/adm-zip, @types/react, @types/react-dom, @vitejs/plugin-react, electron, electron-vite, vite 等
 
 ```
 Permission is hereby granted, free of charge, to any person obtaining a copy

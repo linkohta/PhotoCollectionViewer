@@ -1,9 +1,11 @@
 import { readdir, stat } from 'fs/promises'
+import { existsSync } from 'fs'
 import { join, extname, basename, dirname } from 'path'
 import { ipcMain, dialog, nativeImage } from 'electron'
 import { getFavorites, addFavorite, removeFavorite } from '../store/favorites'
 import { getSession, saveSession, type SessionData } from '../store/session'
 import { getOrCreateThumbnailPath } from '../store/thumbnailCache'
+import { extractZipArchive, getZipExtractPath } from '../utils/zipArchive'
 
 const IMAGE_EXTENSIONS = new Set([
   '.jpg',
@@ -31,16 +33,30 @@ export interface Subfolder {
   name: string
 }
 
+export interface ZipArchive {
+  path: string
+  name: string
+  size: number
+  modified: number
+  extractPath: string
+  isExtracted: boolean
+}
+
 export interface FolderCollection {
   path: string
   name: string
   parentPath: string | null
   subfolders: Subfolder[]
+  zipFiles: ZipArchive[]
   images: ImageFile[]
 }
 
 function isImageFile(filename: string): boolean {
   return IMAGE_EXTENSIONS.has(extname(filename).toLowerCase())
+}
+
+function isZipFile(filename: string): boolean {
+  return extname(filename).toLowerCase() === '.zip'
 }
 
 async function scanFolder(
@@ -50,6 +66,7 @@ async function scanFolder(
   const entries = await readdir(folderPath, { withFileTypes: true })
   const images: ImageFile[] = []
   const subfolders: Subfolder[] = []
+  const zipFiles: ZipArchive[] = []
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
@@ -61,7 +78,28 @@ async function scanFolder(
       continue
     }
 
-    if (!entry.isFile() || !isImageFile(entry.name)) continue
+    if (!entry.isFile()) continue
+
+    if (isZipFile(entry.name)) {
+      const filePath = join(folderPath, entry.name)
+      try {
+        const fileStat = await stat(filePath)
+        const extractPath = getZipExtractPath(filePath)
+        zipFiles.push({
+          path: filePath,
+          name: entry.name,
+          size: fileStat.size,
+          modified: fileStat.mtimeMs,
+          extractPath,
+          isExtracted: existsSync(extractPath)
+        })
+      } catch {
+        // skip unreadable zip files
+      }
+      continue
+    }
+
+    if (!isImageFile(entry.name)) continue
 
     const filePath = join(folderPath, entry.name)
     try {
@@ -78,6 +116,7 @@ async function scanFolder(
   }
 
   subfolders.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+  zipFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
   images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
 
   const parentDir = dirname(folderPath)
@@ -90,6 +129,7 @@ async function scanFolder(
     name: basename(folderPath),
     parentPath: canGoUp ? parentDir : null,
     subfolders,
+    zipFiles,
     images
   }
 }
@@ -128,6 +168,37 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('folder:scan', async (_event, folderPath: string, rootPath?: string) => {
     return scanFolder(folderPath, rootPath)
   })
+
+  ipcMain.handle('zip:extract', async (_event, zipPath: string) => {
+    return extractZipArchive(zipPath)
+  })
+
+  ipcMain.handle(
+    'zip:confirmExtract',
+    async (
+      _event,
+      zipName: string,
+      extractPath: string,
+      isExtracted: boolean
+    ) => {
+      const result = await dialog.showMessageBox({
+        type: 'question',
+        buttons: isExtracted ? ['開く', 'キャンセル'] : ['解凍', 'キャンセル'],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+        title: 'ZIPファイル',
+        message: isExtracted
+          ? `「${zipName}」は既に解凍済みです。`
+          : `「${zipName}」を解凍しますか？`,
+        detail: isExtracted
+          ? `解凍先フォルダを開きます。\n${extractPath}`
+          : `ZIP内に同名フォルダがある場合は、その中身を次の場所へ展開します。\n${extractPath}`
+      })
+
+      return result.response === 0
+    }
+  )
 
   ipcMain.handle(
     'image:thumbnailPath',

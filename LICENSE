@@ -36,3 +36,6 @@ direct, indirect, incidental, special, consequential, or otherwise.
 This software is provided "AS IS" without warranty of any kind. Use of this
 software is at your own risk. See DISCLAIMER.md for the full disclaimer in
 Japanese.
+
+Third-party open source licenses are listed in THIRD-PARTY-NOTICES.md.
+This software uses adm-zip (MIT License) for ZIP archive extraction.

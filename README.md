@@ -13,15 +13,26 @@
 ### サムネイル一覧
 
 - 指定フォルダ内の画像をグリッド表示
-- 遅延読み込み（Intersection Observer）
-- ディスクキャッシュ（`userData/thumbnails/` に JPEG 保存）
+- スクロール領域に合わせた遅延読み込み（Intersection Observer）
+- ディスクキャッシュ（Electron `userData/thumbnails/` に JPEG 保存）
+- 読み込み失敗時は Data URL へフォールバック
 
 ### フォルダコレクション
 
 - フォルダを画像データの集合体として扱う
-- サブフォルダ一覧・ナビゲーション
+- サブフォルダ一覧・パンくずリスト・「↑」ボタンによるナビゲーション
 - サブフォルダを右クリックで新規タブとして開く
 - 画像のみのサブフォルダは先頭画像を自動表示
+- 自動表示後に一覧へ戻る（Esc 等）と、親フォルダの一覧へ移動
+
+### ZIPファイル
+
+- フォルダ内の `.zip` ファイルを一覧表示
+- クリック時に確認ダイアログを表示してから解凍
+- 解凍先は ZIP と同名のフォルダ（例: `photos.zip` → `photos/`）
+- ZIP 内に同名のルートフォルダがある場合は二重フォルダにならないよう平坦化して展開
+- 解凍済みフォルダがある場合は再解凍せず、そのフォルダを開く
+- 右クリックで新しいタブに解凍・表示
 
 ### タブ管理
 
@@ -32,6 +43,8 @@
 ### お気に入りフォルダ
 
 - よく使うフォルダを登録・素早くアクセス
+- 左クリックでアクティブタブに開く
+- 右クリックで新しいタブに開く
 
 ### 状態の永続化
 
@@ -57,11 +70,25 @@ npm run build
 npm start
 ```
 
-ビルド後、`photocollectionviewer-win32-x64/PhotoCollectionViewer.exe` が生成されます。
+ビルド後、`PhotoCollectionViewer-win32-x64/PhotoCollectionViewer.exe` が生成されます。
 
-## キーボードショートカット
+## 操作
 
-### ビューワー
+### マウス操作
+
+| 操作 | 動作 |
+|------|------|
+| サブフォルダ左クリック | フォルダを開く |
+| サブフォルダ右クリック | コンテキストメニュー（新しいタブで開く） |
+| ZIP 左クリック | 確認ダイアログ → 解凍して表示 |
+| ZIP 右クリック | コンテキストメニュー（新しいタブで解凍・表示） |
+| お気に入り左クリック | アクティブタブでフォルダを開く |
+| お気に入り右クリック | コンテキストメニュー（新しいタブで開く） |
+| タブドラッグ&ドロップ | タブの並び替え |
+
+### キーボードショートカット
+
+#### ビューワー
 
 | キー | 操作 |
 |------|------|
@@ -73,7 +100,7 @@ npm start
 | Esc | 一覧に戻る |
 | ダブルクリック | フィット ↔ 実寸 の切り替え |
 
-### タブ
+#### タブ
 
 | キー | 操作 |
 |------|------|
@@ -84,13 +111,15 @@ npm start
 - Electron
 - React + TypeScript
 - electron-vite
+- adm-zip（ZIP 解凍）
 
 ## プロジェクト構成（主要ファイル）
 
 | パス | 役割 |
 |------|------|
-| `src/main/index.ts` | メインプロセス、local-file プロトコル |
-| `src/main/ipc/handlers.ts` | IPC（フォルダ読み込み、セッション、お気に入り等） |
+| `src/main/index.ts` | メインプロセス、`local-file` プロトコル |
+| `src/main/ipc/handlers.ts` | IPC（フォルダ読み込み、ZIP、セッション、お気に入り等） |
+| `src/main/utils/zipArchive.ts` | ZIP 解凍（同名フォルダ平坦化、パストラバーサル対策） |
 | `src/main/store/session.ts` | セッション永続化 |
 | `src/main/store/windowState.ts` | ウィンドウサイズ永続化 |
 | `src/main/store/favorites.ts` | お気に入り永続化 |
@@ -98,7 +127,10 @@ npm start
 | `src/main/store/thumbnailCache.ts` | サムネイルディスクキャッシュ |
 | `src/renderer/src/App.tsx` | タブ状態管理 |
 | `src/renderer/src/components/TabBar.tsx` | タブバー UI（ドラッグ&ドロップ並び替え） |
+| `src/renderer/src/components/Sidebar.tsx` | サイドバー（お気に入り、右クリックメニュー） |
+| `src/renderer/src/components/ThumbnailGrid.tsx` | サブフォルダ・ZIP・サムネイル一覧 |
 | `src/renderer/src/components/ImageViewer.tsx` | 画像ビューワー |
+| `src/renderer/src/components/ContextMenu.tsx` | 右クリックメニュー |
 
 ## ライセンス
 
@@ -111,6 +143,7 @@ npm start
 | react / react-dom | MIT |
 | electron | MIT |
 | electron-vite / vite | MIT |
+| adm-zip | MIT |
 | electron-packager | BSD-2-Clause |
 | typescript | Apache-2.0 |
 
@@ -121,5 +154,7 @@ npm start
 本ツールは **AI（人工知能）を用いて生成・開発された** コードおよびドキュメントを含みます。
 
 本ツールの利用、または利用できないことに起因して生じた一切の不利益（データの消失、ファイルの破損、業務の中断、利益の損失等を含みますが、これらに限られません）について、作者および提供者は**一切の責任を負いません**。本ツールは「現状有姿（AS IS）」で提供され、いかなる保証も行いません。利用者は自己の責任において本ツールを使用するものとします。
+
+ZIP 解凍機能はローカルファイルを書き込むため、解凍先の空き容量・上書きの有無・ZIP 内容の安全性についても利用者自身で確認してください。
 
 詳細は [DISCLAIMER.md](./DISCLAIMER.md) を参照してください。

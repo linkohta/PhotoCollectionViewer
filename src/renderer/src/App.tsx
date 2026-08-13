@@ -4,6 +4,7 @@ import { TabBar } from './components/TabBar'
 import { TabContent } from './components/TabContent'
 import { clearImagePreloadCache } from './utils/imagePreload'
 import { installViewerKeyboardListener } from './utils/viewerKeyboard'
+import type { ZipArchive } from '../../preload/index'
 import {
   createEmptyTab,
   getTabTitle,
@@ -231,6 +232,7 @@ export default function App(): JSX.Element {
         const shouldAutoOpenViewer =
           options.fromSubfolder &&
           result.subfolders.length === 0 &&
+          result.zipFiles.length === 0 &&
           result.images.length > 0
 
         updateTab(tabId, (tab) => ({
@@ -324,6 +326,56 @@ export default function App(): JSX.Element {
       })
     },
     [browseFolder]
+  )
+
+  const openZipInTab = useCallback(
+    async (tabId: string, zipFile: ZipArchive, rootFolderPath: string) => {
+      const confirmed = await window.photoCollection.confirmExtractZip(
+        zipFile.name,
+        zipFile.extractPath,
+        zipFile.isExtracted
+      )
+      if (!confirmed) return
+
+      updateTab(tabId, (tab) => ({
+        ...tab,
+        loading: true,
+        error: null
+      }))
+
+      try {
+        const folderPath = await window.photoCollection.extractZip(zipFile.path)
+        await browseFolder(tabId, folderPath, rootFolderPath, { fromSubfolder: true })
+      } catch {
+        updateTab(tabId, (tab) => ({
+          ...tab,
+          loading: false,
+          error: 'ZIPファイルを解凍できませんでした'
+        }))
+      }
+    },
+    [browseFolder, updateTab]
+  )
+
+  const handleSelectZip = useCallback(
+    async (tabId: string, zipFile: ZipArchive) => {
+      const tab = tabs.find((item) => item.id === tabId)
+      if (!tab?.rootFolderPath) return
+      await openZipInTab(tabId, zipFile, tab.rootFolderPath)
+    },
+    [tabs, openZipInTab]
+  )
+
+  const handleOpenZipInNewTab = useCallback(
+    async (zipFile: ZipArchive, rootFolderPath: string | null) => {
+      if (!rootFolderPath) return
+
+      const tab = createEmptyTab()
+      setTabs((current) => [...current, tab])
+      setActiveTabId(tab.id)
+      await openZipInTab(tab.id, zipFile, rootFolderPath)
+    },
+    [openZipInTab]
   )
 
   const handleGoUp = useCallback(
@@ -437,6 +489,8 @@ export default function App(): JSX.Element {
             onOpenSubfolderInNewTab={(path) =>
               void handleOpenSubfolderInNewTab(path, activeTab.rootFolderPath)
             }
+            onSelectZip={(zipFile) => void handleSelectZip(activeTab.id, zipFile)}
+            onOpenZipInNewTab={(zipFile) => void handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)}
             onGoUp={() => void handleGoUp(activeTab.id)}
             onSelectImage={(index) => handleSelectImage(activeTab.id, index)}
             onCloseViewer={() => void handleCloseViewer(activeTab.id)}

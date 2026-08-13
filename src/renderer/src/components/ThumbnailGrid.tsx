@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import type { FolderCollection } from '../../../preload/index'
+import type { FolderCollection, ZipArchive } from '../../../preload/index'
 import { ContextMenu } from './ContextMenu'
 import { ThumbnailCard } from './ThumbnailCard'
+import { formatFileSize } from '../utils/files'
 
 interface ThumbnailGridProps {
   collection: FolderCollection
@@ -9,14 +10,18 @@ interface ThumbnailGridProps {
   onSelect: (index: number) => void
   onSelectSubfolder: (path: string) => void
   onOpenSubfolderInNewTab: (path: string) => void
+  onSelectZip: (zipFile: ZipArchive) => void
+  onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
 }
 
-interface SubfolderMenuState {
+interface ItemMenuState {
   x: number
   y: number
   path: string
   name: string
+  kind: 'subfolder' | 'zip'
+  zipFile?: ZipArchive
 }
 
 function joinPath(base: string, segment: string): string {
@@ -57,19 +62,39 @@ function buildBreadcrumb(
   return crumbs
 }
 
+function buildCountLabel(collection: FolderCollection): string {
+  const parts: string[] = []
+
+  if (collection.subfolders.length > 0) {
+    parts.push(`${collection.subfolders.length} フォルダ`)
+  }
+  if (collection.zipFiles.length > 0) {
+    parts.push(`${collection.zipFiles.length} ZIP`)
+  }
+  parts.push(`${collection.images.length} 枚`)
+
+  return parts.join(' · ')
+}
+
 export function ThumbnailGrid({
   collection,
   rootFolderPath,
   onSelect,
   onSelectSubfolder,
   onOpenSubfolderInNewTab,
+  onSelectZip,
+  onOpenZipInNewTab,
   onGoUp
 }: ThumbnailGridProps): JSX.Element {
-  const [subfolderMenu, setSubfolderMenu] = useState<SubfolderMenuState | null>(null)
+  const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
 
   const breadcrumbs = buildBreadcrumb(collection, rootFolderPath)
-  const isEmpty = collection.subfolders.length === 0 && collection.images.length === 0
+  const isEmpty =
+    collection.subfolders.length === 0 &&
+    collection.zipFiles.length === 0 &&
+    collection.images.length === 0
+  const hasSectionsAboveImages = collection.subfolders.length > 0 || collection.zipFiles.length > 0
 
   return (
     <div className="grid-container">
@@ -95,17 +120,11 @@ export function ThumbnailGrid({
               </span>
             ))}
           </nav>
-          <span className="image-count">
-            {collection.subfolders.length > 0 && `${collection.subfolders.length} フォルダ · `}
-            {collection.images.length} 枚
-          </span>
+          <span className="image-count">{buildCountLabel(collection)}</span>
         </div>
       </header>
 
-      <div
-        ref={setScrollRoot}
-        className="grid-scroll"
-      >
+      <div ref={setScrollRoot} className="grid-scroll">
         {collection.subfolders.length > 0 && (
           <section className="subfolder-section">
             <h3 className="section-label">サブフォルダ</h3>
@@ -118,11 +137,12 @@ export function ThumbnailGrid({
                   onClick={() => onSelectSubfolder(subfolder.path)}
                   onContextMenu={(event) => {
                     event.preventDefault()
-                    setSubfolderMenu({
+                    setItemMenu({
                       x: event.clientX,
                       y: event.clientY,
                       path: subfolder.path,
-                      name: subfolder.name
+                      name: subfolder.name,
+                      kind: 'subfolder'
                     })
                   }}
                   title={subfolder.path}
@@ -135,11 +155,43 @@ export function ThumbnailGrid({
           </section>
         )}
 
+        {collection.zipFiles.length > 0 && (
+          <section className="subfolder-section">
+            <h3 className="section-label">ZIPファイル</h3>
+            <div className="subfolder-grid">
+              {collection.zipFiles.map((zipFile) => (
+                <button
+                  key={zipFile.path}
+                  type="button"
+                  className="subfolder-card zip-card"
+                  onClick={() => onSelectZip(zipFile)}
+                  onContextMenu={(event) => {
+                    event.preventDefault()
+                    setItemMenu({
+                      x: event.clientX,
+                      y: event.clientY,
+                      path: zipFile.path,
+                      name: zipFile.name,
+                      kind: 'zip',
+                      zipFile
+                    })
+                  }}
+                  title={`${zipFile.path}\n解凍先: ${zipFile.extractPath}`}
+                >
+                  <span className="subfolder-icon">🗜</span>
+                  <span className="zip-info">
+                    <span className="subfolder-name">{zipFile.name}</span>
+                    <span className="zip-size">{formatFileSize(zipFile.size)}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {collection.images.length > 0 && (
           <section className="thumbnail-section">
-            {collection.subfolders.length > 0 && (
-              <h3 className="section-label">画像</h3>
-            )}
+            {hasSectionsAboveImages && <h3 className="section-label">画像</h3>}
             <div className="thumbnail-grid">
               {collection.images.map((image, index) => (
                 <ThumbnailCard
@@ -156,18 +208,22 @@ export function ThumbnailGrid({
 
         {isEmpty && (
           <div className="grid-empty">
-            <p>このフォルダにサブフォルダも画像もありません</p>
+            <p>このフォルダにサブフォルダ・ZIP・画像はありません</p>
           </div>
         )}
       </div>
 
-      {subfolderMenu && (
+      {itemMenu && (
         <ContextMenu
-          x={subfolderMenu.x}
-          y={subfolderMenu.y}
-          label={subfolderMenu.name}
-          onOpenInNewTab={() => onOpenSubfolderInNewTab(subfolderMenu.path)}
-          onClose={() => setSubfolderMenu(null)}
+          x={itemMenu.x}
+          y={itemMenu.y}
+          label={itemMenu.name}
+          onOpenInNewTab={() =>
+            itemMenu.kind === 'zip' && itemMenu.zipFile
+              ? onOpenZipInNewTab(itemMenu.zipFile)
+              : onOpenSubfolderInNewTab(itemMenu.path)
+          }
+          onClose={() => setItemMenu(null)}
         />
       )}
     </div>

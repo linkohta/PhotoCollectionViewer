@@ -1,6 +1,6 @@
 import { ThumbnailGrid } from './ThumbnailGrid'
 import { ImageViewer } from './ImageViewer'
-import type { FavoriteFolder } from '../../../preload/index'
+import type { FavoriteFolder, ZipArchive } from '../../../preload/index'
 import type { TabState } from '../types/tab'
 
 interface TabContentProps {
@@ -10,6 +10,8 @@ interface TabContentProps {
   onOpenFolder: (path: string) => void
   onSelectSubfolder: (path: string) => void
   onOpenSubfolderInNewTab: (path: string) => void
+  onSelectZip: (zipFile: ZipArchive) => void
+  onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
   onSelectImage: (index: number) => void
   onCloseViewer: () => void
@@ -23,6 +25,8 @@ export function TabContent({
   onOpenFolder,
   onSelectSubfolder,
   onOpenSubfolderInNewTab,
+  onSelectZip,
+  onOpenZipInNewTab,
   onGoUp,
   onSelectImage,
   onCloseViewer,
@@ -80,6 +84,8 @@ export function TabContent({
           onSelect={onSelectImage}
           onSelectSubfolder={onSelectSubfolder}
           onOpenSubfolderInNewTab={onOpenSubfolderInNewTab}
+          onSelectZip={onSelectZip}
+          onOpenZipInNewTab={onOpenZipInNewTab}
           onGoUp={onGoUp}
         />
       )}

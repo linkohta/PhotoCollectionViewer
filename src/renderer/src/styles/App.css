@@ -525,6 +525,22 @@
   transition: background 0.15s, transform 0.15s;
 }
 
+.zip-card {
+  align-items: flex-start;
+}
+
+.zip-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.zip-size {
+  font-size: 11px;
+  color: #888;
+}
+
 .subfolder-card:hover {
   background: #2a2a2a;
   transform: translateY(-1px);
