@@ -1,7 +1,23 @@
 export function toLocalFileUrl(filePath: string): string {
   const normalized = filePath.replace(/\\/g, '/')
-  const segments = normalized.split('/').map(encodeURIComponent).join('/')
-  return `local-file:///${segments}`
+
+  if (/^[a-zA-Z]:\//.test(normalized)) {
+    const drive = normalized.slice(0, 2)
+    const encodedRest = normalized
+      .slice(3)
+      .split('/')
+      .filter(Boolean)
+      .map(encodeURIComponent)
+      .join('/')
+    return encodedRest ? `local-file:///${drive}/${encodedRest}` : `local-file:///${drive}/`
+  }
+
+  const encoded = normalized
+    .split('/')
+    .filter(Boolean)
+    .map(encodeURIComponent)
+    .join('/')
+  return `local-file:///${encoded}`
 }
 
 export function formatFileSize(bytes: number): string {

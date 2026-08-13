@@ -219,7 +219,8 @@ export default function App(): JSX.Element {
         loading: true,
         error: null,
         selectedIndex: null,
-        viewMode: 'grid'
+        viewMode: 'grid',
+        returnToParentOnCloseViewer: false
       }))
 
       const nextRoot = options.resetRoot ? folderPath : rootPath
@@ -239,7 +240,8 @@ export default function App(): JSX.Element {
           collection: result,
           title: getTabTitle(result, options.resetRoot ? folderPath : tab.rootFolderPath ?? nextRoot),
           selectedIndex: shouldAutoOpenViewer ? 0 : null,
-          viewMode: shouldAutoOpenViewer ? 'viewer' : 'grid'
+          viewMode: shouldAutoOpenViewer ? 'viewer' : 'grid',
+          returnToParentOnCloseViewer: shouldAutoOpenViewer
         }))
       } catch {
         updateTab(tabId, (tab) => ({
@@ -265,6 +267,16 @@ export default function App(): JSX.Element {
       await openFolderInTab(activeTabId, folderPath)
     },
     [activeTabId, openFolderInTab]
+  )
+
+  const handleOpenFolderInNewTab = useCallback(
+    async (folderPath: string) => {
+      const tab = createEmptyTab()
+      setTabs((current) => [...current, tab])
+      setActiveTabId(tab.id)
+      await openFolderInTab(tab.id, folderPath)
+    },
+    [openFolderInTab]
   )
 
   const handleOpenDialog = useCallback(async () => {
@@ -338,7 +350,8 @@ export default function App(): JSX.Element {
       updateTab(tabId, (tab) => ({
         ...tab,
         selectedIndex: index,
-        viewMode: 'viewer'
+        viewMode: 'viewer',
+        returnToParentOnCloseViewer: false
       }))
       focusMain()
     },
@@ -346,13 +359,26 @@ export default function App(): JSX.Element {
   )
 
   const handleCloseViewer = useCallback(
-    (tabId: string) => {
-      updateTab(tabId, (tab) => ({
-        ...tab,
-        viewMode: 'grid'
+    async (tabId: string) => {
+      const tab = tabs.find((item) => item.id === tabId)
+      if (!tab) return
+
+      if (
+        tab.returnToParentOnCloseViewer &&
+        tab.collection?.parentPath &&
+        tab.rootFolderPath
+      ) {
+        await browseFolder(tabId, tab.collection.parentPath, tab.rootFolderPath)
+        return
+      }
+
+      updateTab(tabId, (current) => ({
+        ...current,
+        viewMode: 'grid',
+        returnToParentOnCloseViewer: false
       }))
     },
-    [updateTab]
+    [tabs, browseFolder, updateTab]
   )
 
   const handleNavigate = useCallback(
@@ -382,6 +408,7 @@ export default function App(): JSX.Element {
         onOpenDialog={handleOpenDialog}
         onOpenDialogNewTab={handleOpenDialogNewTab}
         onSelectFolder={openFolderInActiveTab}
+        onOpenFolderInNewTab={(path) => void handleOpenFolderInNewTab(path)}
         onToggleFavorite={handleToggleFavorite}
         isFavorite={isFavorite}
         canFavorite={!!activeTab.rootFolderPath}
@@ -412,7 +439,7 @@ export default function App(): JSX.Element {
             }
             onGoUp={() => void handleGoUp(activeTab.id)}
             onSelectImage={(index) => handleSelectImage(activeTab.id, index)}
-            onCloseViewer={() => handleCloseViewer(activeTab.id)}
+            onCloseViewer={() => void handleCloseViewer(activeTab.id)}
             onNavigate={(direction) => handleNavigate(activeTab.id, direction)}
           />
         </main>

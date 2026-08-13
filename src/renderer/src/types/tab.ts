@@ -19,6 +19,7 @@ export interface TabState {
   viewMode: ViewMode
   loading: boolean
   error: string | null
+  returnToParentOnCloseViewer: boolean
 }
 
 export function createEmptyTab(): TabState {
@@ -30,7 +31,8 @@ export function createEmptyTab(): TabState {
     selectedIndex: null,
     viewMode: 'grid',
     loading: false,
-    error: null
+    error: null,
+    returnToParentOnCloseViewer: false
   }
 }
 

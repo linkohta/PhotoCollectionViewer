@@ -66,6 +66,7 @@ export function ThumbnailGrid({
   onGoUp
 }: ThumbnailGridProps): JSX.Element {
   const [subfolderMenu, setSubfolderMenu] = useState<SubfolderMenuState | null>(null)
+  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
 
   const breadcrumbs = buildBreadcrumb(collection, rootFolderPath)
   const isEmpty = collection.subfolders.length === 0 && collection.images.length === 0
@@ -101,7 +102,10 @@ export function ThumbnailGrid({
         </div>
       </header>
 
-      <div className="grid-scroll">
+      <div
+        ref={setScrollRoot}
+        className="grid-scroll"
+      >
         {collection.subfolders.length > 0 && (
           <section className="subfolder-section">
             <h3 className="section-label">サブフォルダ</h3>
@@ -138,7 +142,13 @@ export function ThumbnailGrid({
             )}
             <div className="thumbnail-grid">
               {collection.images.map((image, index) => (
-                <ThumbnailCard key={image.path} image={image} index={index} onSelect={onSelect} />
+                <ThumbnailCard
+                  key={image.path}
+                  image={image}
+                  index={index}
+                  scrollRoot={scrollRoot}
+                  onSelect={onSelect}
+                />
               ))}
             </div>
           </section>

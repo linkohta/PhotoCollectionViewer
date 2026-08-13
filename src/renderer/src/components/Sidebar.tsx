@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { FavoriteFolder } from '../../../preload/index'
+import { ContextMenu } from './ContextMenu'
 
 interface SidebarProps {
   favorites: FavoriteFolder[]
@@ -8,7 +10,15 @@ interface SidebarProps {
   onOpenDialog: () => void
   onOpenDialogNewTab: () => void
   onSelectFolder: (path: string) => void
+  onOpenFolderInNewTab: (path: string) => void
   onToggleFavorite: () => void
+}
+
+interface FavoriteMenuState {
+  x: number
+  y: number
+  path: string
+  name: string
 }
 
 export function Sidebar({
@@ -19,9 +29,13 @@ export function Sidebar({
   onOpenDialog,
   onOpenDialogNewTab,
   onSelectFolder,
+  onOpenFolderInNewTab,
   onToggleFavorite
 }: SidebarProps): JSX.Element {
+  const [favoriteMenu, setFavoriteMenu] = useState<FavoriteMenuState | null>(null)
+
   return (
+    <>
     <aside className="sidebar">
       <div className="sidebar-header">
         <h1 className="app-title">PhotoCollectionViewer</h1>
@@ -58,6 +72,15 @@ export function Sidebar({
                   type="button"
                   className={`folder-item ${currentFolder === fav.path ? 'active' : ''}`}
                   onClick={() => onSelectFolder(fav.path)}
+                  onContextMenu={(event) => {
+                    event.preventDefault()
+                    setFavoriteMenu({
+                      x: event.clientX,
+                      y: event.clientY,
+                      path: fav.path,
+                      name: fav.name
+                    })
+                  }}
                   title={fav.path}
                 >
                   <span className="folder-icon">📁</span>
@@ -78,5 +101,16 @@ export function Sidebar({
         </div>
       )}
     </aside>
+
+    {favoriteMenu && (
+      <ContextMenu
+        x={favoriteMenu.x}
+        y={favoriteMenu.y}
+        label={favoriteMenu.name}
+        onOpenInNewTab={() => onOpenFolderInNewTab(favoriteMenu.path)}
+        onClose={() => setFavoriteMenu(null)}
+      />
+    )}
+  </>
   )
 }

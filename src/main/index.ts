@@ -1,6 +1,5 @@
 import { app, BrowserWindow, shell, protocol, net } from 'electron'
 import { join } from 'path'
-import { pathToFileURL } from 'url'
 import { registerIpcHandlers } from './ipc/handlers'
 import { getWindowState, trackWindowState } from './store/windowState'
 
@@ -63,18 +62,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   app.setName('PhotoCollectionViewer')
   protocol.handle('local-file', (request) => {
-    const { pathname } = new URL(request.url)
-    let filePath = pathname
-      .split('/')
-      .filter(Boolean)
-      .map((segment) => decodeURIComponent(segment))
-      .join('/')
-
-    if (process.platform === 'win32') {
-      filePath = filePath.replace(/\//g, '\\')
-    }
-
-    return net.fetch(pathToFileURL(filePath).href)
+    return net.fetch(request.url.replace(/^local-file:/, 'file:'))
   })
 
   registerIpcHandlers()
