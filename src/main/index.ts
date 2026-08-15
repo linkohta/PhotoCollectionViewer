@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell, protocol, net } from 'electron'
 import { join } from 'path'
 import { registerIpcHandlers } from './ipc/handlers'
 import { getWindowState, trackWindowState } from './store/windowState'
+import { migrateLegacyStoreFiles } from './store/appState'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -65,6 +66,7 @@ app.whenReady().then(() => {
     return net.fetch(request.url.replace(/^local-file:/, 'file:'))
   })
 
+  migrateLegacyStoreFiles()
   registerIpcHandlers()
   createWindow()
 

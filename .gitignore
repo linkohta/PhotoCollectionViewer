@@ -5,3 +5,4 @@ dist/
 .DS_Store
 Thumbs.db
 photocollectionviewer-win32-x64
+app-state.json

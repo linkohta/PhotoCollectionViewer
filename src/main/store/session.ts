@@ -1,44 +1,15 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs'
-import { getAppRootFilePath } from './appRoot'
+import { readAppStateSlice, writeAppStateSlice, type SessionData, type TabSnapshot, type ViewMode } from './appState'
 
-export type ViewMode = 'grid' | 'viewer'
-
-export interface TabSnapshot {
-  title: string
-  rootFolderPath: string | null
-  currentFolderPath: string | null
-  selectedIndex: number | null
-  viewMode: ViewMode
-}
-
-export interface SessionData {
-  tabs: TabSnapshot[]
-  activeTabIndex: number
-  closedTabs: TabSnapshot[]
-}
+export type { SessionData, TabSnapshot, ViewMode }
 
 const MAX_CLOSED_TABS = 25
 
-function getStorePath(): string {
-  return getAppRootFilePath('session.json')
-}
-
 function readSession(): SessionData {
-  const storePath = getStorePath()
-  if (!existsSync(storePath)) {
-    return { tabs: [], activeTabIndex: 0, closedTabs: [] }
-  }
-
-  try {
-    const raw = readFileSync(storePath, 'utf-8')
-    const data = JSON.parse(raw) as SessionData
-    return {
-      tabs: Array.isArray(data.tabs) ? data.tabs : [],
-      activeTabIndex: typeof data.activeTabIndex === 'number' ? data.activeTabIndex : 0,
-      closedTabs: Array.isArray(data.closedTabs) ? data.closedTabs : []
-    }
-  } catch {
-    return { tabs: [], activeTabIndex: 0, closedTabs: [] }
+  const data = readAppStateSlice('session')
+  return {
+    tabs: Array.isArray(data.tabs) ? data.tabs : [],
+    activeTabIndex: typeof data.activeTabIndex === 'number' ? data.activeTabIndex : 0,
+    closedTabs: Array.isArray(data.closedTabs) ? data.closedTabs : []
   }
 }
 
@@ -53,7 +24,7 @@ export function saveSession(session: SessionData): SessionData {
     closedTabs: session.closedTabs.slice(0, MAX_CLOSED_TABS)
   }
 
-  writeFileSync(getStorePath(), JSON.stringify(normalized, null, 2), 'utf-8')
+  writeAppStateSlice('session', normalized)
   return normalized
 }
 

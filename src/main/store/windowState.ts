@@ -1,14 +1,7 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { screen, type BrowserWindow } from 'electron'
-import { getAppRootFilePath } from './appRoot'
+import { readAppStateSlice, writeAppStateSlice, type WindowState } from './appState'
 
-export interface WindowState {
-  width: number
-  height: number
-  x?: number
-  y?: number
-  isMaximized?: boolean
-}
+export type { WindowState }
 
 const DEFAULT_STATE: WindowState = {
   width: 1280,
@@ -17,10 +10,6 @@ const DEFAULT_STATE: WindowState = {
 
 const MIN_WIDTH = 900
 const MIN_HEIGHT = 600
-
-function getStorePath(): string {
-  return getAppRootFilePath('window-state.json')
-}
 
 function isPositionVisible(state: WindowState): boolean {
   if (state.x === undefined || state.y === undefined) return true
@@ -62,29 +51,23 @@ function normalizeState(state: WindowState): WindowState {
 }
 
 export function getWindowState(): WindowState {
-  const storePath = getStorePath()
-  if (!existsSync(storePath)) {
+  const data = readAppStateSlice('windowState')
+  if (typeof data.width !== 'number' || typeof data.height !== 'number') {
     return DEFAULT_STATE
   }
 
-  try {
-    const raw = readFileSync(storePath, 'utf-8')
-    const data = JSON.parse(raw) as WindowState
-    return normalizeState({
-      width: typeof data.width === 'number' ? data.width : DEFAULT_STATE.width,
-      height: typeof data.height === 'number' ? data.height : DEFAULT_STATE.height,
-      x: typeof data.x === 'number' ? data.x : undefined,
-      y: typeof data.y === 'number' ? data.y : undefined,
-      isMaximized: Boolean(data.isMaximized)
-    })
-  } catch {
-    return DEFAULT_STATE
-  }
+  return normalizeState({
+    width: data.width,
+    height: data.height,
+    x: typeof data.x === 'number' ? data.x : undefined,
+    y: typeof data.y === 'number' ? data.y : undefined,
+    isMaximized: Boolean(data.isMaximized)
+  })
 }
 
 export function saveWindowState(state: WindowState): WindowState {
   const normalized = normalizeState(state)
-  writeFileSync(getStorePath(), JSON.stringify(normalized, null, 2), 'utf-8')
+  writeAppStateSlice('windowState', normalized)
   return normalized
 }
 
