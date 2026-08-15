@@ -46,6 +46,18 @@ PhotoCollectionViewer は、以下のオープンソースソフトウェアを�
 
 ビルド後の配布物（例: `PhotoCollectionViewer-win32-x64/`）には、上記ファイルが自動的に含まれます。
 
+## アプリアイコン
+
+`resources/icon.svg` / `resources/icon.png` / `resources/icon.ico` / `src/renderer/public/favicon.png` は、
+Google の [Material Design Icons](https://github.com/google/material-design-icons)（`photo_library` アイコン）を元に、
+背景の角丸パネルと配色を追加して作成しています。
+
+| 項目 | 内容 |
+|------|------|
+| 素材 | Material Design Icons（`photo_library`） |
+| ライセンス | Apache License 2.0 |
+| 配布元 | https://github.com/google/material-design-icons |
+
 ## 間接依存（transitive dependencies）
 
 上記以外にも、`npm install` により多数の間接依存パッケージが導入されます。
