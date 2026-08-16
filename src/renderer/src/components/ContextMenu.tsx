@@ -4,7 +4,8 @@ interface ContextMenuProps {
   x: number
   y: number
   label: string
-  onOpenInNewTab: () => void
+  onOpenInNewTab?: () => void
+  onRename?: () => void
   onClose: () => void
 }
 
@@ -13,6 +14,7 @@ export function ContextMenu({
   y,
   label,
   onOpenInNewTab,
+  onRename,
   onClose
 }: ContextMenuProps): JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null)
@@ -47,16 +49,30 @@ export function ContextMenu({
       role="menu"
     >
       <div className="context-menu-title">{label}</div>
-      <button
-        type="button"
-        className="context-menu-item"
-        onClick={() => {
-          onOpenInNewTab()
-          onClose()
-        }}
-      >
-        新しいタブで開く
-      </button>
+      {onOpenInNewTab && (
+        <button
+          type="button"
+          className="context-menu-item"
+          onClick={() => {
+            onOpenInNewTab()
+            onClose()
+          }}
+        >
+          新しいタブで開く
+        </button>
+      )}
+      {onRename && (
+        <button
+          type="button"
+          className="context-menu-item"
+          onClick={() => {
+            onRename()
+            onClose()
+          }}
+        >
+          名前の変更
+        </button>
+      )}
     </div>
   )
 }

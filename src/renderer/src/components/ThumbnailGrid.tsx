@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import type { FolderCollection, ZipArchive } from '../../../preload/index'
+import type { FolderCollection, ImageFile, ZipArchive } from '../../../preload/index'
 import { ContextMenu } from './ContextMenu'
+import { RenameInput } from './RenameInput'
 import { ThumbnailCard } from './ThumbnailCard'
 import { formatFileSize } from '../utils/files'
 
@@ -13,6 +14,7 @@ interface ThumbnailGridProps {
   onSelectZip: (zipFile: ZipArchive) => void
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
+  onRenameItem: (path: string, newName: string) => Promise<void>
 }
 
 interface ItemMenuState {
@@ -20,8 +22,13 @@ interface ItemMenuState {
   y: number
   path: string
   name: string
-  kind: 'subfolder' | 'zip'
+  kind: 'subfolder' | 'zip' | 'image'
   zipFile?: ZipArchive
+}
+
+interface RenamingState {
+  kind: 'subfolder' | 'zip' | 'image'
+  path: string
 }
 
 function joinPath(base: string, segment: string): string {
@@ -84,10 +91,18 @@ export function ThumbnailGrid({
   onOpenSubfolderInNewTab,
   onSelectZip,
   onOpenZipInNewTab,
-  onGoUp
+  onGoUp,
+  onRenameItem
 }: ThumbnailGridProps): JSX.Element {
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
+  const [renaming, setRenaming] = useState<RenamingState | null>(null)
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
+
+  const handleRenameSubmit = async (newName: string): Promise<void> => {
+    if (!renaming) return
+    await onRenameItem(renaming.path, newName)
+    setRenaming(null)
+  }
 
   const breadcrumbs = buildBreadcrumb(collection, rootFolderPath)
   const isEmpty =
@@ -129,28 +144,39 @@ export function ThumbnailGrid({
           <section className="subfolder-section">
             <h3 className="section-label">サブフォルダ</h3>
             <div className="subfolder-grid">
-              {collection.subfolders.map((subfolder) => (
-                <button
-                  key={subfolder.path}
-                  type="button"
-                  className="subfolder-card"
-                  onClick={() => onSelectSubfolder(subfolder.path)}
-                  onContextMenu={(event) => {
-                    event.preventDefault()
-                    setItemMenu({
-                      x: event.clientX,
-                      y: event.clientY,
-                      path: subfolder.path,
-                      name: subfolder.name,
-                      kind: 'subfolder'
-                    })
-                  }}
-                  title={subfolder.path}
-                >
-                  <span className="subfolder-icon">📁</span>
-                  <span className="subfolder-name">{subfolder.name}</span>
-                </button>
-              ))}
+              {collection.subfolders.map((subfolder) =>
+                renaming?.kind === 'subfolder' && renaming.path === subfolder.path ? (
+                  <div key={subfolder.path} className="subfolder-card renaming">
+                    <span className="subfolder-icon">📁</span>
+                    <RenameInput
+                      initialName={subfolder.name}
+                      onSubmit={handleRenameSubmit}
+                      onCancel={() => setRenaming(null)}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    key={subfolder.path}
+                    type="button"
+                    className="subfolder-card"
+                    onClick={() => onSelectSubfolder(subfolder.path)}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      setItemMenu({
+                        x: event.clientX,
+                        y: event.clientY,
+                        path: subfolder.path,
+                        name: subfolder.name,
+                        kind: 'subfolder'
+                      })
+                    }}
+                    title={subfolder.path}
+                  >
+                    <span className="subfolder-icon">📁</span>
+                    <span className="subfolder-name">{subfolder.name}</span>
+                  </button>
+                )
+              )}
             </div>
           </section>
         )}
@@ -159,32 +185,46 @@ export function ThumbnailGrid({
           <section className="subfolder-section">
             <h3 className="section-label">ZIPファイル</h3>
             <div className="subfolder-grid">
-              {collection.zipFiles.map((zipFile) => (
-                <button
-                  key={zipFile.path}
-                  type="button"
-                  className="subfolder-card zip-card"
-                  onClick={() => onSelectZip(zipFile)}
-                  onContextMenu={(event) => {
-                    event.preventDefault()
-                    setItemMenu({
-                      x: event.clientX,
-                      y: event.clientY,
-                      path: zipFile.path,
-                      name: zipFile.name,
-                      kind: 'zip',
-                      zipFile
-                    })
-                  }}
-                  title={`${zipFile.path}\n解凍先: ${zipFile.extractPath}`}
-                >
-                  <span className="subfolder-icon">🗜</span>
-                  <span className="zip-info">
-                    <span className="subfolder-name">{zipFile.name}</span>
-                    <span className="zip-size">{formatFileSize(zipFile.size)}</span>
-                  </span>
-                </button>
-              ))}
+              {collection.zipFiles.map((zipFile) =>
+                renaming?.kind === 'zip' && renaming.path === zipFile.path ? (
+                  <div key={zipFile.path} className="subfolder-card zip-card renaming">
+                    <span className="subfolder-icon">🗜</span>
+                    <span className="zip-info">
+                      <RenameInput
+                        initialName={zipFile.name}
+                        onSubmit={handleRenameSubmit}
+                        onCancel={() => setRenaming(null)}
+                      />
+                      <span className="zip-size">{formatFileSize(zipFile.size)}</span>
+                    </span>
+                  </div>
+                ) : (
+                  <button
+                    key={zipFile.path}
+                    type="button"
+                    className="subfolder-card zip-card"
+                    onClick={() => onSelectZip(zipFile)}
+                    onContextMenu={(event) => {
+                      event.preventDefault()
+                      setItemMenu({
+                        x: event.clientX,
+                        y: event.clientY,
+                        path: zipFile.path,
+                        name: zipFile.name,
+                        kind: 'zip',
+                        zipFile
+                      })
+                    }}
+                    title={`${zipFile.path}\n解凍先: ${zipFile.extractPath}`}
+                  >
+                    <span className="subfolder-icon">🗜</span>
+                    <span className="zip-info">
+                      <span className="subfolder-name">{zipFile.name}</span>
+                      <span className="zip-size">{formatFileSize(zipFile.size)}</span>
+                    </span>
+                  </button>
+                )
+              )}
             </div>
           </section>
         )}
@@ -193,13 +233,26 @@ export function ThumbnailGrid({
           <section className="thumbnail-section">
             {hasSectionsAboveImages && <h3 className="section-label">画像</h3>}
             <div className="thumbnail-grid">
-              {collection.images.map((image, index) => (
+              {collection.images.map((image: ImageFile, index) => (
                 <ThumbnailCard
                   key={image.path}
                   image={image}
                   index={index}
                   scrollRoot={scrollRoot}
                   onSelect={onSelect}
+                  onContextMenu={(event, targetImage) => {
+                    event.preventDefault()
+                    setItemMenu({
+                      x: event.clientX,
+                      y: event.clientY,
+                      path: targetImage.path,
+                      name: targetImage.name,
+                      kind: 'image'
+                    })
+                  }}
+                  isRenaming={renaming?.kind === 'image' && renaming.path === image.path}
+                  onRenameSubmit={handleRenameSubmit}
+                  onRenameCancel={() => setRenaming(null)}
                 />
               ))}
             </div>
@@ -218,11 +271,15 @@ export function ThumbnailGrid({
           x={itemMenu.x}
           y={itemMenu.y}
           label={itemMenu.name}
-          onOpenInNewTab={() =>
-            itemMenu.kind === 'zip' && itemMenu.zipFile
-              ? onOpenZipInNewTab(itemMenu.zipFile)
-              : onOpenSubfolderInNewTab(itemMenu.path)
+          onOpenInNewTab={
+            itemMenu.kind === 'image'
+              ? undefined
+              : () =>
+                  itemMenu.kind === 'zip' && itemMenu.zipFile
+                    ? onOpenZipInNewTab(itemMenu.zipFile)
+                    : onOpenSubfolderInNewTab(itemMenu.path)
           }
+          onRename={() => setRenaming({ kind: itemMenu.kind, path: itemMenu.path })}
           onClose={() => setItemMenu(null)}
         />
       )}

@@ -24,5 +24,5 @@ export function useFavorites() {
     [favorites]
   )
 
-  return { favorites, toggleFavorite }
+  return { favorites, toggleFavorite, refreshFavorites: loadFavorites }
 }

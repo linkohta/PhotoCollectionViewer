@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import type { ZipArchive } from '../../../preload/index'
 import { getTabTitle, type TabState } from '../types/tab'
+import { isSameOrChildPath, replacePathPrefix } from '../utils/files'
 
 interface UseFolderNavigationArgs {
   tabs: TabState[]
@@ -212,6 +213,60 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
     [tabs, browseFolder, updateTab]
   )
 
+  const handleRenameItem = useCallback(
+    async (tabId: string, oldPath: string, newName: string): Promise<string> => {
+      const newPath = await window.photoCollection.renamePath(oldPath, newName)
+      if (newPath === oldPath) return newPath
+
+      for (const tab of tabs) {
+        const rootMatches = tab.rootFolderPath && isSameOrChildPath(tab.rootFolderPath, oldPath)
+        const collectionMatches = tab.collection && isSameOrChildPath(tab.collection.path, oldPath)
+        if (!rootMatches && !collectionMatches) continue
+
+        updateTab(tab.id, (current) => {
+          const nextRoot =
+            current.rootFolderPath && isSameOrChildPath(current.rootFolderPath, oldPath)
+              ? replacePathPrefix(current.rootFolderPath, oldPath, newPath)
+              : current.rootFolderPath
+
+          const nextCollection =
+            current.collection && isSameOrChildPath(current.collection.path, oldPath)
+              ? {
+                  ...current.collection,
+                  path: replacePathPrefix(current.collection.path, oldPath, newPath),
+                  name:
+                    replacePathPrefix(current.collection.path, oldPath, newPath)
+                      .split(/[/\\]/)
+                      .filter(Boolean)
+                      .pop() ?? current.collection.name
+                }
+              : current.collection
+
+          return {
+            ...current,
+            rootFolderPath: nextRoot,
+            collection: nextCollection,
+            title: getTabTitle(nextCollection, nextRoot)
+          }
+        })
+      }
+
+      const originTab = tabs.find((tab) => tab.id === tabId)
+      if (originTab?.collection && originTab.rootFolderPath) {
+        const nextFolderPath = isSameOrChildPath(originTab.collection.path, oldPath)
+          ? replacePathPrefix(originTab.collection.path, oldPath, newPath)
+          : originTab.collection.path
+        const nextRootPath = isSameOrChildPath(originTab.rootFolderPath, oldPath)
+          ? replacePathPrefix(originTab.rootFolderPath, oldPath, newPath)
+          : originTab.rootFolderPath
+        await browseFolder(tabId, nextFolderPath, nextRootPath)
+      }
+
+      return newPath
+    },
+    [tabs, updateTab, browseFolder]
+  )
+
   const handleNavigate = useCallback(
     (tabId: string, direction: -1 | 1) => {
       updateTab(tabId, (tab) => {
@@ -239,6 +294,7 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
     handleGoUp,
     handleSelectImage,
     handleCloseViewer,
-    handleNavigate
+    handleNavigate,
+    handleRenameItem
   }
 }
