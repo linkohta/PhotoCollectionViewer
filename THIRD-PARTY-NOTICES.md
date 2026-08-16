@@ -21,6 +21,7 @@ PhotoCollectionViewer は、以下のオープンソースソフトウェアを�
 | [react](https://www.npmjs.com/package/react) | 18.3.1 | MIT | https://github.com/facebook/react |
 | [react-dom](https://www.npmjs.com/package/react-dom) | 18.3.1 | MIT | https://github.com/facebook/react |
 | [electron-packager](https://www.npmjs.com/package/electron-packager) | 17.1.2 | BSD-2-Clause | https://github.com/electron/electron-packager |
+| [sharp](https://www.npmjs.com/package/sharp) | 0.35.3 | Apache-2.0 | https://github.com/lovell/sharp |
 
 ### 開発時依存（devDependencies）
 

@@ -1,10 +1,17 @@
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync } from 'fs'
+import { cpus } from 'os'
 import { join } from 'path'
-import { app, nativeImage } from 'electron'
+import { app } from 'electron'
+import sharp from 'sharp'
+
+// libuv's threadpool (default size 4) caps how many sharp operations can run
+// at once; raise it so the concurrent thumbnail queue below can actually use
+// all its slots in parallel instead of queueing behind a small fixed pool.
+process.env.UV_THREADPOOL_SIZE = String(Math.max(4, cpus().length))
 
 const memoryCache = new Map<string, string>()
-const MAX_MEMORY_CACHE = 120
+const MAX_MEMORY_CACHE = 400
 
 class ThumbnailQueue {
   private running = 0
@@ -33,7 +40,7 @@ class ThumbnailQueue {
   }
 }
 
-const thumbnailQueue = new ThumbnailQueue(4)
+const thumbnailQueue = new ThumbnailQueue(Math.min(8, Math.max(4, cpus().length)))
 
 function getCacheDir(): string {
   const dir = join(app.getPath('userData'), 'thumbnails')
@@ -73,24 +80,15 @@ async function generateThumbnailFile(
   maxSize: number,
   outputPath: string
 ): Promise<boolean> {
-  const image = nativeImage.createFromPath(filePath)
-  if (image.isEmpty()) return false
-
-  const { width, height } = image.getSize()
-  if (width === 0 || height === 0) return false
-
-  const scale = maxSize / Math.max(width, height)
-  const target =
-    scale >= 1
-      ? image
-      : image.resize({
-          width: Math.round(width * scale),
-          height: Math.round(height * scale),
-          quality: 'good'
-        })
-
-  writeFileSync(outputPath, target.toJPEG(82))
-  return true
+  try {
+    await sharp(filePath)
+      .resize(maxSize, maxSize, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 82, mozjpeg: true })
+      .toFile(outputPath)
+    return true
+  } catch {
+    return false
+  }
 }
 
 export async function getOrCreateThumbnailPath(

@@ -1,5 +1,5 @@
 const preloadCache = new Map<string, HTMLImageElement>()
-const MAX_PRELOAD_CACHE = 12
+const MAX_PRELOAD_CACHE = 24
 
 export function preloadImage(url: string): void {
   if (preloadCache.has(url)) return
