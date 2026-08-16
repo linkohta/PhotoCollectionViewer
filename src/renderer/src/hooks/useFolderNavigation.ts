@@ -32,11 +32,12 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
       try {
         const result = await window.photoCollection.scanFolder(folderPath, nextRoot)
 
-        const shouldAutoOpenViewer =
+        const shouldAutoOpenViewer = Boolean(
           options.fromSubfolder &&
-          result.subfolders.length === 0 &&
-          result.zipFiles.length === 0 &&
-          result.images.length > 0
+            result.subfolders.length === 0 &&
+            result.zipFiles.length === 0 &&
+            result.images.length > 0
+        )
 
         updateTab(tabId, (tab) => ({
           ...tab,

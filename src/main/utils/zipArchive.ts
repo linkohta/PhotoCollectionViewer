@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import { basename, dirname, extname, join, resolve, sep } from 'path'
 import AdmZip from 'adm-zip'
-import type AdmZipEntry from 'adm-zip/zipEntry'
 
 function getZipExtractPath(zipPath: string): string {
   return join(dirname(zipPath), basename(zipPath, extname(zipPath)))
@@ -21,7 +20,7 @@ function normalizeEntryPath(entryName: string): string {
   return entryName.replace(/\\/g, '/').replace(/^\/+/, '')
 }
 
-function detectMatchingRootPrefix(entries: AdmZipEntry[], zipBaseName: string): string | null {
+function detectMatchingRootPrefix(entries: AdmZip.IZipEntry[], zipBaseName: string): string | null {
   const fileEntries = entries.filter((entry) => !entry.isDirectory)
   if (fileEntries.length === 0) return null
 
