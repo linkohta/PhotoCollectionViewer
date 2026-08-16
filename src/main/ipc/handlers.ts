@@ -2,10 +2,15 @@ import { readdir, stat, rename } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join, extname, basename, dirname } from 'path'
 import { ipcMain, dialog, nativeImage } from 'electron'
+import sharp from 'sharp'
 import { getFavorites, addFavorite, removeFavorite, renameFavoritePaths } from '../store/favorites'
 import { getSession, saveSession, type SessionData } from '../store/session'
 import { getOrCreateThumbnailPath } from '../store/thumbnailCache'
 import { extractZipArchive, getZipExtractPath } from '../utils/zipArchive'
+
+// sharp is unsupported for these formats; fall back to Electron's (synchronous)
+// nativeImage decoder only for them so the common case never blocks the main process.
+const SHARP_UNSUPPORTED_EXTENSIONS = new Set(['.bmp', '.ico'])
 
 const INVALID_NAME_CHARS = /[\\/:*?"<>|]/
 
@@ -136,7 +141,7 @@ async function scanFolder(
   }
 }
 
-async function createImageDataUrl(filePath: string, maxSize = 4096): Promise<string | null> {
+function createImageDataUrlSync(filePath: string, maxSize: number): string | null {
   try {
     const image = nativeImage.createFromPath(filePath)
     if (image.isEmpty()) return null
@@ -155,6 +160,22 @@ async function createImageDataUrl(filePath: string, maxSize = 4096): Promise<str
     return `data:image/jpeg;base64,${resized.toJPEG(85).toString('base64')}`
   } catch {
     return null
+  }
+}
+
+async function createImageDataUrl(filePath: string, maxSize = 4096): Promise<string | null> {
+  if (SHARP_UNSUPPORTED_EXTENSIONS.has(extname(filePath).toLowerCase())) {
+    return createImageDataUrlSync(filePath, maxSize)
+  }
+
+  try {
+    const buffer = await sharp(filePath)
+      .resize(maxSize, maxSize, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer()
+    return `data:image/jpeg;base64,${buffer.toString('base64')}`
+  } catch {
+    return createImageDataUrlSync(filePath, maxSize)
   }
 }
 
