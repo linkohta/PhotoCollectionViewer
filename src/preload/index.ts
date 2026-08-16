@@ -77,7 +77,9 @@ const api = {
     ipcRenderer.invoke('favorites:remove', folderPath),
   getSession: (): Promise<SessionData> => ipcRenderer.invoke('session:get'),
   saveSession: (session: SessionData): Promise<SessionData> =>
-    ipcRenderer.invoke('session:save', session)
+    ipcRenderer.invoke('session:save', session),
+  renamePath: (targetPath: string, newName: string): Promise<string> =>
+    ipcRenderer.invoke('fs:rename', targetPath, newName)
 }
 
 contextBridge.exposeInMainWorld('photoCollection', api)

@@ -25,3 +25,15 @@ export function formatFileSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+export function isSameOrChildPath(path: string, target: string): boolean {
+  const normalize = (value: string): string => value.replace(/\\/g, '/').toLowerCase()
+  const normPath = normalize(path)
+  const normTarget = normalize(target)
+  return normPath === normTarget || normPath.startsWith(`${normTarget}/`)
+}
+
+export function replacePathPrefix(path: string, oldPrefix: string, newPrefix: string): string {
+  if (path === oldPrefix) return newPrefix
+  return newPrefix + path.slice(oldPrefix.length)
+}

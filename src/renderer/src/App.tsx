@@ -36,8 +36,16 @@ export default function App(): JSX.Element {
     setClosedTabs
   })
 
-  const { favorites, toggleFavorite } = useFavorites()
+  const { favorites, toggleFavorite, refreshFavorites } = useFavorites()
   const navigation = useFolderNavigation({ tabs, activeTabId, updateTab, addTab })
+
+  const handleRenameItem = useCallback(
+    async (path: string, newName: string) => {
+      await navigation.handleRenameItem(activeTab.id, path, newName)
+      await refreshFavorites()
+    },
+    [navigation, activeTab.id, refreshFavorites]
+  )
 
   const mainRef = useRef<HTMLElement>(null)
 
@@ -135,6 +143,7 @@ export default function App(): JSX.Element {
               void navigation.handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)
             }
             onGoUp={() => void navigation.handleGoUp(activeTab.id)}
+            onRenameItem={handleRenameItem}
             onSelectImage={handleSelectImage}
             onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}
             onNavigate={(direction) => navigation.handleNavigate(activeTab.id, direction)}
