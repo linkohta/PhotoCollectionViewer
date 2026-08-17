@@ -1,8 +1,20 @@
 const preloadCache = new Map<string, HTMLImageElement>()
-const MAX_PRELOAD_CACHE = 24
+// Sized to cover ~20 images on each side of the current one (preview thumbnails
+// for the full window plus full-resolution images for the nearest few), so
+// browsing stays fast even after the OS page cache for the photo files has
+// been evicted (e.g. after the app sat in the background for a while).
+const MAX_PRELOAD_CACHE = 96
 
 export function preloadImage(url: string): void {
-  if (preloadCache.has(url)) return
+  if (preloadCache.has(url)) {
+    // Touch the entry so it counts as recently used and survives eviction.
+    const existing = preloadCache.get(url)
+    if (existing) {
+      preloadCache.delete(url)
+      preloadCache.set(url, existing)
+    }
+    return
+  }
 
   const img = new Image()
   img.decoding = 'async'
