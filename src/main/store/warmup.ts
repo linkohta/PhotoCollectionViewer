@@ -1,4 +1,4 @@
-import { getOrCreateThumbnailPath } from './thumbnailCache'
+import { getOrCreateThumbnailPath, warmSourceFile } from './thumbnailCache'
 
 export interface WarmupImageDescriptor {
   path: string
@@ -32,11 +32,17 @@ export function clearWarmupContext(windowId: number): void {
 // for those files even if it was evicted while another app was active in the
 // foreground, which the renderer-side preload alone can't do because it only
 // runs while the window is actually visible/focused.
+//
+// warmSourceFile reads the original photo bytes directly, since
+// getOrCreateThumbnailPath short-circuits on a thumbnail cache hit (the
+// common case, as the renderer already preloads thumbnails for this same
+// window while browsing) without touching the source file at all.
 export function warmupWindow(windowId: number): void {
   const context = contexts.get(windowId)
   if (!context || context.images.length === 0) return
 
   for (const image of context.images) {
+    void warmSourceFile(image.path)
     void getOrCreateThumbnailPath(image.path, context.maxSize, image.modified, image.size)
   }
 }
