@@ -3,6 +3,7 @@ import { join } from 'path'
 import { registerIpcHandlers } from './ipc/handlers'
 import { getWindowState, trackWindowState } from './store/windowState'
 import { migrateLegacyStoreFiles } from './store/appState'
+import { clearWarmupContext, warmupWindow } from './store/warmup'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -49,6 +50,10 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  mainWindow.on('closed', () => {
+    clearWarmupContext(mainWindow.id)
+  })
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
@@ -73,6 +78,13 @@ app.whenReady().then(() => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  })
+
+  // Re-warm the thumbnail cache for whatever the renderer last reported as
+  // "in view" whenever the window regains focus (e.g. after another app was
+  // active for a while and the OS evicted the photo files from its cache).
+  app.on('browser-window-focus', (_event, window) => {
+    warmupWindow(window.id)
   })
 })
 

@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync } from 'fs'
+import { createReadStream, existsSync, mkdirSync } from 'fs'
 import { cpus } from 'os'
 import { join } from 'path'
 import { app } from 'electron'
@@ -89,6 +89,23 @@ async function generateThumbnailFile(
   } catch {
     return false
   }
+}
+
+// Reads the original file's bytes so the OS file cache holds it, independent
+// of whether a thumbnail for it already exists. getOrCreateThumbnailPath
+// short-circuits on a thumbnail cache hit without touching the source file
+// at all, so it alone can't re-warm the OS cache for the full-size photo.
+async function readFileForCacheWarmup(filePath: string): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const stream = createReadStream(filePath)
+    stream.on('data', () => {})
+    stream.on('error', () => resolve())
+    stream.on('close', () => resolve())
+  })
+}
+
+export function warmSourceFile(filePath: string): Promise<void> {
+  return thumbnailQueue.run(() => readFileForCacheWarmup(filePath))
 }
 
 export async function getOrCreateThumbnailPath(

@@ -50,6 +50,12 @@ export interface SessionData {
   closedTabs: TabSnapshot[]
 }
 
+export interface WarmupImageDescriptor {
+  path: string
+  modified: number
+  size: number
+}
+
 const api = {
   openFolderDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:openFolder'),
   scanFolder: (folderPath: string, rootPath?: string): Promise<FolderCollection> =>
@@ -79,7 +85,9 @@ const api = {
   saveSession: (session: SessionData): Promise<SessionData> =>
     ipcRenderer.invoke('session:save', session),
   renamePath: (targetPath: string, newName: string): Promise<string> =>
-    ipcRenderer.invoke('fs:rename', targetPath, newName)
+    ipcRenderer.invoke('fs:rename', targetPath, newName),
+  setWarmupContext: (images: WarmupImageDescriptor[], maxSize: number): void =>
+    ipcRenderer.send('warmup:setContext', images, maxSize)
 }
 
 contextBridge.exposeInMainWorld('photoCollection', api)
