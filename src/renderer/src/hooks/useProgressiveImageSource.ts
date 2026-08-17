@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ImageFile } from '../../../preload/index'
+import type { ImageFile, WarmupImageDescriptor } from '../../../preload/index'
 import { preloadImage } from '../utils/imagePreload'
 import { toLocalFileUrl } from '../utils/files'
 import type { Size } from '../utils/viewerGeometry'
@@ -98,19 +98,23 @@ export function useProgressiveImageSource({
   }, [image.path, image.modified, image.size, fullUrl, onNaturalSize])
 
   useEffect(() => {
-    if (allImages.length <= 1) return
+    const total = allImages.length
+    if (total === 0) return
 
     let cancelled = false
-    const total = allImages.length
     const maxRange = Math.floor((total - 1) / 2)
     const neighborAt = (offset: number): ImageFile | undefined =>
       allImages[(index + offset + total) % total]
 
-    const fullOffsets = [1, 2, -1, -2].filter((offset) => Math.abs(offset) <= FULL_PRELOAD_RANGE)
-    for (const offset of fullOffsets) {
-      const neighbor = neighborAt(offset)
-      if (neighbor) {
-        preloadImage(toLocalFileUrl(neighbor.path))
+    if (total > 1) {
+      const fullOffsets = [1, 2, -1, -2].filter(
+        (offset) => Math.abs(offset) <= FULL_PRELOAD_RANGE
+      )
+      for (const offset of fullOffsets) {
+        const neighbor = neighborAt(offset)
+        if (neighbor) {
+          preloadImage(toLocalFileUrl(neighbor.path))
+        }
       }
     }
 
@@ -135,6 +139,29 @@ export function useProgressiveImageSource({
     }
 
     void preloadThumbnailWindow()
+
+    // Tell the main process which images are "in view" so it can re-warm the
+    // thumbnail cache (and, transitively, the OS file cache) for this window
+    // when the app regains focus after sitting in the background.
+    const warmupRange = Math.min(THUMBNAIL_PRELOAD_RANGE, maxRange)
+    const warmupOffsets = [0]
+    for (let distance = 1; distance <= warmupRange; distance++) {
+      warmupOffsets.push(distance, -distance)
+    }
+
+    const warmupContext: WarmupImageDescriptor[] = []
+    for (const offset of warmupOffsets) {
+      const neighbor = neighborAt(offset)
+      if (neighbor) {
+        warmupContext.push({
+          path: neighbor.path,
+          modified: neighbor.modified,
+          size: neighbor.size
+        })
+      }
+    }
+
+    window.photoCollection.setWarmupContext(warmupContext, PREVIEW_THUMB_SIZE)
 
     return () => {
       cancelled = true

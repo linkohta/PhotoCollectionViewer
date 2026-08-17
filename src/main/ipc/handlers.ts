@@ -1,11 +1,12 @@
 import { readdir, stat, rename } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join, extname, basename, dirname } from 'path'
-import { ipcMain, dialog, nativeImage } from 'electron'
+import { ipcMain, dialog, nativeImage, BrowserWindow } from 'electron'
 import sharp from 'sharp'
 import { getFavorites, addFavorite, removeFavorite, renameFavoritePaths } from '../store/favorites'
 import { getSession, saveSession, type SessionData } from '../store/session'
 import { getOrCreateThumbnailPath } from '../store/thumbnailCache'
+import { setWarmupContext, type WarmupImageDescriptor } from '../store/warmup'
 import { extractZipArchive, getZipExtractPath } from '../utils/zipArchive'
 
 // sharp is unsupported for these formats; fall back to Electron's (synchronous)
@@ -239,6 +240,15 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('image:dataUrl', async (_event, filePath: string) => {
     return createImageDataUrl(filePath)
   })
+
+  ipcMain.on(
+    'warmup:setContext',
+    (event, images: WarmupImageDescriptor[], maxSize: number) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (!win) return
+      setWarmupContext(win.id, images, maxSize)
+    }
+  )
 
   ipcMain.handle('favorites:get', async () => {
     return getFavorites()
