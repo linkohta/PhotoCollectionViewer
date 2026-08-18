@@ -76,6 +76,13 @@ const api = {
     ipcRenderer.invoke('image:thumbnailPath', filePath, maxSize, modified, fileSize),
   getImageDataUrl: (filePath: string): Promise<string | null> =>
     ipcRenderer.invoke('image:dataUrl', filePath),
+  getThumbnailDataUrl: (
+    filePath: string,
+    maxSize: number,
+    modified: number,
+    fileSize: number
+  ): Promise<string | null> =>
+    ipcRenderer.invoke('image:thumbnailDataUrl', filePath, maxSize, modified, fileSize),
   getFavorites: (): Promise<FavoriteFolder[]> => ipcRenderer.invoke('favorites:get'),
   addFavorite: (folderPath: string): Promise<FavoriteFolder[]> =>
     ipcRenderer.invoke('favorites:add', folderPath),

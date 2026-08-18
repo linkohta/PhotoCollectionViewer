@@ -71,12 +71,23 @@ export function useImageTransform(imagePath: string) {
     return fitScale * zoomFactor
   })()
 
-  const displaySize = naturalSize
-    ? {
-        width: Math.max(1, Math.round(naturalSize.width * displayScale)),
-        height: Math.max(1, Math.round(naturalSize.height * displayScale))
-      }
-    : null
+  // Only produce an explicit pixel size once the container has actually been
+  // measured. Before the first ResizeObserver callback fires (e.g. right
+  // after regaining focus from minimized, where layout hasn't settled yet)
+  // containerSize is {0, 0}, which makes getFitScale fall back to a scale of
+  // 1 - i.e. the image's raw natural pixel size with no fitting applied at
+  // all, which renders as a huge, "zoomed in" image until the next resize
+  // observation corrects it. Falling back to the CSS contain/max-size rule
+  // (see ImageViewer.tsx) instead keeps the image properly bounded the whole
+  // time.
+  const containerMeasured = containerSize.width > 0 && containerSize.height > 0
+  const displaySize =
+    naturalSize && containerMeasured
+      ? {
+          width: Math.max(1, Math.round(naturalSize.width * displayScale)),
+          height: Math.max(1, Math.round(naturalSize.height * displayScale))
+        }
+      : null
 
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {

@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
 import { createReadStream, existsSync, mkdirSync } from 'fs'
+import { readFile } from 'fs/promises'
 import { cpus } from 'os'
 import { join } from 'path'
 import { app } from 'electron'
@@ -13,7 +14,17 @@ process.env.UV_THREADPOOL_SIZE = String(Math.max(4, cpus().length))
 const memoryCache = new Map<string, string>()
 const MAX_MEMORY_CACHE = 400
 
-class ThumbnailQueue {
+// Holds the actual JPEG bytes (not just the on-disk path) for a small "hot"
+// window of thumbnails, so they can be served straight from process memory.
+// memoryCache above only remembers where a thumbnail was written - reading it
+// back still means a disk access, which is exactly what's slow again once
+// the OS file cache has been evicted (e.g. the app sat minimized for a
+// while and other processes reused that RAM). A handful of small preview
+// JPEGs costs only a few hundred KB, so it's cheap to keep them resident.
+const bufferCache = new Map<string, Buffer>()
+const MAX_BUFFER_CACHE = 48
+
+export class ThumbnailQueue {
   private running = 0
   private readonly waiters: Array<() => void> = []
   private readonly maxConcurrent: number
@@ -104,8 +115,8 @@ async function readFileForCacheWarmup(filePath: string): Promise<void> {
   })
 }
 
-export function warmSourceFile(filePath: string): Promise<void> {
-  return thumbnailQueue.run(() => readFileForCacheWarmup(filePath))
+export function warmSourceFile(filePath: string, queue: ThumbnailQueue = thumbnailQueue): Promise<void> {
+  return queue.run(() => readFileForCacheWarmup(filePath))
 }
 
 export async function getOrCreateThumbnailPath(
@@ -134,4 +145,46 @@ export async function getOrCreateThumbnailPath(
     if (!created) return null
     return rememberInMemory(cacheKey, outputPath)
   })
+}
+
+function rememberBuffer(key: string, buffer: Buffer): void {
+  if (bufferCache.has(key)) {
+    bufferCache.delete(key)
+  }
+  bufferCache.set(key, buffer)
+
+  if (bufferCache.size > MAX_BUFFER_CACHE) {
+    const oldest = bufferCache.keys().next().value
+    if (oldest) bufferCache.delete(oldest)
+  }
+}
+
+// Same result as getOrCreateThumbnailPath, but returns the bytes as a data
+// URL instead of a file path, and remembers them in the in-memory buffer
+// cache above so a later call for the same image needs no disk access at
+// all, regardless of what the OS has since evicted from its file cache.
+export async function getThumbnailDataUrl(
+  filePath: string,
+  maxSize: number,
+  modified: number,
+  fileSize: number
+): Promise<string | null> {
+  const cacheKey = buildCacheKey(filePath, maxSize, modified, fileSize)
+
+  const cachedBuffer = bufferCache.get(cacheKey)
+  if (cachedBuffer) {
+    rememberBuffer(cacheKey, cachedBuffer)
+    return `data:image/jpeg;base64,${cachedBuffer.toString('base64')}`
+  }
+
+  const path = await getOrCreateThumbnailPath(filePath, maxSize, modified, fileSize)
+  if (!path) return null
+
+  try {
+    const buffer = await readFile(path)
+    rememberBuffer(cacheKey, buffer)
+    return `data:image/jpeg;base64,${buffer.toString('base64')}`
+  } catch {
+    return null
+  }
 }

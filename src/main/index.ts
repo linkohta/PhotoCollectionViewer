@@ -3,7 +3,7 @@ import { join } from 'path'
 import { registerIpcHandlers } from './ipc/handlers'
 import { getWindowState, trackWindowState } from './store/windowState'
 import { migrateLegacyStoreFiles } from './store/appState'
-import { clearWarmupContext, warmupWindow } from './store/warmup'
+import { clearWarmupContext, startPeriodicWarmup, warmupWindow } from './store/warmup'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -86,6 +86,8 @@ app.whenReady().then(() => {
   app.on('browser-window-focus', (_event, window) => {
     warmupWindow(window.id)
   })
+
+  startPeriodicWarmup()
 })
 
 app.on('window-all-closed', () => {
