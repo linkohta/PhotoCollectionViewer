@@ -1,8 +1,8 @@
 node_modules/
 out/
 dist/
+release/
 *.log
 .DS_Store
 Thumbs.db
-photocollectionviewer-win32-x64
 app-state.json
