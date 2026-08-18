@@ -5,7 +5,7 @@ import { ipcMain, dialog, nativeImage, BrowserWindow } from 'electron'
 import sharp from 'sharp'
 import { getFavorites, addFavorite, removeFavorite, renameFavoritePaths } from '../store/favorites'
 import { getSession, saveSession, type SessionData } from '../store/session'
-import { getOrCreateThumbnailPath } from '../store/thumbnailCache'
+import { getOrCreateThumbnailPath, getThumbnailDataUrl, ThumbnailQueue } from '../store/thumbnailCache'
 import { setWarmupContext, type WarmupImageDescriptor } from '../store/warmup'
 import { extractZipArchive, getZipExtractPath } from '../utils/zipArchive'
 
@@ -164,9 +164,26 @@ function createImageDataUrlSync(filePath: string, maxSize: number): string | nul
   }
 }
 
+// nativeImage has no async decode/resize API, so this always runs on the main
+// process's JS thread and blocks it for the duration of the call. There's no
+// way to make the call itself non-blocking, but serializing calls through a
+// single-slot queue (with a setImmediate yield beforehand) prevents several
+// of them from piling up back-to-back and keeps other pending IPC replies
+// from being starved behind a burst of these.
+const syncFallbackQueue = new ThumbnailQueue(1)
+
+function runImageDataUrlSync(filePath: string, maxSize: number): Promise<string | null> {
+  return syncFallbackQueue.run(
+    () =>
+      new Promise((resolve) => {
+        setImmediate(() => resolve(createImageDataUrlSync(filePath, maxSize)))
+      })
+  )
+}
+
 async function createImageDataUrl(filePath: string, maxSize = 4096): Promise<string | null> {
   if (SHARP_UNSUPPORTED_EXTENSIONS.has(extname(filePath).toLowerCase())) {
-    return createImageDataUrlSync(filePath, maxSize)
+    return runImageDataUrlSync(filePath, maxSize)
   }
 
   try {
@@ -176,7 +193,7 @@ async function createImageDataUrl(filePath: string, maxSize = 4096): Promise<str
       .toBuffer()
     return `data:image/jpeg;base64,${buffer.toString('base64')}`
   } catch {
-    return createImageDataUrlSync(filePath, maxSize)
+    return runImageDataUrlSync(filePath, maxSize)
   }
 }
 
@@ -240,6 +257,19 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('image:dataUrl', async (_event, filePath: string) => {
     return createImageDataUrl(filePath)
   })
+
+  ipcMain.handle(
+    'image:thumbnailDataUrl',
+    async (
+      _event,
+      filePath: string,
+      maxSize: number,
+      modified: number,
+      fileSize: number
+    ) => {
+      return getThumbnailDataUrl(filePath, maxSize, modified, fileSize)
+    }
+  )
 
   ipcMain.on(
     'warmup:setContext',
