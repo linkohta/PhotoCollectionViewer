@@ -101,6 +101,25 @@ export default function App(): JSX.Element {
     ? favorites.some((f) => f.path === activeTab.rootFolderPath)
     : false
 
+  const handleExportSettings = useCallback(async () => {
+    try {
+      const exported = await window.photoCollection.exportSettings()
+      if (exported) {
+        window.alert('設定をエクスポートしました。')
+      }
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '設定のエクスポートに失敗しました')
+    }
+  }, [])
+
+  const handleImportSettings = useCallback(async () => {
+    try {
+      await window.photoCollection.importSettings()
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : '設定のインポートに失敗しました')
+    }
+  }, [])
+
   return (
     <div className="app">
       <Sidebar
@@ -113,6 +132,8 @@ export default function App(): JSX.Element {
         onToggleFavorite={handleToggleFavorite}
         isFavorite={isFavorite}
         canFavorite={!!activeTab.rootFolderPath}
+        onExportSettings={() => void handleExportSettings()}
+        onImportSettings={() => void handleImportSettings()}
       />
 
       <div className="main-area">

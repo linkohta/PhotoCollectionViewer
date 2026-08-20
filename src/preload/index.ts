@@ -94,7 +94,9 @@ const api = {
   renamePath: (targetPath: string, newName: string): Promise<string> =>
     ipcRenderer.invoke('fs:rename', targetPath, newName),
   setWarmupContext: (images: WarmupImageDescriptor[], maxSize: number): void =>
-    ipcRenderer.send('warmup:setContext', images, maxSize)
+    ipcRenderer.send('warmup:setContext', images, maxSize),
+  exportSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:export'),
+  importSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:import')
 }
 
 contextBridge.exposeInMainWorld('photoCollection', api)

@@ -52,13 +52,19 @@
 
 ### 状態の永続化
 
-次の内容を `app-state.json` に**アプリの直下**へ保存します（開発時はプロジェクトルート、ビルド後は実行ファイルと同じフォルダ）。
+次の内容を `app-state.json` に保存します（開発時はプロジェクトルート、ビルド後は Electron の `userData` フォルダ、通常 `%APPDATA%\PhotoCollectionViewer`）。実行ファイルと同じインストールディレクトリには保存されないため、アップデートインストールや再インストールを行っても設定は保持されます。
 
 | キー | 内容 |
 |------|------|
 | `session` | 開いているタブ、表示中タブ、閉じたタブ |
 | `windowState` | ウィンドウサイズ・位置・最大化状態 |
 | `favorites` | お気に入りフォルダ |
+
+旧バージョン（インストールディレクトリに保存していたもの）からアップデートした場合は、初回起動時に `userData` フォルダへ自動的に移行されます。
+
+### 設定のインポート・エクスポート
+
+サイドバー下部の「設定」から、`app-state.json` の内容（お気に入り・セッション・ウィンドウ状態）をファイルとしてエクスポート／インポートできます。他の PC への移行や、再インストール前のバックアップに利用できます。インポート後は内容を反映するためウィンドウが自動的に再読み込みされます。
 
 ## 開発
 
@@ -127,7 +133,8 @@ npm start
 | `src/main/store/session.ts` | セッション永続化 |
 | `src/main/store/windowState.ts` | ウィンドウサイズ永続化 |
 | `src/main/store/favorites.ts` | お気に入り永続化 |
-| `src/main/store/appRoot.ts` | 設定ファイルの保存先（アプリ直下） |
+| `src/main/store/appRoot.ts` | 設定ファイルの保存先（`userData`、開発時はプロジェクトルート） |
+| `src/main/store/appState.ts` | 設定の読み書き、レガシー移行、インポート／エクスポート |
 | `src/main/store/thumbnailCache.ts` | サムネイルディスクキャッシュ |
 | `src/renderer/src/App.tsx` | タブ状態管理 |
 | `src/renderer/src/components/TabBar.tsx` | タブバー UI（ドラッグ&ドロップ並び替え） |
