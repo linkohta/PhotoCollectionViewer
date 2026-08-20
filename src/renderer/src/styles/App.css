@@ -497,10 +497,14 @@
   border-radius: 4px;
   font-size: 13px;
   color: #aaa;
-  max-width: 180px;
+  max-width: 320px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.breadcrumb-link.current {
+  max-width: none;
 }
 
 .breadcrumb-link:hover:not(:disabled) {
@@ -545,13 +549,21 @@
 
 .subfolder-card {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   padding: 12px 14px;
   background: #1e1e1e;
   border-radius: 8px;
   text-align: left;
-  transition: background 0.15s, transform 0.15s;
+  transition: background 0.15s, transform 0.15s, outline-color 0.15s;
+  min-width: 0;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+}
+
+.subfolder-card.highlighted {
+  outline-color: #4a6cf7;
+  background: #24304f;
 }
 
 .zip-card {
@@ -577,14 +589,17 @@
 
 .subfolder-icon {
   font-size: 22px;
+  line-height: 1.3;
   flex-shrink: 0;
 }
 
 .subfolder-name {
   font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.3;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  flex: 1;
+  min-width: 0;
 }
 
 .thumbnail-section {
@@ -615,13 +630,19 @@
   background: #1e1e1e;
   border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s, outline-color 0.15s;
   text-align: left;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
 }
 
 .thumbnail-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.thumbnail-card.highlighted {
+  outline-color: #4a6cf7;
 }
 
 .thumbnail-image-wrap {

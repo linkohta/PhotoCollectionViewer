@@ -20,6 +20,9 @@ export interface TabState {
   loading: boolean
   error: string | null
   returnToParentOnCloseViewer: boolean
+  // Path of the image or subfolder that was last shown in the viewer /
+  // navigated into, so the grid can highlight it when the user comes back.
+  highlightPath: string | null
 }
 
 export function createEmptyTab(): TabState {
@@ -32,7 +35,8 @@ export function createEmptyTab(): TabState {
     viewMode: 'grid',
     loading: false,
     error: null,
-    returnToParentOnCloseViewer: false
+    returnToParentOnCloseViewer: false,
+    highlightPath: null
   }
 }
 

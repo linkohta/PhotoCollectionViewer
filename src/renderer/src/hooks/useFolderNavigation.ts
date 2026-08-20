@@ -13,6 +13,7 @@ interface UseFolderNavigationArgs {
 interface BrowseOptions {
   resetRoot?: boolean
   fromSubfolder?: boolean
+  highlightPath?: string
 }
 
 export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: UseFolderNavigationArgs) {
@@ -47,7 +48,8 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
           title: getTabTitle(result, options.resetRoot ? folderPath : tab.rootFolderPath ?? nextRoot),
           selectedIndex: shouldAutoOpenViewer ? 0 : null,
           viewMode: shouldAutoOpenViewer ? 'viewer' : 'grid',
-          returnToParentOnCloseViewer: shouldAutoOpenViewer
+          returnToParentOnCloseViewer: shouldAutoOpenViewer,
+          highlightPath: shouldAutoOpenViewer ? null : options.highlightPath ?? null
         }))
       } catch {
         updateTab(tabId, (tab) => ({
@@ -178,7 +180,9 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
     async (tabId: string) => {
       const tab = tabs.find((item) => item.id === tabId)
       if (!tab?.collection?.parentPath || !tab.rootFolderPath) return
-      await browseFolder(tabId, tab.collection.parentPath, tab.rootFolderPath)
+      await browseFolder(tabId, tab.collection.parentPath, tab.rootFolderPath, {
+        highlightPath: tab.collection.path
+      })
     },
     [tabs, browseFolder]
   )
@@ -189,7 +193,8 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
         ...tab,
         selectedIndex: index,
         viewMode: 'viewer',
-        returnToParentOnCloseViewer: false
+        returnToParentOnCloseViewer: false,
+        highlightPath: null
       }))
     },
     [updateTab]
@@ -201,14 +206,20 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
       if (!tab) return
 
       if (tab.returnToParentOnCloseViewer && tab.collection?.parentPath && tab.rootFolderPath) {
-        await browseFolder(tabId, tab.collection.parentPath, tab.rootFolderPath)
+        await browseFolder(tabId, tab.collection.parentPath, tab.rootFolderPath, {
+          highlightPath: tab.collection.path
+        })
         return
       }
+
+      const lastViewedImagePath =
+        tab.selectedIndex !== null ? tab.collection?.images[tab.selectedIndex]?.path ?? null : null
 
       updateTab(tabId, (current) => ({
         ...current,
         viewMode: 'grid',
-        returnToParentOnCloseViewer: false
+        returnToParentOnCloseViewer: false,
+        highlightPath: lastViewedImagePath
       }))
     },
     [tabs, browseFolder, updateTab]

@@ -83,6 +83,7 @@ export function TabContent({
         <ThumbnailGrid
           collection={tab.collection}
           rootFolderPath={tab.rootFolderPath}
+          highlightPath={tab.highlightPath}
           onSelect={onSelectImage}
           onSelectSubfolder={onSelectSubfolder}
           onOpenSubfolderInNewTab={onOpenSubfolderInNewTab}
