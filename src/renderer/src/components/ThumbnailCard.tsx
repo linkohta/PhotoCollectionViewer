@@ -108,7 +108,11 @@ export function ThumbnailCard({
       <div ref={cardRef as RefObject<HTMLDivElement>} className="thumbnail-card renaming">
         {imageWrap}
         <div className="thumbnail-info">
-          <RenameInput initialName={image.name} onSubmit={onRenameSubmit} onCancel={onRenameCancel} />
+          <RenameInput
+            initialName={image.name}
+            onSubmit={onRenameSubmit}
+            onCancel={onRenameCancel}
+          />
           <span className="thumbnail-size">{formatFileSize(image.size)}</span>
         </div>
       </div>

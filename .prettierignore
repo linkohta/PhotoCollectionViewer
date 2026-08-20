@@ -1,0 +1,7 @@
+out
+release
+node_modules
+*.tsbuildinfo
+.github/
+*.md
+package-lock.json

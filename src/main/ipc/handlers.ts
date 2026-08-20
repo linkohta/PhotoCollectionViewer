@@ -36,7 +36,9 @@ export function registerIpcHandlers(): void {
         cancelId: 1,
         noLink: true,
         title: 'ZIPファイル',
-        message: isExtracted ? `「${zipName}」は既に解凍済みです。` : `「${zipName}」を解凍しますか？`,
+        message: isExtracted
+          ? `「${zipName}」は既に解凍済みです。`
+          : `「${zipName}」を解凍しますか？`,
         detail: isExtracted
           ? `解凍先フォルダを開きます。\n${extractPath}`
           : `ZIP内に同名フォルダがある場合は、その中身を次の場所へ展開します。\n${extractPath}`

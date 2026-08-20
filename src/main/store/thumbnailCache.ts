@@ -67,9 +67,7 @@ function buildCacheKey(
   modified: number,
   fileSize: number
 ): string {
-  return createHash('sha256')
-    .update(`${filePath}|${modified}|${fileSize}|${maxSize}`)
-    .digest('hex')
+  return createHash('sha256').update(`${filePath}|${modified}|${fileSize}|${maxSize}`).digest('hex')
 }
 
 function rememberInMemory(key: string, path: string): string {
@@ -115,7 +113,10 @@ async function readFileForCacheWarmup(filePath: string): Promise<void> {
   })
 }
 
-export function warmSourceFile(filePath: string, queue: ThumbnailQueue = thumbnailQueue): Promise<void> {
+export function warmSourceFile(
+  filePath: string,
+  queue: ThumbnailQueue = thumbnailQueue
+): Promise<void> {
   return queue.run(() => readFileForCacheWarmup(filePath))
 }
 

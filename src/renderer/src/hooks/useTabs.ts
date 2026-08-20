@@ -57,7 +57,9 @@ export function useTabs() {
       setTabs((current) => {
         const closingTab = current.find((tab) => tab.id === tabId)
         if (closingTab && hasRestorableContent(closingTab)) {
-          setClosedTabs((closed) => [tabToSnapshot(closingTab), ...closed].slice(0, MAX_CLOSED_TABS))
+          setClosedTabs((closed) =>
+            [tabToSnapshot(closingTab), ...closed].slice(0, MAX_CLOSED_TABS)
+          )
         }
 
         if (current.length === 1) {

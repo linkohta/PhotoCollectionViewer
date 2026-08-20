@@ -12,11 +12,7 @@ export function toLocalFileUrl(filePath: string): string {
     return encodedRest ? `local-file:///${drive}/${encodedRest}` : `local-file:///${drive}/`
   }
 
-  const encoded = normalized
-    .split('/')
-    .filter(Boolean)
-    .map(encodeURIComponent)
-    .join('/')
+  const encoded = normalized.split('/').filter(Boolean).map(encodeURIComponent).join('/')
   return `local-file:///${encoded}`
 }
 
