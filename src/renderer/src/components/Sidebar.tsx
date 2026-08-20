@@ -12,6 +12,8 @@ interface SidebarProps {
   onSelectFolder: (path: string) => void
   onOpenFolderInNewTab: (path: string) => void
   onToggleFavorite: () => void
+  onExportSettings: () => void
+  onImportSettings: () => void
 }
 
 interface FavoriteMenuState {
@@ -30,7 +32,9 @@ export function Sidebar({
   onOpenDialogNewTab,
   onSelectFolder,
   onOpenFolderInNewTab,
-  onToggleFavorite
+  onToggleFavorite,
+  onExportSettings,
+  onImportSettings
 }: SidebarProps): JSX.Element {
   const [favoriteMenu, setFavoriteMenu] = useState<FavoriteMenuState | null>(null)
 
@@ -100,6 +104,16 @@ export function Sidebar({
           </p>
         </div>
       )}
+
+      <div className="sidebar-section sidebar-footer">
+        <h2 className="section-title">設定</h2>
+        <button type="button" className="btn full-width sidebar-secondary" onClick={onExportSettings}>
+          設定をエクスポート
+        </button>
+        <button type="button" className="btn full-width sidebar-secondary" onClick={onImportSettings}>
+          設定をインポート
+        </button>
+      </div>
     </aside>
 
     {favoriteMenu && (

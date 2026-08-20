@@ -1,5 +1,7 @@
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs'
-import { getAppRootFilePath } from './appRoot'
+import { join } from 'path'
+import { app } from 'electron'
+import { getAppRootFilePath, getLegacyAppRootDir } from './appRoot'
 
 const LEGACY_FAVORITES_FILE = 'favorites.json'
 const LEGACY_SESSION_FILE = 'session.json'
@@ -76,6 +78,23 @@ function writeAppState(state: AppState): void {
   writeFileSync(getStorePath(), JSON.stringify(state, null, 2), 'utf-8')
 }
 
+export function exportAppState(destPath: string): void {
+  const state = readAppState()
+  writeFileSync(destPath, JSON.stringify(state, null, 2), 'utf-8')
+}
+
+export function importAppState(srcPath: string): AppState {
+  const raw = readFileSync(srcPath, 'utf-8')
+  const data = JSON.parse(raw) as Partial<AppState>
+  const state: AppState = {
+    favorites: Array.isArray(data.favorites) ? data.favorites : [],
+    session: data.session ?? defaultAppState().session,
+    windowState: data.windowState ?? {}
+  }
+  writeAppState(state)
+  return state
+}
+
 export function readAppStateSlice<K extends keyof AppState>(key: K): AppState[K] {
   return readAppState()[key]
 }
@@ -97,7 +116,31 @@ function readLegacyJson<T>(filename: string): T | null {
   }
 }
 
+/**
+ * 旧バージョンはインストールディレクトリ(exeと同じ場所)に app-state.json を保存していたため、
+ * アップデートインストール時に設定が失われていた。userData に app-state.json がまだ無ければ、
+ * 旧パスから移行する。
+ */
+function migrateLegacyAppStateFile(): void {
+  if (!app.isPackaged) return
+
+  const currentStorePath = getStorePath()
+  if (existsSync(currentStorePath)) return
+
+  const legacyStorePath = join(getLegacyAppRootDir(), 'app-state.json')
+  if (!existsSync(legacyStorePath)) return
+
+  try {
+    const raw = readFileSync(legacyStorePath, 'utf-8')
+    writeFileSync(currentStorePath, raw, 'utf-8')
+  } catch {
+    // 読み込みに失敗した場合は何もしない(初期状態で起動)
+  }
+}
+
 export function migrateLegacyStoreFiles(): void {
+  migrateLegacyAppStateFile()
+
   const legacyPaths = [LEGACY_FAVORITES_FILE, LEGACY_SESSION_FILE, LEGACY_WINDOW_STATE_FILE].map((filename) =>
     getAppRootFilePath(filename)
   )
