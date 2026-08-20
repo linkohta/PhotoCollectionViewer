@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FolderCollection, ImageFile, ZipArchive } from '../../../preload/index'
 import { ContextMenu } from './ContextMenu'
-import { RenameInput } from './RenameInput'
+import { SubfolderCard } from './SubfolderCard'
 import { ThumbnailCard } from './ThumbnailCard'
-import { formatFileSize } from '../utils/files'
+import { ZipCard } from './ZipCard'
 
 // Keyed by folder path so returning to a folder (e.g. via "go up" or a
 // breadcrumb) restores the scroll position it was left at, instead of
@@ -131,6 +131,17 @@ export function ThumbnailGrid({
     setRenaming(null)
   }
 
+  const openItemMenu = (
+    event: { clientX: number; clientY: number; preventDefault: () => void },
+    path: string,
+    name: string,
+    kind: ItemMenuState['kind'],
+    zipFile?: ZipArchive
+  ): void => {
+    event.preventDefault()
+    setItemMenu({ x: event.clientX, y: event.clientY, path, name, kind, zipFile })
+  }
+
   const breadcrumbs = buildBreadcrumb(collection, rootFolderPath)
   const isEmpty =
     collection.subfolders.length === 0 &&
@@ -172,40 +183,19 @@ export function ThumbnailGrid({
           <section className="subfolder-section">
             <h3 className="section-label">サブフォルダ</h3>
             <div className="subfolder-grid">
-              {collection.subfolders.map((subfolder) =>
-                renaming?.kind === 'subfolder' && renaming.path === subfolder.path ? (
-                  <div key={subfolder.path} className="subfolder-card renaming">
-                    <span className="subfolder-icon">📁</span>
-                    <RenameInput
-                      initialName={subfolder.name}
-                      onSubmit={handleRenameSubmit}
-                      onCancel={() => setRenaming(null)}
-                    />
-                  </div>
-                ) : (
-                  <button
-                    key={subfolder.path}
-                    type="button"
-                    className={`subfolder-card ${subfolder.path === highlightPath ? 'highlighted' : ''}`}
-                    data-path={subfolder.path}
-                    onClick={() => onSelectSubfolder(subfolder.path)}
-                    onContextMenu={(event) => {
-                      event.preventDefault()
-                      setItemMenu({
-                        x: event.clientX,
-                        y: event.clientY,
-                        path: subfolder.path,
-                        name: subfolder.name,
-                        kind: 'subfolder'
-                      })
-                    }}
-                    title={subfolder.path}
-                  >
-                    <span className="subfolder-icon">📁</span>
-                    <span className="subfolder-name">{subfolder.name}</span>
-                  </button>
-                )
-              )}
+              {collection.subfolders.map((subfolder) => (
+                <SubfolderCard
+                  key={subfolder.path}
+                  path={subfolder.path}
+                  name={subfolder.name}
+                  isHighlighted={subfolder.path === highlightPath}
+                  isRenaming={renaming?.kind === 'subfolder' && renaming.path === subfolder.path}
+                  onSelect={() => onSelectSubfolder(subfolder.path)}
+                  onContextMenu={(event) => openItemMenu(event, subfolder.path, subfolder.name, 'subfolder')}
+                  onRenameSubmit={handleRenameSubmit}
+                  onRenameCancel={() => setRenaming(null)}
+                />
+              ))}
             </div>
           </section>
         )}
@@ -214,47 +204,18 @@ export function ThumbnailGrid({
           <section className="subfolder-section">
             <h3 className="section-label">ZIPファイル</h3>
             <div className="subfolder-grid">
-              {collection.zipFiles.map((zipFile) =>
-                renaming?.kind === 'zip' && renaming.path === zipFile.path ? (
-                  <div key={zipFile.path} className="subfolder-card zip-card renaming">
-                    <span className="subfolder-icon">🗜</span>
-                    <span className="zip-info">
-                      <RenameInput
-                        initialName={zipFile.name}
-                        onSubmit={handleRenameSubmit}
-                        onCancel={() => setRenaming(null)}
-                      />
-                      <span className="zip-size">{formatFileSize(zipFile.size)}</span>
-                    </span>
-                  </div>
-                ) : (
-                  <button
-                    key={zipFile.path}
-                    type="button"
-                    className={`subfolder-card zip-card ${zipFile.path === highlightPath ? 'highlighted' : ''}`}
-                    data-path={zipFile.path}
-                    onClick={() => onSelectZip(zipFile)}
-                    onContextMenu={(event) => {
-                      event.preventDefault()
-                      setItemMenu({
-                        x: event.clientX,
-                        y: event.clientY,
-                        path: zipFile.path,
-                        name: zipFile.name,
-                        kind: 'zip',
-                        zipFile
-                      })
-                    }}
-                    title={`${zipFile.path}\n解凍先: ${zipFile.extractPath}`}
-                  >
-                    <span className="subfolder-icon">🗜</span>
-                    <span className="zip-info">
-                      <span className="subfolder-name">{zipFile.name}</span>
-                      <span className="zip-size">{formatFileSize(zipFile.size)}</span>
-                    </span>
-                  </button>
-                )
-              )}
+              {collection.zipFiles.map((zipFile) => (
+                <ZipCard
+                  key={zipFile.path}
+                  zipFile={zipFile}
+                  isHighlighted={zipFile.path === highlightPath}
+                  isRenaming={renaming?.kind === 'zip' && renaming.path === zipFile.path}
+                  onSelect={() => onSelectZip(zipFile)}
+                  onContextMenu={(event) => openItemMenu(event, zipFile.path, zipFile.name, 'zip', zipFile)}
+                  onRenameSubmit={handleRenameSubmit}
+                  onRenameCancel={() => setRenaming(null)}
+                />
+              ))}
             </div>
           </section>
         )}
@@ -271,16 +232,9 @@ export function ThumbnailGrid({
                   scrollRoot={scrollRoot}
                   isHighlighted={image.path === highlightPath}
                   onSelect={onSelect}
-                  onContextMenu={(event, targetImage) => {
-                    event.preventDefault()
-                    setItemMenu({
-                      x: event.clientX,
-                      y: event.clientY,
-                      path: targetImage.path,
-                      name: targetImage.name,
-                      kind: 'image'
-                    })
-                  }}
+                  onContextMenu={(event, targetImage) =>
+                    openItemMenu(event, targetImage.path, targetImage.name, 'image')
+                  }
                   isRenaming={renaming?.kind === 'image' && renaming.path === image.path}
                   onRenameSubmit={handleRenameSubmit}
                   onRenameCancel={() => setRenaming(null)}
