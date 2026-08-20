@@ -53,6 +53,19 @@ export class ThumbnailQueue {
 
 const thumbnailQueue = new ThumbnailQueue(Math.min(8, Math.max(4, cpus().length)))
 
+// Re-inserts `key` so it becomes the most-recently-used entry (Map iterates
+// in insertion order), then evicts the oldest entry once the cache exceeds
+// maxSize.
+function insertWithLruEviction<K, V>(cache: Map<K, V>, key: K, value: V, maxSize: number): void {
+  cache.delete(key)
+  cache.set(key, value)
+
+  if (cache.size > maxSize) {
+    const oldest = cache.keys().next().value
+    if (oldest !== undefined) cache.delete(oldest)
+  }
+}
+
 function getCacheDir(): string {
   const dir = join(app.getPath('userData'), 'thumbnails')
   if (!existsSync(dir)) {
@@ -73,16 +86,7 @@ function buildCacheKey(
 }
 
 function rememberInMemory(key: string, path: string): string {
-  if (memoryCache.has(key)) {
-    memoryCache.delete(key)
-  }
-  memoryCache.set(key, path)
-
-  if (memoryCache.size > MAX_MEMORY_CACHE) {
-    const oldest = memoryCache.keys().next().value
-    if (oldest) memoryCache.delete(oldest)
-  }
-
+  insertWithLruEviction(memoryCache, key, path, MAX_MEMORY_CACHE)
   return path
 }
 
@@ -148,15 +152,7 @@ export async function getOrCreateThumbnailPath(
 }
 
 function rememberBuffer(key: string, buffer: Buffer): void {
-  if (bufferCache.has(key)) {
-    bufferCache.delete(key)
-  }
-  bufferCache.set(key, buffer)
-
-  if (bufferCache.size > MAX_BUFFER_CACHE) {
-    const oldest = bufferCache.keys().next().value
-    if (oldest) bufferCache.delete(oldest)
-  }
+  insertWithLruEviction(bufferCache, key, buffer, MAX_BUFFER_CACHE)
 }
 
 // Same result as getOrCreateThumbnailPath, but returns the bytes as a data

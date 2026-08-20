@@ -16,6 +16,32 @@ interface BrowseOptions {
   highlightPath?: string
 }
 
+function remapTabPathsAfterRename(
+  tab: TabState,
+  oldPath: string,
+  newPath: string
+): { rootFolderPath: TabState['rootFolderPath']; collection: TabState['collection'] } {
+  const nextRoot =
+    tab.rootFolderPath && isSameOrChildPath(tab.rootFolderPath, oldPath)
+      ? replacePathPrefix(tab.rootFolderPath, oldPath, newPath)
+      : tab.rootFolderPath
+
+  const nextCollection =
+    tab.collection && isSameOrChildPath(tab.collection.path, oldPath)
+      ? {
+          ...tab.collection,
+          path: replacePathPrefix(tab.collection.path, oldPath, newPath),
+          name:
+            replacePathPrefix(tab.collection.path, oldPath, newPath)
+              .split(/[/\\]/)
+              .filter(Boolean)
+              .pop() ?? tab.collection.name
+        }
+      : tab.collection
+
+  return { rootFolderPath: nextRoot, collection: nextCollection }
+}
+
 export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: UseFolderNavigationArgs) {
   const browseFolder = useCallback(
     async (tabId: string, folderPath: string, rootPath: string, options: BrowseOptions = {}) => {
@@ -236,42 +262,22 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
         if (!rootMatches && !collectionMatches) continue
 
         updateTab(tab.id, (current) => {
-          const nextRoot =
-            current.rootFolderPath && isSameOrChildPath(current.rootFolderPath, oldPath)
-              ? replacePathPrefix(current.rootFolderPath, oldPath, newPath)
-              : current.rootFolderPath
-
-          const nextCollection =
-            current.collection && isSameOrChildPath(current.collection.path, oldPath)
-              ? {
-                  ...current.collection,
-                  path: replacePathPrefix(current.collection.path, oldPath, newPath),
-                  name:
-                    replacePathPrefix(current.collection.path, oldPath, newPath)
-                      .split(/[/\\]/)
-                      .filter(Boolean)
-                      .pop() ?? current.collection.name
-                }
-              : current.collection
-
+          const { rootFolderPath, collection } = remapTabPathsAfterRename(current, oldPath, newPath)
           return {
             ...current,
-            rootFolderPath: nextRoot,
-            collection: nextCollection,
-            title: getTabTitle(nextCollection, nextRoot)
+            rootFolderPath,
+            collection,
+            title: getTabTitle(collection, rootFolderPath)
           }
         })
       }
 
       const originTab = tabs.find((tab) => tab.id === tabId)
       if (originTab?.collection && originTab.rootFolderPath) {
-        const nextFolderPath = isSameOrChildPath(originTab.collection.path, oldPath)
-          ? replacePathPrefix(originTab.collection.path, oldPath, newPath)
-          : originTab.collection.path
-        const nextRootPath = isSameOrChildPath(originTab.rootFolderPath, oldPath)
-          ? replacePathPrefix(originTab.rootFolderPath, oldPath, newPath)
-          : originTab.rootFolderPath
-        await browseFolder(tabId, nextFolderPath, nextRootPath)
+        const { rootFolderPath, collection } = remapTabPathsAfterRename(originTab, oldPath, newPath)
+        if (collection && rootFolderPath) {
+          await browseFolder(tabId, collection.path, rootFolderPath)
+        }
       }
 
       return newPath
