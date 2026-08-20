@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ImageFile } from '../../../preload/index'
 import { isTypingTarget } from '../utils/imagePreload'
 import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
@@ -24,6 +24,7 @@ export function ImageViewer({
   onClose,
   onNavigate
 }: ImageViewerProps): JSX.Element {
+  const isVideo = image.mediaType === 'video'
   const viewerRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   const onNavigateRef = useRef(onNavigate)
@@ -31,6 +32,7 @@ export function ImageViewer({
   onNavigateRef.current = onNavigate
 
   const fullUrl = useMemo(() => toLocalFileUrl(image.path), [image.path])
+  const [videoError, setVideoError] = useState(false)
 
   const transform = useImageTransform(image.path)
   const { imageSrc, isFullLoaded } = useProgressiveImageSource({
@@ -40,6 +42,10 @@ export function ImageViewer({
     fullUrl,
     onNaturalSize: transform.setNaturalSize
   })
+
+  useEffect(() => {
+    setVideoError(false)
+  }, [image.path])
 
   useEffect(() => {
     viewerRef.current?.focus({ preventScroll: true })
@@ -67,31 +73,33 @@ export function ImageViewer({
           break
         case '+':
         case '=':
+          if (isVideo) break
           event.preventDefault()
           transform.zoom(0.2)
           break
         case '-':
+          if (isVideo) break
           event.preventDefault()
           transform.zoom(-0.2)
           break
         case '0':
-          transform.resetView()
+          if (!isVideo) transform.resetView()
           break
         case 'f':
         case 'F':
-          transform.fitToScreen()
+          if (!isVideo) transform.fitToScreen()
           break
         case 'r':
-          transform.rotateClockwise()
+          if (!isVideo) transform.rotateClockwise()
           break
         case 'R':
-          transform.rotateCounterClockwise()
+          if (!isVideo) transform.rotateCounterClockwise()
           break
         default:
           break
       }
     })
-  }, [transform])
+  }, [transform, isVideo])
 
   return (
     <div
@@ -106,7 +114,8 @@ export function ImageViewer({
         total={total}
         imageName={image.name}
         imagePath={image.path}
-        showLoadingBadge={!isFullLoaded && !!imageSrc}
+        showLoadingBadge={!isVideo && !isFullLoaded && !!imageSrc}
+        hideZoomControls={isVideo}
         onClose={onClose}
         onNavigate={onNavigate}
         onFit={transform.fitToScreen}
@@ -116,49 +125,68 @@ export function ImageViewer({
         onReset={transform.resetView}
       />
 
-      <div
-        ref={transform.containerRef}
-        className={`viewer-canvas ${transform.fitMode !== 'fit' ? 'pannable' : ''}`}
-        onWheel={transform.handleWheel}
-        onMouseDown={(e) => {
-          viewerRef.current?.focus({ preventScroll: true })
-          transform.handleMouseDown(e)
-        }}
-        onMouseMove={transform.handleMouseMove}
-        onMouseUp={transform.handleMouseUp}
-        onMouseLeave={transform.handleMouseUp}
-        onDoubleClick={transform.toggleActualSize}
-      >
-        {!imageSrc && (
-          <div className="viewer-loading">
-            <span className="tab-spinner" aria-hidden="true" />
-          </div>
-        )}
-
-        {imageSrc && (
-          <div
-            className="viewer-image-frame"
-            style={{
-              transform: `translate(${transform.offset.x}px, ${transform.offset.y}px) rotate(${transform.rotation}deg)`
-            }}
-          >
-            <img
+      {isVideo ? (
+        <div className="viewer-canvas">
+          {videoError ? (
+            <div className="viewer-loading">
+              <span>この動画は再生できませんでした（未対応の形式の可能性があります）</span>
+            </div>
+          ) : (
+            <video
               key={image.path}
-              src={imageSrc}
-              alt={image.name}
-              className={`viewer-image ${isFullLoaded ? 'loaded' : 'preview'}`}
-              style={
-                transform.displaySize
-                  ? { width: transform.displaySize.width, height: transform.displaySize.height }
-                  : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }
-              }
-              draggable={false}
-              decoding="async"
-              onLoad={transform.handleImageLoad}
+              src={imageSrc ?? undefined}
+              className="viewer-video"
+              controls
+              autoPlay
+              onError={() => setVideoError(true)}
             />
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      ) : (
+        <div
+          ref={transform.containerRef}
+          className={`viewer-canvas ${transform.fitMode !== 'fit' ? 'pannable' : ''}`}
+          onWheel={transform.handleWheel}
+          onMouseDown={(e) => {
+            viewerRef.current?.focus({ preventScroll: true })
+            transform.handleMouseDown(e)
+          }}
+          onMouseMove={transform.handleMouseMove}
+          onMouseUp={transform.handleMouseUp}
+          onMouseLeave={transform.handleMouseUp}
+          onDoubleClick={transform.toggleActualSize}
+        >
+          {!imageSrc && (
+            <div className="viewer-loading">
+              <span className="tab-spinner" aria-hidden="true" />
+            </div>
+          )}
+
+          {imageSrc && (
+            <div
+              className="viewer-image-frame"
+              style={{
+                transform: `translate(${transform.offset.x}px, ${transform.offset.y}px) rotate(${transform.rotation}deg)`
+              }}
+            >
+              <img
+                key={image.path}
+                src={imageSrc}
+                alt={image.name}
+                className={`viewer-image ${isFullLoaded ? 'loaded' : 'preview'}`}
+                style={
+                  transform.displaySize
+                    ? { width: transform.displaySize.width, height: transform.displaySize.height }
+                    : { maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }
+                }
+                draggable={false}
+                decoding="async"
+                onLoad={transform.handleImageLoad}
+              />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

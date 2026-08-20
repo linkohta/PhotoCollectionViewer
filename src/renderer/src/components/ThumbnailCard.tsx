@@ -27,11 +27,20 @@ export function ThumbnailCard({
   onRenameSubmit,
   onRenameCancel
 }: ThumbnailCardProps): JSX.Element {
+  const isVideo = image.mediaType === 'video'
   const cardRef = useRef<HTMLElement>(null)
   const [src, setSrc] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const loadThumbnail = useCallback(async (): Promise<void> => {
+    // Videos have no sharp-generated thumbnail - the local-file:// URL is
+    // handed straight to a <video preload="metadata"> element below, which
+    // renders the first frame itself.
+    if (isVideo) {
+      setSrc(toLocalFileUrl(image.path))
+      return
+    }
+
     setLoading(true)
     try {
       const path = await window.photoCollection.getThumbnailPath(
@@ -52,7 +61,7 @@ export function ThumbnailCard({
     } finally {
       setLoading(false)
     }
-  }, [image.path, image.modified, image.size])
+  }, [isVideo, image.path, image.modified, image.size])
 
   useEffect(() => {
     const element = cardRef.current
@@ -80,17 +89,26 @@ export function ThumbnailCard({
   }, [loadThumbnail, scrollRoot])
 
   const handleImageError = useCallback(() => {
+    if (isVideo) return
     void window.photoCollection.getImageDataUrl(image.path).then((dataUrl) => {
       if (dataUrl) {
         setSrc(dataUrl)
       }
     })
-  }, [image.path])
+  }, [isVideo, image.path])
+
+  const handleVideoError = useCallback(() => setSrc(null), [])
 
   const imageWrap = (
     <div className="thumbnail-image-wrap">
       {loading && <div className="thumbnail-placeholder" />}
-      {src && (
+      {src && isVideo && (
+        <>
+          <video src={src} className="thumbnail-image" preload="metadata" muted onError={handleVideoError} />
+          <span className="thumbnail-video-badge" aria-hidden="true">▶</span>
+        </>
+      )}
+      {src && !isVideo && (
         <img
           src={src}
           alt={image.name}
@@ -99,7 +117,7 @@ export function ThumbnailCard({
           onError={handleImageError}
         />
       )}
-      {!loading && !src && <div className="thumbnail-fallback">🖼</div>}
+      {!loading && !src && <div className="thumbnail-fallback">{isVideo ? '🎬' : '🖼'}</div>}
     </div>
   )
 

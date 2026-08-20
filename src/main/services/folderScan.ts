@@ -17,11 +17,18 @@ const IMAGE_EXTENSIONS = new Set([
   '.avif'
 ])
 
+// .flv is included so it shows up alongside videos in the grid, but Chromium
+// has no built-in FLV demuxer - playback in the viewer's <video> element will
+// fail on most FLV files, which the renderer surfaces as an error instead of
+// silently omitting the file from the list.
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.flv'])
+
 export interface ImageFile {
   path: string
   name: string
   size: number
   modified: number
+  mediaType: 'image' | 'video'
 }
 
 export interface Subfolder {
@@ -49,6 +56,10 @@ export interface FolderCollection {
 
 function isImageFile(filename: string): boolean {
   return IMAGE_EXTENSIONS.has(extname(filename).toLowerCase())
+}
+
+function isVideoFile(filename: string): boolean {
+  return VIDEO_EXTENSIONS.has(extname(filename).toLowerCase())
 }
 
 function isZipFile(filename: string): boolean {
@@ -92,7 +103,8 @@ export async function scanFolder(folderPath: string, rootPath?: string): Promise
       continue
     }
 
-    if (!isImageFile(entry.name)) continue
+    const isVideo = isVideoFile(entry.name)
+    if (!isVideo && !isImageFile(entry.name)) continue
 
     const filePath = join(folderPath, entry.name)
     try {
@@ -101,7 +113,8 @@ export async function scanFolder(folderPath: string, rootPath?: string): Promise
         path: filePath,
         name: entry.name,
         size: fileStat.size,
-        modified: fileStat.mtimeMs
+        modified: fileStat.mtimeMs,
+        mediaType: isVideo ? 'video' : 'image'
       })
     } catch {
       // skip unreadable files
