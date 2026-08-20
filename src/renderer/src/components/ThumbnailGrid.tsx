@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FolderCollection, ImageFile, ZipArchive } from '../../../preload/index'
+import { isTypingTarget } from '../utils/imagePreload'
+import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
 import { ContextMenu } from './ContextMenu'
 import { SubfolderCard } from './SubfolderCard'
 import { ThumbnailCard } from './ThumbnailCard'
@@ -14,6 +16,7 @@ interface ThumbnailGridProps {
   collection: FolderCollection
   rootFolderPath: string | null
   highlightPath: string | null
+  onHighlightChange: (path: string) => void
   onSelect: (index: number) => void
   onSelectSubfolder: (path: string) => void
   onOpenSubfolderInNewTab: (path: string) => void
@@ -21,6 +24,23 @@ interface ThumbnailGridProps {
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
   onRenameItem: (path: string, newName: string) => Promise<void>
+}
+
+interface NavigableItem {
+  path: string
+  kind: 'subfolder' | 'zip' | 'image'
+  zipFile?: ZipArchive
+  imageIndex?: number
+}
+
+// Arrow-key/Enter navigation is only meant to move the highlight between the
+// grid's own cards (identified by their data-path attribute) - buttons
+// elsewhere in the app (sidebar, tab bar, breadcrumbs, toolbar) are plain
+// buttons too and must keep handling their own Enter/Space activation.
+function blocksGridKeyNavigation(target: EventTarget | null): boolean {
+  if (isTypingTarget(target)) return true
+  if (!(target instanceof HTMLElement)) return false
+  return target.tagName === 'BUTTON' && !target.hasAttribute('data-path')
 }
 
 interface ItemMenuState {
@@ -93,6 +113,7 @@ export function ThumbnailGrid({
   collection,
   rootFolderPath,
   highlightPath,
+  onHighlightChange,
   onSelect,
   onSelectSubfolder,
   onOpenSubfolderInNewTab,
@@ -120,6 +141,69 @@ export function ThumbnailGrid({
 
     scrollRoot.scrollTop = gridScrollPositions.get(collection.path) ?? 0
   }, [scrollRoot, collection.path, highlightPath])
+
+  // Keeps the highlighted card in view as the user moves the highlight with
+  // arrow keys, without re-triggering the initial mount/restore effect above.
+  useEffect(() => {
+    if (!scrollRoot || !highlightPath || restoredPathRef.current !== collection.path) return
+    const target = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
+    target?.scrollIntoView({ block: 'nearest' })
+  }, [scrollRoot, collection.path, highlightPath])
+
+  const navigableItems = useMemo<NavigableItem[]>(
+    () => [
+      ...collection.subfolders.map((subfolder) => ({ path: subfolder.path, kind: 'subfolder' as const })),
+      ...collection.zipFiles.map((zipFile) => ({ path: zipFile.path, kind: 'zip' as const, zipFile })),
+      ...collection.images.map((image, imageIndex) => ({
+        path: image.path,
+        kind: 'image' as const,
+        imageIndex
+      }))
+    ],
+    [collection]
+  )
+
+  useEffect(() => {
+    return registerViewerKeyboardHandler((event) => {
+      if (blocksGridKeyNavigation(event.target) || navigableItems.length === 0) return
+
+      const currentIndex = highlightPath
+        ? navigableItems.findIndex((item) => item.path === highlightPath)
+        : -1
+
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown': {
+          event.preventDefault()
+          const next = navigableItems[(currentIndex + 1) % navigableItems.length]
+          onHighlightChange(next.path)
+          break
+        }
+        case 'ArrowLeft':
+        case 'ArrowUp': {
+          event.preventDefault()
+          const prevIndex = currentIndex <= 0 ? navigableItems.length - 1 : currentIndex - 1
+          onHighlightChange(navigableItems[prevIndex].path)
+          break
+        }
+        case 'Enter': {
+          if (currentIndex < 0) return
+          event.preventDefault()
+          const item = navigableItems[currentIndex]
+          if (item.kind === 'subfolder') {
+            onSelectSubfolder(item.path)
+          } else if (item.kind === 'zip' && item.zipFile) {
+            onSelectZip(item.zipFile)
+          } else if (item.kind === 'image' && item.imageIndex !== undefined) {
+            onSelect(item.imageIndex)
+          }
+          break
+        }
+        default:
+          break
+      }
+    })
+  }, [navigableItems, highlightPath, onHighlightChange, onSelectSubfolder, onSelectZip, onSelect])
 
   const handleGridScroll = (event: React.UIEvent<HTMLDivElement>): void => {
     gridScrollPositions.set(collection.path, event.currentTarget.scrollTop)

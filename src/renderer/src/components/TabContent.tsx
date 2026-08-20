@@ -10,6 +10,7 @@ interface TabContentProps {
   onOpenFolder: (path: string) => void
   onSelectSubfolder: (path: string) => void
   onOpenSubfolderInNewTab: (path: string) => void
+  onHighlightChange: (path: string) => void
   onSelectZip: (zipFile: ZipArchive) => void
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
@@ -26,6 +27,7 @@ export function TabContent({
   onOpenFolder,
   onSelectSubfolder,
   onOpenSubfolderInNewTab,
+  onHighlightChange,
   onSelectZip,
   onOpenZipInNewTab,
   onGoUp,
@@ -84,6 +86,7 @@ export function TabContent({
           collection={tab.collection}
           rootFolderPath={tab.rootFolderPath}
           highlightPath={tab.highlightPath}
+          onHighlightChange={onHighlightChange}
           onSelect={onSelectImage}
           onSelectSubfolder={onSelectSubfolder}
           onOpenSubfolderInNewTab={onOpenSubfolderInNewTab}
