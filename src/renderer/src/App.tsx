@@ -92,6 +92,13 @@ export default function App(): JSX.Element {
     [navigation, activeTab.id, focusMain]
   )
 
+  const handleHighlightChange = useCallback(
+    (path: string) => {
+      updateTab(activeTab.id, (tab) => ({ ...tab, highlightPath: path }))
+    },
+    [updateTab, activeTab.id]
+  )
+
   const handleToggleFavorite = useCallback(() => {
     if (!activeTab.rootFolderPath) return
     void toggleFavorite(activeTab.rootFolderPath)
@@ -159,6 +166,7 @@ export default function App(): JSX.Element {
             onOpenSubfolderInNewTab={(path) =>
               void navigation.handleOpenSubfolderInNewTab(path, activeTab.rootFolderPath)
             }
+            onHighlightChange={handleHighlightChange}
             onSelectZip={(zipFile) => void navigation.handleSelectZip(activeTab.id, zipFile)}
             onOpenZipInNewTab={(zipFile) =>
               void navigation.handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)
