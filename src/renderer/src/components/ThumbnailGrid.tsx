@@ -163,6 +163,39 @@ export function ThumbnailGrid({
     [collection]
   )
 
+  // Finds the item whose card sits in the next/previous visual row, closest
+  // horizontally to the current card - unlike flat list order, this follows
+  // the actual multi-column layout (subfolders/zip/images each wrap into
+  // their own row count depending on the window width).
+  const findRowNeighborPath = (direction: 1 | -1): string | null => {
+    if (!scrollRoot || !highlightPath) return null
+    const currentEl = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
+    if (!currentEl) return null
+
+    const currentRect = currentEl.getBoundingClientRect()
+    const centerX = currentRect.left + currentRect.width / 2
+
+    const candidates = Array.from(scrollRoot.querySelectorAll<HTMLElement>('[data-path]'))
+      .filter((el) => el !== currentEl)
+      .map((el) => ({ path: el.dataset.path ?? '', rect: el.getBoundingClientRect() }))
+      .filter(({ rect }) =>
+        direction === 1 ? rect.top > currentRect.top + 1 : rect.top < currentRect.top - 1
+      )
+    if (candidates.length === 0) return null
+
+    const nearestRowTop = candidates.reduce(
+      (best, c) => (direction === 1 ? Math.min(best, c.rect.top) : Math.max(best, c.rect.top)),
+      direction === 1 ? Infinity : -Infinity
+    )
+    const sameRow = candidates.filter((c) => Math.abs(c.rect.top - nearestRowTop) <= 4)
+    sameRow.sort(
+      (a, b) =>
+        Math.abs(a.rect.left + a.rect.width / 2 - centerX) -
+        Math.abs(b.rect.left + b.rect.width / 2 - centerX)
+    )
+    return sameRow[0]?.path ?? null
+  }
+
   useEffect(() => {
     return registerViewerKeyboardHandler((event) => {
       if (blocksGridKeyNavigation(event.target) || navigableItems.length === 0) return
@@ -172,18 +205,36 @@ export function ThumbnailGrid({
         : -1
 
       switch (event.key) {
-        case 'ArrowRight':
-        case 'ArrowDown': {
+        case 'ArrowRight': {
           event.preventDefault()
           const next = navigableItems[(currentIndex + 1) % navigableItems.length]
           onHighlightChange(next.path)
           break
         }
-        case 'ArrowLeft':
-        case 'ArrowUp': {
+        case 'ArrowLeft': {
           event.preventDefault()
           const prevIndex = currentIndex <= 0 ? navigableItems.length - 1 : currentIndex - 1
           onHighlightChange(navigableItems[prevIndex].path)
+          break
+        }
+        case 'ArrowDown': {
+          event.preventDefault()
+          if (currentIndex < 0) {
+            onHighlightChange(navigableItems[0].path)
+            break
+          }
+          const next = findRowNeighborPath(1)
+          if (next) onHighlightChange(next)
+          break
+        }
+        case 'ArrowUp': {
+          event.preventDefault()
+          if (currentIndex < 0) {
+            onHighlightChange(navigableItems[navigableItems.length - 1].path)
+            break
+          }
+          const prev = findRowNeighborPath(-1)
+          if (prev) onHighlightChange(prev)
           break
         }
         case 'Enter': {
@@ -203,7 +254,15 @@ export function ThumbnailGrid({
           break
       }
     })
-  }, [navigableItems, highlightPath, onHighlightChange, onSelectSubfolder, onSelectZip, onSelect])
+  }, [
+    navigableItems,
+    highlightPath,
+    scrollRoot,
+    onHighlightChange,
+    onSelectSubfolder,
+    onSelectZip,
+    onSelect
+  ])
 
   const handleGridScroll = (event: React.UIEvent<HTMLDivElement>): void => {
     gridScrollPositions.set(collection.path, event.currentTarget.scrollTop)
