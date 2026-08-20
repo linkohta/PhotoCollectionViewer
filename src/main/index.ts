@@ -1,6 +1,8 @@
 import { app, BrowserWindow, shell, protocol } from 'electron'
 import { join, extname } from 'path'
-import { readFile } from 'fs/promises'
+import { createReadStream } from 'fs'
+import { readFile, stat } from 'fs/promises'
+import { Readable } from 'stream'
 import { registerIpcHandlers } from './ipc/handlers'
 import { getWindowState, trackWindowState } from './store/windowState'
 import { migrateLegacyStoreFiles } from './store/appState'
@@ -75,7 +77,9 @@ const MIME_TYPES: Record<string, string> = {
   '.webp': 'image/webp',
   '.bmp': 'image/bmp',
   '.avif': 'image/avif',
-  '.svg': 'image/svg+xml'
+  '.svg': 'image/svg+xml',
+  '.mp4': 'video/mp4',
+  '.flv': 'video/x-flv'
 }
 
 // `toLocalFileUrl` (utils/files.ts, renderer side) emits Windows paths as
@@ -105,9 +109,31 @@ app.whenReady().then(() => {
   protocol.handle('local-file', async (request) => {
     try {
       const filePath = localFileUrlToPath(request.url)
-      const data = await readFile(filePath)
       const mime = MIME_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream'
-      return new Response(data, { headers: { 'Content-Type': mime } })
+
+      // <video> needs Range support to seek without re-downloading the whole
+      // file - Chromium requests a byte range once the user drags the
+      // scrubber, and won't seek at all if the response doesn't honor it.
+      const rangeHeader = request.headers.get('range')
+      if (rangeHeader) {
+        const fileStat = await stat(filePath)
+        const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader)
+        const start = match?.[1] ? Number(match[1]) : 0
+        const end = match?.[2] ? Number(match[2]) : fileStat.size - 1
+
+        return new Response(Readable.toWeb(createReadStream(filePath, { start, end })) as ReadableStream, {
+          status: 206,
+          headers: {
+            'Content-Type': mime,
+            'Content-Range': `bytes ${start}-${end}/${fileStat.size}`,
+            'Content-Length': String(end - start + 1),
+            'Accept-Ranges': 'bytes'
+          }
+        })
+      }
+
+      const data = await readFile(filePath)
+      return new Response(data, { headers: { 'Content-Type': mime, 'Accept-Ranges': 'bytes' } })
     } catch {
       return new Response(null, { status: 404 })
     }

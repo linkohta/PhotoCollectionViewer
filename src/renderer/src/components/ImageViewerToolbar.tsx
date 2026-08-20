@@ -7,6 +7,7 @@ interface ImageViewerToolbarProps {
   imageName: string
   imagePath: string
   showLoadingBadge: boolean
+  hideZoomControls?: boolean
   onClose: () => void
   onNavigate: (direction: -1 | 1) => void
   onFit: () => void
@@ -23,6 +24,7 @@ export function ImageViewerToolbar({
   imageName,
   imagePath,
   showLoadingBadge,
+  hideZoomControls,
   onClose,
   onNavigate,
   onFit,
@@ -63,29 +65,31 @@ export function ImageViewerToolbar({
         </button>
       </div>
 
-      <div className="viewer-controls">
-        <button
-          type="button"
-          className={`btn ${fitMode === 'fit' ? 'active' : ''}`}
-          onClick={onFit}
-          title="画面に合わせる (F)"
-          tabIndex={-1}
-        >
-          フィット
-        </button>
-        <button type="button" className="btn" onClick={onZoomIn} title="拡大 (+)" tabIndex={-1}>
-          ＋
-        </button>
-        <button type="button" className="btn" onClick={onZoomOut} title="縮小 (-)" tabIndex={-1}>
-          －
-        </button>
-        <button type="button" className="btn" onClick={onRotate} title="右回転 (R)" tabIndex={-1}>
-          ↻
-        </button>
-        <button type="button" className="btn" onClick={onReset} title="リセット (0)" tabIndex={-1}>
-          リセット
-        </button>
-      </div>
+      {!hideZoomControls && (
+        <div className="viewer-controls">
+          <button
+            type="button"
+            className={`btn ${fitMode === 'fit' ? 'active' : ''}`}
+            onClick={onFit}
+            title="画面に合わせる (F)"
+            tabIndex={-1}
+          >
+            フィット
+          </button>
+          <button type="button" className="btn" onClick={onZoomIn} title="拡大 (+)" tabIndex={-1}>
+            ＋
+          </button>
+          <button type="button" className="btn" onClick={onZoomOut} title="縮小 (-)" tabIndex={-1}>
+            －
+          </button>
+          <button type="button" className="btn" onClick={onRotate} title="右回転 (R)" tabIndex={-1}>
+            ↻
+          </button>
+          <button type="button" className="btn" onClick={onReset} title="リセット (0)" tabIndex={-1}>
+            リセット
+          </button>
+        </div>
+      )}
 
       <span className="viewer-filename" title={imagePath}>
         {imageName}

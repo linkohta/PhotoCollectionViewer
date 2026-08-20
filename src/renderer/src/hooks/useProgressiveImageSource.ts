@@ -57,6 +57,15 @@ export function useProgressiveImageSource({
     const isAnimatedGif = image.path.toLowerCase().endsWith('.gif')
 
     const loadPreviewThenFull = async (): Promise<void> => {
+      // Videos aren't handled by the sharp-based thumbnail/preview pipeline
+      // below (it can't decode them) - the <video> element loads the file
+      // directly and manages its own buffering.
+      if (image.mediaType === 'video') {
+        setImageSrc(fullUrl)
+        setIsFullLoaded(true)
+        return
+      }
+
       // GIFs must be shown directly via the real <img> element so the
       // animation plays - any thumbnail/data-URL preview would be a single
       // rasterized frame, and pre-probing the source with an off-document
@@ -150,7 +159,7 @@ export function useProgressiveImageSource({
       )
       for (const offset of fullOffsets) {
         const neighbor = neighborAt(offset)
-        if (neighbor) {
+        if (neighbor && neighbor.mediaType !== 'video') {
           preloadImage(toLocalFileUrl(neighbor.path))
         }
       }
@@ -164,7 +173,7 @@ export function useProgressiveImageSource({
         for (const offset of [distance, -distance]) {
           if (cancelled) return
           const neighbor = neighborAt(offset)
-          if (!neighbor) continue
+          if (!neighbor || neighbor.mediaType === 'video') continue
 
           if (isHot) {
             const dataUrl = await window.photoCollection.getThumbnailDataUrl(

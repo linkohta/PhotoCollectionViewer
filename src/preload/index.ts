@@ -5,6 +5,7 @@ export interface ImageFile {
   name: string
   size: number
   modified: number
+  mediaType: 'image' | 'video'
 }
 
 export interface Subfolder {

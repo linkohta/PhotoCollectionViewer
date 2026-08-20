@@ -681,6 +681,18 @@
   opacity: 0.3;
 }
 
+.thumbnail-video-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
 .thumbnail-info {
   padding: 8px 10px;
   display: flex;
@@ -800,4 +812,9 @@
   display: block;
   object-fit: contain;
   transition: none;
+}
+
+.viewer-video {
+  max-width: 100%;
+  max-height: 100%;
 }
