@@ -1,13 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FolderCollection, ImageFile, ZipArchive } from '../../../preload/index'
 import { ContextMenu } from './ContextMenu'
 import { RenameInput } from './RenameInput'
 import { ThumbnailCard } from './ThumbnailCard'
 import { formatFileSize } from '../utils/files'
 
+// Keyed by folder path so returning to a folder (e.g. via "go up" or a
+// breadcrumb) restores the scroll position it was left at, instead of
+// always snapping back to the top.
+const gridScrollPositions = new Map<string, number>()
+
 interface ThumbnailGridProps {
   collection: FolderCollection
   rootFolderPath: string | null
+  highlightPath: string | null
   onSelect: (index: number) => void
   onSelectSubfolder: (path: string) => void
   onOpenSubfolderInNewTab: (path: string) => void
@@ -86,6 +92,7 @@ function buildCountLabel(collection: FolderCollection): string {
 export function ThumbnailGrid({
   collection,
   rootFolderPath,
+  highlightPath,
   onSelect,
   onSelectSubfolder,
   onOpenSubfolderInNewTab,
@@ -97,6 +104,26 @@ export function ThumbnailGrid({
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
   const [renaming, setRenaming] = useState<RenamingState | null>(null)
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
+  const restoredPathRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!scrollRoot || restoredPathRef.current === collection.path) return
+    restoredPathRef.current = collection.path
+
+    if (highlightPath) {
+      const target = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
+      if (target) {
+        target.scrollIntoView({ block: 'center' })
+        return
+      }
+    }
+
+    scrollRoot.scrollTop = gridScrollPositions.get(collection.path) ?? 0
+  }, [scrollRoot, collection.path, highlightPath])
+
+  const handleGridScroll = (event: React.UIEvent<HTMLDivElement>): void => {
+    gridScrollPositions.set(collection.path, event.currentTarget.scrollTop)
+  }
 
   const handleRenameSubmit = async (newName: string): Promise<void> => {
     if (!renaming) return
@@ -129,6 +156,7 @@ export function ThumbnailGrid({
                   className={`breadcrumb-link ${index === breadcrumbs.length - 1 ? 'current' : ''}`}
                   onClick={() => onSelectSubfolder(crumb.path)}
                   disabled={index === breadcrumbs.length - 1}
+                  title={crumb.label}
                 >
                   {crumb.label}
                 </button>
@@ -139,7 +167,7 @@ export function ThumbnailGrid({
         </div>
       </header>
 
-      <div ref={setScrollRoot} className="grid-scroll">
+      <div ref={setScrollRoot} className="grid-scroll" onScroll={handleGridScroll}>
         {collection.subfolders.length > 0 && (
           <section className="subfolder-section">
             <h3 className="section-label">サブフォルダ</h3>
@@ -158,7 +186,8 @@ export function ThumbnailGrid({
                   <button
                     key={subfolder.path}
                     type="button"
-                    className="subfolder-card"
+                    className={`subfolder-card ${subfolder.path === highlightPath ? 'highlighted' : ''}`}
+                    data-path={subfolder.path}
                     onClick={() => onSelectSubfolder(subfolder.path)}
                     onContextMenu={(event) => {
                       event.preventDefault()
@@ -202,7 +231,8 @@ export function ThumbnailGrid({
                   <button
                     key={zipFile.path}
                     type="button"
-                    className="subfolder-card zip-card"
+                    className={`subfolder-card zip-card ${zipFile.path === highlightPath ? 'highlighted' : ''}`}
+                    data-path={zipFile.path}
                     onClick={() => onSelectZip(zipFile)}
                     onContextMenu={(event) => {
                       event.preventDefault()
@@ -239,6 +269,7 @@ export function ThumbnailGrid({
                   image={image}
                   index={index}
                   scrollRoot={scrollRoot}
+                  isHighlighted={image.path === highlightPath}
                   onSelect={onSelect}
                   onContextMenu={(event, targetImage) => {
                     event.preventDefault()

@@ -54,7 +54,20 @@ export function useProgressiveImageSource({
       loaderRef.current = null
     }
 
+    const isAnimatedGif = image.path.toLowerCase().endsWith('.gif')
+
     const loadPreviewThenFull = async (): Promise<void> => {
+      // GIFs must be shown directly via the real <img> element so the
+      // animation plays - any thumbnail/data-URL preview would be a single
+      // rasterized frame, and pre-probing the source with an off-document
+      // Image() (as done below for stills) is unnecessary and only delays
+      // the animated element from actually attaching to the DOM.
+      if (isAnimatedGif) {
+        setImageSrc(fullUrl)
+        setIsFullLoaded(true)
+        return
+      }
+
       // If this image's preview was already resolved as a path while it was
       // a preloaded (non-hot) neighbor, show it immediately instead of
       // waiting on another IPC round-trip to re-resolve the same path.

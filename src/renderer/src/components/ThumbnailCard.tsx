@@ -8,6 +8,7 @@ interface ThumbnailCardProps {
   image: ImageFile
   index: number
   scrollRoot: HTMLElement | null
+  isHighlighted: boolean
   onSelect: (index: number) => void
   onContextMenu: (event: MouseEvent, image: ImageFile) => void
   isRenaming: boolean
@@ -19,6 +20,7 @@ export function ThumbnailCard({
   image,
   index,
   scrollRoot,
+  isHighlighted,
   onSelect,
   onContextMenu,
   isRenaming,
@@ -117,7 +119,8 @@ export function ThumbnailCard({
     <button
       ref={cardRef as RefObject<HTMLButtonElement>}
       type="button"
-      className="thumbnail-card"
+      className={`thumbnail-card ${isHighlighted ? 'highlighted' : ''}`}
+      data-path={image.path}
       onClick={() => onSelect(index)}
       onContextMenu={(event) => onContextMenu(event, image)}
       title={image.name}
