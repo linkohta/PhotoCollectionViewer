@@ -6,3 +6,6 @@ release/
 .DS_Store
 Thumbs.db
 app-state.json
+*.tsbuildinfo
+.claude/settings.local.json
+.claude/worktrees/

@@ -1,5 +1,10 @@
 import { BrowserWindow } from 'electron'
-import { getOrCreateThumbnailPath, getThumbnailDataUrl, warmSourceFile, ThumbnailQueue } from './thumbnailCache'
+import {
+  getOrCreateThumbnailPath,
+  getThumbnailDataUrl,
+  warmSourceFile,
+  ThumbnailQueue
+} from './thumbnailCache'
 
 export interface WarmupImageDescriptor {
   path: string

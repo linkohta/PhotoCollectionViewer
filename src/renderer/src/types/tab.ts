@@ -66,9 +66,7 @@ export function hasRestorableContent(tab: TabState): boolean {
   return tab.collection !== null || tab.rootFolderPath !== null
 }
 
-export async function restoreTabFromSnapshot(
-  snapshot: TabSnapshot
-): Promise<TabState> {
+export async function restoreTabFromSnapshot(snapshot: TabSnapshot): Promise<TabState> {
   const tab = createEmptyTab()
   tab.title = snapshot.title
   tab.rootFolderPath = snapshot.rootFolderPath

@@ -114,7 +114,8 @@ export async function scanFolder(folderPath: string, rootPath?: string): Promise
 
   const parentDir = dirname(folderPath)
   const canGoUp =
-    rootPath != null && folderPath.localeCompare(rootPath, undefined, { sensitivity: 'accent' }) !== 0
+    rootPath != null &&
+    folderPath.localeCompare(rootPath, undefined, { sensitivity: 'accent' }) !== 0
 
   return {
     path: folderPath,

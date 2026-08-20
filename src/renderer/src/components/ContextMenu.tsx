@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 
 interface ContextMenuProps {
   x: number
@@ -42,12 +42,7 @@ export function ContextMenu({
   }, [onClose])
 
   return (
-    <div
-      ref={menuRef}
-      className="context-menu"
-      style={{ top: y, left: x }}
-      role="menu"
-    >
+    <div ref={menuRef} className="context-menu" style={{ top: y, left: x }} role="menu">
       <div className="context-menu-title">{label}</div>
       {onOpenInNewTab && (
         <button

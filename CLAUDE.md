@@ -12,12 +12,16 @@ npm run build:vite    # electron-vite build のみ（ビルド成果物の確認
 npm run preview / npm start  # electron-vite preview（ビルド後のプレビュー起動）
 ```
 
-型チェックのみを行う場合（lint/test は未整備、下記「開発ルール」参照）:
-
 ```bash
-npx tsc --noEmit -p tsconfig.node.json  # メインプロセス（src/main, src/preload）
-npx tsc --noEmit -p tsconfig.web.json   # レンダラー（src/renderer）
+npm run lint        # ESLint（警告0件が必須。--max-warnings=0）
+npm run lint:fix     # ESLint の自動修正
+npm run format       # Prettier で全体を整形
+npm run format:check   # Prettier のフォーマットチェックのみ（書き換えなし）
+npx tsc --noEmit -p tsconfig.node.json  # 型チェック: メインプロセス（src/main, src/preload）
+npx tsc --noEmit -p tsconfig.web.json   # 型チェック: レンダラー（src/renderer）
 ```
+
+自動テスト（Vitest等）は未整備（下記「開発ルール」参照）。
 
 ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer-Setup-*.exe`）が生成される。
 
@@ -59,6 +63,6 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 ## 開発ルール
 
 - **修正を行う際は必ず作業用ブランチを切ること**。`master` に直接コミットしない。
-- ESLint / Prettier、テスト（Vitest 等）は現状未整備。導入・整備を進めている途中なので、このファイルおよび直近のコミット履歴を確認し、既に導入済みならそのルールに従うこと。
+- ESLint（`eslint.config.mjs`、flat config）と Prettier（`.prettierrc.json`）を導入済み。コミット前に `npm run lint` と `npm run format:check`（または `format`）を通すこと。テスト（Vitest 等）は未整備。
 - IPCハンドラー（`src/main/ipc/handlers.ts`）は「配線」のみとし、実処理は `main/store/` や `main/utils/` に切り出す。1ファイル1責務を意識する（目安: 1ファイル300行、1関数50行を超えたら分割を検討）。
 - `preload/index.ts` と main 側で型定義が重複しないよう注意する。

@@ -144,7 +144,12 @@ export function ThumbnailGrid({
         <div className="grid-header-main">
           <nav className="breadcrumb" aria-label="フォルダパス">
             {collection.parentPath && (
-              <button type="button" className="btn breadcrumb-up" onClick={onGoUp} title="上のフォルダへ">
+              <button
+                type="button"
+                className="btn breadcrumb-up"
+                onClick={onGoUp}
+                title="上のフォルダへ"
+              >
                 ↑
               </button>
             )}

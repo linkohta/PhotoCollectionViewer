@@ -42,7 +42,11 @@ function normalizeState(state: WindowState): WindowState {
     isMaximized: Boolean(state.isMaximized)
   }
 
-  if (state.x !== undefined && state.y !== undefined && isPositionVisible({ ...normalized, x: state.x, y: state.y })) {
+  if (
+    state.x !== undefined &&
+    state.y !== undefined &&
+    isPositionVisible({ ...normalized, x: state.x, y: state.y })
+  ) {
     normalized.x = Math.round(state.x)
     normalized.y = Math.round(state.y)
   }

@@ -16,7 +16,12 @@ interface BrowseOptions {
   highlightPath?: string
 }
 
-export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: UseFolderNavigationArgs) {
+export function useFolderNavigation({
+  tabs,
+  activeTabId,
+  updateTab,
+  addTab
+}: UseFolderNavigationArgs) {
   const browseFolder = useCallback(
     async (tabId: string, folderPath: string, rootPath: string, options: BrowseOptions = {}) => {
       updateTab(tabId, (tab) => ({
@@ -35,21 +40,24 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
 
         const shouldAutoOpenViewer = Boolean(
           options.fromSubfolder &&
-            result.subfolders.length === 0 &&
-            result.zipFiles.length === 0 &&
-            result.images.length > 0
+          result.subfolders.length === 0 &&
+          result.zipFiles.length === 0 &&
+          result.images.length > 0
         )
 
         updateTab(tabId, (tab) => ({
           ...tab,
           loading: false,
-          rootFolderPath: options.resetRoot ? folderPath : tab.rootFolderPath ?? nextRoot,
+          rootFolderPath: options.resetRoot ? folderPath : (tab.rootFolderPath ?? nextRoot),
           collection: result,
-          title: getTabTitle(result, options.resetRoot ? folderPath : tab.rootFolderPath ?? nextRoot),
+          title: getTabTitle(
+            result,
+            options.resetRoot ? folderPath : (tab.rootFolderPath ?? nextRoot)
+          ),
           selectedIndex: shouldAutoOpenViewer ? 0 : null,
           viewMode: shouldAutoOpenViewer ? 'viewer' : 'grid',
           returnToParentOnCloseViewer: shouldAutoOpenViewer,
-          highlightPath: shouldAutoOpenViewer ? null : options.highlightPath ?? null
+          highlightPath: shouldAutoOpenViewer ? null : (options.highlightPath ?? null)
         }))
       } catch {
         updateTab(tabId, (tab) => ({
@@ -213,7 +221,9 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
       }
 
       const lastViewedImagePath =
-        tab.selectedIndex !== null ? tab.collection?.images[tab.selectedIndex]?.path ?? null : null
+        tab.selectedIndex !== null
+          ? (tab.collection?.images[tab.selectedIndex]?.path ?? null)
+          : null
 
       updateTab(tabId, (current) => ({
         ...current,

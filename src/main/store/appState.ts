@@ -141,8 +141,8 @@ function migrateLegacyAppStateFile(): void {
 export function migrateLegacyStoreFiles(): void {
   migrateLegacyAppStateFile()
 
-  const legacyPaths = [LEGACY_FAVORITES_FILE, LEGACY_SESSION_FILE, LEGACY_WINDOW_STATE_FILE].map((filename) =>
-    getAppRootFilePath(filename)
+  const legacyPaths = [LEGACY_FAVORITES_FILE, LEGACY_SESSION_FILE, LEGACY_WINDOW_STATE_FILE].map(
+    (filename) => getAppRootFilePath(filename)
   )
   if (!legacyPaths.some((path) => existsSync(path))) return
 
@@ -157,7 +157,8 @@ export function migrateLegacyStoreFiles(): void {
   if (legacySession) {
     state.session = {
       tabs: Array.isArray(legacySession.tabs) ? legacySession.tabs : [],
-      activeTabIndex: typeof legacySession.activeTabIndex === 'number' ? legacySession.activeTabIndex : 0,
+      activeTabIndex:
+        typeof legacySession.activeTabIndex === 'number' ? legacySession.activeTabIndex : 0,
       closedTabs: Array.isArray(legacySession.closedTabs) ? legacySession.closedTabs : []
     }
   }

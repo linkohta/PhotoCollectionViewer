@@ -33,7 +33,13 @@ export function ImageViewerToolbar({
 }: ImageViewerToolbarProps): JSX.Element {
   return (
     <div className="viewer-toolbar">
-      <button type="button" className="btn" onClick={onClose} title="一覧に戻る (Esc)" tabIndex={-1}>
+      <button
+        type="button"
+        className="btn"
+        onClick={onClose}
+        title="一覧に戻る (Esc)"
+        tabIndex={-1}
+      >
         ← 一覧
       </button>
 

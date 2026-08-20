@@ -36,7 +36,7 @@ export function TabContent({
 }: TabContentProps): JSX.Element {
   const selectedImage =
     tab.collection && tab.selectedIndex !== null
-      ? tab.collection.images[tab.selectedIndex] ?? null
+      ? (tab.collection.images[tab.selectedIndex] ?? null)
       : null
 
   return (
