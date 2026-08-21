@@ -68,3 +68,4 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - ESLint（`eslint.config.mjs`、flat config）と Prettier（`.prettierrc.json`）を導入済み。**コミット前に必ず `npm run lint`・`npm run format:check`（または `format`）・両方の `tsc --noEmit`（上記コマンド参照）を通すこと**。テスト（Vitest 等）は未整備。
 - IPCハンドラー（`src/main/ipc/handlers.ts`）は「配線」のみとし、実処理は `main/store/` や `main/utils/` に切り出す。1ファイル1責務を意識する（目安: 1ファイル300行、1関数50行を超えたら分割を検討）。
 - `preload/index.ts` と main 側で型定義が重複しないよう注意する。
+- **ユーザーとの応対は必ず日本語で行うこと**。
