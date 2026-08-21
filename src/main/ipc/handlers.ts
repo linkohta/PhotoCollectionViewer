@@ -5,7 +5,7 @@ import { exportAppState, importAppState } from '../store/appState'
 import { getOrCreateThumbnailPath, getThumbnailDataUrl } from '../store/thumbnailCache'
 import { setWarmupContext, type WarmupImageDescriptor } from '../store/warmup'
 import { extractZipArchive } from '../utils/zipArchive'
-import { scanFolder } from '../services/folderScan'
+import { scanFolder, searchSubfolders } from '../services/folderScan'
 import { createImageDataUrl } from '../services/imageDataUrl'
 import { renamePath } from '../services/renamePath'
 
@@ -20,6 +20,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('folder:scan', async (_event, folderPath: string, rootPath?: string) => {
     return scanFolder(folderPath, rootPath)
+  })
+
+  ipcMain.handle('folder:searchSubfolders', async (_event, folderPath: string, query: string) => {
+    return searchSubfolders(folderPath, query)
   })
 
   ipcMain.handle('zip:extract', async (_event, zipPath: string) => {

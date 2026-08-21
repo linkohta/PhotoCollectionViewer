@@ -3,6 +3,7 @@ import { RenameInput } from './RenameInput'
 interface SubfolderCardProps {
   path: string
   name: string
+  subtitle?: string
   isHighlighted: boolean
   isRenaming: boolean
   onSelect: () => void
@@ -14,6 +15,7 @@ interface SubfolderCardProps {
 export function SubfolderCard({
   path,
   name,
+  subtitle,
   isHighlighted,
   isRenaming,
   onSelect,
@@ -40,7 +42,10 @@ export function SubfolderCard({
       title={path}
     >
       <span className="subfolder-icon">📁</span>
-      <span className="subfolder-name">{name}</span>
+      <span className="subfolder-name-group">
+        <span className="subfolder-name">{name}</span>
+        {subtitle && <span className="subfolder-subtitle">{subtitle}</span>}
+      </span>
     </button>
   )
 }

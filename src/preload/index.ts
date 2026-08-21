@@ -13,6 +13,12 @@ export interface Subfolder {
   name: string
 }
 
+export interface SubfolderSearchResult {
+  path: string
+  name: string
+  relativePath: string
+}
+
 export interface ZipArchive {
   path: string
   name: string
@@ -61,6 +67,8 @@ const api = {
   openFolderDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:openFolder'),
   scanFolder: (folderPath: string, rootPath?: string): Promise<FolderCollection> =>
     ipcRenderer.invoke('folder:scan', folderPath, rootPath),
+  searchSubfolders: (folderPath: string, query: string): Promise<SubfolderSearchResult[]> =>
+    ipcRenderer.invoke('folder:searchSubfolders', folderPath, query),
   extractZip: (zipPath: string): Promise<string> => ipcRenderer.invoke('zip:extract', zipPath),
   confirmExtractZip: (
     zipName: string,

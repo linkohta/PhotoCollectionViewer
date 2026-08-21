@@ -36,6 +36,12 @@ export interface Subfolder {
   name: string
 }
 
+export interface SubfolderSearchResult {
+  path: string
+  name: string
+  relativePath: string
+}
+
 export interface ZipArchive {
   path: string
   name: string
@@ -137,4 +143,47 @@ export async function scanFolder(folderPath: string, rootPath?: string): Promise
     zipFiles,
     images
   }
+}
+
+// Walks the folder tree under folderPath looking for subfolder names that
+// contain the query, so the sidebar search can surface matches nested
+// several levels deep, not just the folders shown in the current grid.
+export async function searchSubfolders(
+  folderPath: string,
+  query: string
+): Promise<SubfolderSearchResult[]> {
+  const normalizedQuery = query.trim().toLowerCase()
+  if (!normalizedQuery) return []
+
+  const results: SubfolderSearchResult[] = []
+
+  async function walk(currentPath: string, relativeParts: string[]): Promise<void> {
+    let entries
+    try {
+      entries = await readdir(currentPath, { withFileTypes: true })
+    } catch {
+      return
+    }
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue
+
+      const entryPath = join(currentPath, entry.name)
+      const relativeParts_ = [...relativeParts, entry.name]
+
+      if (entry.name.toLowerCase().includes(normalizedQuery)) {
+        results.push({
+          path: entryPath,
+          name: entry.name,
+          relativePath: relativeParts_.join('/')
+        })
+      }
+
+      await walk(entryPath, relativeParts_)
+    }
+  }
+
+  await walk(folderPath, [])
+  results.sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true }))
+  return results
 }
