@@ -8,6 +8,20 @@ import { getWindowState, trackWindowState } from './store/windowState'
 import { migrateLegacyStoreFiles } from './store/appState'
 import { clearWarmupContext, startPeriodicWarmup, warmupWindow } from './store/warmup'
 
+// Must run before app.whenReady() - Chromium resolves the userData path (and
+// with it, where the GPU shader disk cache lives) from the app name during
+// early startup, before any of the ready-time code below runs. Setting the
+// name late doesn't retroactively fix a cache path Chromium already picked.
+app.setName('PhotoCollectionViewer')
+
+// Silences a benign but noisy Windows warning ("Unable to create cache" /
+// "Gpu Cache Creation failed: -2") that shows up when electron-vite's dev
+// hot-reload restarts the main process while a previous instance still holds
+// the GPU shader cache directory open. The shader cache is a pure
+// performance optimization (avoids recompiling shaders across launches); the
+// app has no shader-heavy rendering, so disabling it has no visible effect.
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
+
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'local-file',
@@ -102,7 +116,6 @@ function localFileUrlToPath(requestUrl: string): string {
 }
 
 app.whenReady().then(() => {
-  app.setName('PhotoCollectionViewer')
   // Reads the file directly with Node's fs rather than delegating to
   // net.fetch('file://...'), which intermittently fails with
   // net::ERR_UNEXPECTED for larger files (observed with animated GIFs).
