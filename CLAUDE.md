@@ -12,11 +12,15 @@ npm run build:vite    # electron-vite build のみ（ビルド成果物の確認
 npm run preview / npm start  # electron-vite preview（ビルド後のプレビュー起動）
 ```
 
-型チェックのみを行う場合（lint/test は未整備、下記「開発ルール」参照）:
+コミット前に通すチェック（詳細は下記「開発ルール」参照。テスト（Vitest等）は未整備）:
 
 ```bash
-npx tsc --noEmit -p tsconfig.node.json  # メインプロセス（src/main, src/preload）
-npx tsc --noEmit -p tsconfig.web.json   # レンダラー（src/renderer）
+npm run lint        # ESLint（警告0件が必須。--max-warnings=0）
+npm run lint:fix     # ESLint の自動修正
+npm run format       # Prettier で全体を整形
+npm run format:check   # Prettier のフォーマットチェックのみ（書き換えなし）
+npx tsc --noEmit -p tsconfig.node.json  # 型チェック: メインプロセス（src/main, src/preload）
+npx tsc --noEmit -p tsconfig.web.json   # 型チェック: レンダラー（src/renderer）
 ```
 
 ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer-Setup-*.exe`）が生成される。
@@ -59,6 +63,8 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 ## 開発ルール
 
 - **修正を行う際は必ず作業用ブランチを切ること**。`master` に直接コミットしない。
-- ESLint / Prettier、テスト（Vitest 等）は現状未整備。導入・整備を進めている途中なので、このファイルおよび直近のコミット履歴を確認し、既に導入済みならそのルールに従うこと。
+- **ブランチは原則として `master` から作成し、PR のベースブランチも指示がない限り常に `master` にすること**。未マージの作業ブランチを起点に新しいブランチを切ると、そのPRが `master` にマージされてもベースブランチ側の変更が反映されず、機能が消えたように見える事故につながる（実際に ESLint 導入PRが `refactor/split-ipc-handlers` をベースにマージされ、`master` に反映されないまま放置される事故が発生した）。他のブランチを意図的にベースにする場合は、その旨をPR説明に明記すること。
+- ブランチ名は用途に応じた prefix を付ける: 新機能は `feature/`、不具合修正は `fix/`、挙動を変えない整理は `refactor/`、ビルド・ツール・設定まわりは `chore/`。
+- ESLint（`eslint.config.mjs`、flat config）と Prettier（`.prettierrc.json`）を導入済み。**コミット前に必ず `npm run lint`・`npm run format:check`（または `format`）・両方の `tsc --noEmit`（上記コマンド参照）を通すこと**。テスト（Vitest 等）は未整備。
 - IPCハンドラー（`src/main/ipc/handlers.ts`）は「配線」のみとし、実処理は `main/store/` や `main/utils/` に切り出す。1ファイル1責務を意識する（目安: 1ファイル300行、1関数50行を超えたら分割を検討）。
 - `preload/index.ts` と main 側で型定義が重複しないよう注意する。

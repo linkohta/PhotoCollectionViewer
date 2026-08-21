@@ -134,15 +134,18 @@ app.whenReady().then(() => {
         const start = match?.[1] ? Number(match[1]) : 0
         const end = match?.[2] ? Number(match[2]) : fileStat.size - 1
 
-        return new Response(Readable.toWeb(createReadStream(filePath, { start, end })) as ReadableStream, {
-          status: 206,
-          headers: {
-            'Content-Type': mime,
-            'Content-Range': `bytes ${start}-${end}/${fileStat.size}`,
-            'Content-Length': String(end - start + 1),
-            'Accept-Ranges': 'bytes'
+        return new Response(
+          Readable.toWeb(createReadStream(filePath, { start, end })) as ReadableStream,
+          {
+            status: 206,
+            headers: {
+              'Content-Type': mime,
+              'Content-Range': `bytes ${start}-${end}/${fileStat.size}`,
+              'Content-Length': String(end - start + 1),
+              'Accept-Ranges': 'bytes'
+            }
           }
-        })
+        )
       }
 
       const data = await readFile(filePath)

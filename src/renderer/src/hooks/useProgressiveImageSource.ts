@@ -142,7 +142,7 @@ export function useProgressiveImageSource({
         loaderRef.current = null
       }
     }
-  }, [image.path, image.modified, image.size, fullUrl, onNaturalSize])
+  }, [image.path, image.modified, image.size, image.mediaType, fullUrl, onNaturalSize])
 
   useEffect(() => {
     const total = allImages.length

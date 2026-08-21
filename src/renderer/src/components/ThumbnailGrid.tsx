@@ -214,8 +214,15 @@ export function ThumbnailGrid({
 
   const navigableItems = useMemo<NavigableItem[]>(
     () => [
-      ...filteredSubfolders.map((subfolder) => ({ path: subfolder.path, kind: 'subfolder' as const })),
-      ...collection.zipFiles.map((zipFile) => ({ path: zipFile.path, kind: 'zip' as const, zipFile })),
+      ...filteredSubfolders.map((subfolder) => ({
+        path: subfolder.path,
+        kind: 'subfolder' as const
+      })),
+      ...collection.zipFiles.map((zipFile) => ({
+        path: zipFile.path,
+        kind: 'zip' as const,
+        zipFile
+      })),
       ...collection.images.map((image, imageIndex) => ({
         path: image.path,
         kind: 'image' as const,
@@ -319,6 +326,9 @@ export function ThumbnailGrid({
           break
       }
     })
+    // findRowNeighborPath is redefined each render but only ever reads scrollRoot/highlightPath,
+    // both already listed below, so re-running the effect on its identity would be redundant.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     navigableItems,
     highlightPath,
@@ -366,7 +376,12 @@ export function ThumbnailGrid({
         <div className="grid-header-main">
           <nav className="breadcrumb" aria-label="フォルダパス">
             {collection.parentPath && (
-              <button type="button" className="btn breadcrumb-up" onClick={onGoUp} title="上のフォルダへ">
+              <button
+                type="button"
+                className="btn breadcrumb-up"
+                onClick={onGoUp}
+                title="上のフォルダへ"
+              >
                 ↑
               </button>
             )}
@@ -415,10 +430,14 @@ export function ThumbnailGrid({
                     onSelect={() =>
                       onSelectSubfolder(
                         subfolder.path,
-                        isSearching ? { originFolderPath: collection.path, query: subfolderQuery } : undefined
+                        isSearching
+                          ? { originFolderPath: collection.path, query: subfolderQuery }
+                          : undefined
                       )
                     }
-                    onContextMenu={(event) => openItemMenu(event, subfolder.path, subfolder.name, 'subfolder')}
+                    onContextMenu={(event) =>
+                      openItemMenu(event, subfolder.path, subfolder.name, 'subfolder')
+                    }
                     onRenameSubmit={handleRenameSubmit}
                     onRenameCancel={() => setRenaming(null)}
                   />
@@ -426,7 +445,9 @@ export function ThumbnailGrid({
               </div>
             ) : (
               <p className="subfolder-search-empty">
-                {isSearching && searchResults === null ? '検索中...' : '一致するサブフォルダはありません'}
+                {isSearching && searchResults === null
+                  ? '検索中...'
+                  : '一致するサブフォルダはありません'}
               </p>
             )}
           </section>
@@ -443,7 +464,9 @@ export function ThumbnailGrid({
                   isHighlighted={zipFile.path === highlightPath}
                   isRenaming={renaming?.kind === 'zip' && renaming.path === zipFile.path}
                   onSelect={() => onSelectZip(zipFile)}
-                  onContextMenu={(event) => openItemMenu(event, zipFile.path, zipFile.name, 'zip', zipFile)}
+                  onContextMenu={(event) =>
+                    openItemMenu(event, zipFile.path, zipFile.name, 'zip', zipFile)
+                  }
                   onRenameSubmit={handleRenameSubmit}
                   onRenameCancel={() => setRenaming(null)}
                 />

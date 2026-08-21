@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
-import { restoreTabFromSnapshot, tabToSnapshot, type TabSnapshot, type TabState } from '../types/tab'
+import {
+  restoreTabFromSnapshot,
+  tabToSnapshot,
+  type TabSnapshot,
+  type TabState
+} from '../types/tab'
 
 const SAVE_DEBOUNCE_MS = 400
 
@@ -62,7 +67,10 @@ export function useSessionPersistence({
     }
 
     saveTimerRef.current = window.setTimeout(() => {
-      const activeTabIndex = Math.max(0, tabs.findIndex((tab) => tab.id === activeTabId))
+      const activeTabIndex = Math.max(
+        0,
+        tabs.findIndex((tab) => tab.id === activeTabId)
+      )
 
       void window.photoCollection.saveSession({
         tabs: tabs.map(tabToSnapshot),

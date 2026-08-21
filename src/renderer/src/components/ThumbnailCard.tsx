@@ -104,8 +104,16 @@ export function ThumbnailCard({
       {loading && <div className="thumbnail-placeholder" />}
       {src && isVideo && (
         <>
-          <video src={src} className="thumbnail-image" preload="metadata" muted onError={handleVideoError} />
-          <span className="thumbnail-video-badge" aria-hidden="true">▶</span>
+          <video
+            src={src}
+            className="thumbnail-image"
+            preload="metadata"
+            muted
+            onError={handleVideoError}
+          />
+          <span className="thumbnail-video-badge" aria-hidden="true">
+            ▶
+          </span>
         </>
       )}
       {src && !isVideo && (
@@ -126,7 +134,11 @@ export function ThumbnailCard({
       <div ref={cardRef as RefObject<HTMLDivElement>} className="thumbnail-card renaming">
         {imageWrap}
         <div className="thumbnail-info">
-          <RenameInput initialName={image.name} onSubmit={onRenameSubmit} onCancel={onRenameCancel} />
+          <RenameInput
+            initialName={image.name}
+            onSubmit={onRenameSubmit}
+            onCancel={onRenameCancel}
+          />
           <span className="thumbnail-size">{formatFileSize(image.size)}</span>
         </div>
       </div>
