@@ -26,7 +26,11 @@ export function ZipCard({
       <div className="subfolder-card zip-card renaming">
         <span className="subfolder-icon">🗜</span>
         <span className="zip-info">
-          <RenameInput initialName={zipFile.name} onSubmit={onRenameSubmit} onCancel={onRenameCancel} />
+          <RenameInput
+            initialName={zipFile.name}
+            onSubmit={onRenameSubmit}
+            onCancel={onRenameCancel}
+          />
           <span className="zip-size">{formatFileSize(zipFile.size)}</span>
         </span>
       </div>

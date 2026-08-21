@@ -35,7 +35,13 @@ export function ImageViewerToolbar({
 }: ImageViewerToolbarProps): JSX.Element {
   return (
     <div className="viewer-toolbar">
-      <button type="button" className="btn" onClick={onClose} title="一覧に戻る (Esc)" tabIndex={-1}>
+      <button
+        type="button"
+        className="btn"
+        onClick={onClose}
+        title="一覧に戻る (Esc)"
+        tabIndex={-1}
+      >
         ← 一覧
       </button>
 
@@ -85,7 +91,13 @@ export function ImageViewerToolbar({
           <button type="button" className="btn" onClick={onRotate} title="右回転 (R)" tabIndex={-1}>
             ↻
           </button>
-          <button type="button" className="btn" onClick={onReset} title="リセット (0)" tabIndex={-1}>
+          <button
+            type="button"
+            className="btn"
+            onClick={onReset}
+            title="リセット (0)"
+            tabIndex={-1}
+          >
             リセット
           </button>
         </div>

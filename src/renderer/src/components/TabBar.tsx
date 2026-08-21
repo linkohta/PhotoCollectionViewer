@@ -42,19 +42,16 @@ export function TabBar({
     )
   }, [])
 
-  const handleDragStart = useCallback(
-    (event: React.DragEvent<HTMLDivElement>, tabId: string) => {
-      if ((event.target as HTMLElement).closest('.tab-close')) {
-        event.preventDefault()
-        return
-      }
+  const handleDragStart = useCallback((event: React.DragEvent<HTMLDivElement>, tabId: string) => {
+    if ((event.target as HTMLElement).closest('.tab-close')) {
+      event.preventDefault()
+      return
+    }
 
-      event.dataTransfer.effectAllowed = 'move'
-      event.dataTransfer.setData('text/plain', tabId)
-      setDraggingId(tabId)
-    },
-    []
-  )
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', tabId)
+    setDraggingId(tabId)
+  }, [])
 
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>, tabId: string) => {

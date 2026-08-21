@@ -2,9 +2,7 @@ type ViewerKeyboardHandler = (event: KeyboardEvent) => void
 
 let activeHandler: ViewerKeyboardHandler | null = null
 
-export function registerViewerKeyboardHandler(
-  handler: ViewerKeyboardHandler
-): () => void {
+export function registerViewerKeyboardHandler(handler: ViewerKeyboardHandler): () => void {
   activeHandler = handler
   return () => {
     if (activeHandler === handler) {

@@ -200,7 +200,9 @@
 }
 
 @keyframes tab-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .tab-title {
@@ -582,7 +584,10 @@
   background: #1e1e1e;
   border-radius: 8px;
   text-align: left;
-  transition: background 0.15s, transform 0.15s, outline-color 0.15s;
+  transition:
+    background 0.15s,
+    transform 0.15s,
+    outline-color 0.15s;
   min-width: 0;
   outline: 2px solid transparent;
   outline-offset: -2px;
@@ -670,7 +675,10 @@
   background: #1e1e1e;
   border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.15s, box-shadow 0.15s, outline-color 0.15s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    outline-color 0.15s;
   text-align: left;
   outline: 2px solid transparent;
   outline-offset: -2px;
@@ -712,8 +720,12 @@
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .thumbnail-fallback {

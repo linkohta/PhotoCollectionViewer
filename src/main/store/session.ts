@@ -1,4 +1,10 @@
-import { readAppStateSlice, writeAppStateSlice, type SessionData, type TabSnapshot, type ViewMode } from './appState'
+import {
+  readAppStateSlice,
+  writeAppStateSlice,
+  type SessionData,
+  type TabSnapshot,
+  type ViewMode
+} from './appState'
 
 export type { SessionData, TabSnapshot, ViewMode }
 
