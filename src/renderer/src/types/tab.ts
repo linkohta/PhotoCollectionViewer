@@ -23,6 +23,15 @@ export interface TabState {
   // Path of the image or subfolder that was last shown in the viewer /
   // navigated into, so the grid can highlight it when the user comes back.
   highlightPath: string | null
+  // When the folder currently open was reached by picking a subfolder search
+  // result, these remember where the search happened and what was typed, so
+  // closing an auto-opened viewer returns to the search results instead of
+  // the folder's actual parent.
+  returnFolderPath: string | null
+  returnSearchQuery: string | null
+  // Search query to restore into the grid's subfolder search box the next
+  // time this folder is shown, consumed (set back to null) once applied.
+  pendingSearchQuery: string | null
 }
 
 export function createEmptyTab(): TabState {
@@ -36,7 +45,10 @@ export function createEmptyTab(): TabState {
     loading: false,
     error: null,
     returnToParentOnCloseViewer: false,
-    highlightPath: null
+    highlightPath: null,
+    returnFolderPath: null,
+    returnSearchQuery: null,
+    pendingSearchQuery: null
   }
 }
 

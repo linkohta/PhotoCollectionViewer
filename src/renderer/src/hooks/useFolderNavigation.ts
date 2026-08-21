@@ -14,6 +14,14 @@ interface BrowseOptions {
   resetRoot?: boolean
   fromSubfolder?: boolean
   highlightPath?: string
+  returnFolderPath?: string
+  returnSearchQuery?: string
+  searchQuery?: string
+}
+
+export interface SearchOrigin {
+  originFolderPath: string
+  query: string
 }
 
 function remapTabPathsAfterRename(
@@ -75,7 +83,10 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
           selectedIndex: shouldAutoOpenViewer ? 0 : null,
           viewMode: shouldAutoOpenViewer ? 'viewer' : 'grid',
           returnToParentOnCloseViewer: shouldAutoOpenViewer,
-          highlightPath: shouldAutoOpenViewer ? null : options.highlightPath ?? null
+          highlightPath: shouldAutoOpenViewer ? null : options.highlightPath ?? null,
+          returnFolderPath: options.returnFolderPath ?? null,
+          returnSearchQuery: options.returnSearchQuery ?? null,
+          pendingSearchQuery: options.searchQuery ?? null
         }))
       } catch {
         updateTab(tabId, (tab) => ({
@@ -127,17 +138,21 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
   }, [addTab, openFolderInTab])
 
   const openSubfolderInTab = useCallback(
-    async (tabId: string, subfolderPath: string, rootFolderPath: string) => {
-      await browseFolder(tabId, subfolderPath, rootFolderPath, { fromSubfolder: true })
+    async (tabId: string, subfolderPath: string, rootFolderPath: string, searchOrigin?: SearchOrigin) => {
+      await browseFolder(tabId, subfolderPath, rootFolderPath, {
+        fromSubfolder: true,
+        returnFolderPath: searchOrigin?.originFolderPath,
+        returnSearchQuery: searchOrigin?.query
+      })
     },
     [browseFolder]
   )
 
   const handleSelectSubfolder = useCallback(
-    async (tabId: string, subfolderPath: string) => {
+    async (tabId: string, subfolderPath: string, searchOrigin?: SearchOrigin) => {
       const tab = tabs.find((item) => item.id === tabId)
       if (!tab?.rootFolderPath) return
-      await openSubfolderInTab(tabId, subfolderPath, tab.rootFolderPath)
+      await openSubfolderInTab(tabId, subfolderPath, tab.rootFolderPath, searchOrigin)
     },
     [tabs, openSubfolderInTab]
   )
@@ -231,11 +246,15 @@ export function useFolderNavigation({ tabs, activeTabId, updateTab, addTab }: Us
       const tab = tabs.find((item) => item.id === tabId)
       if (!tab) return
 
-      if (tab.returnToParentOnCloseViewer && tab.collection?.parentPath && tab.rootFolderPath) {
-        await browseFolder(tabId, tab.collection.parentPath, tab.rootFolderPath, {
-          highlightPath: tab.collection.path
-        })
-        return
+      if (tab.returnToParentOnCloseViewer && tab.rootFolderPath) {
+        const targetFolder = tab.returnFolderPath ?? tab.collection?.parentPath ?? null
+        if (targetFolder) {
+          await browseFolder(tabId, targetFolder, tab.rootFolderPath, {
+            highlightPath: tab.collection?.path,
+            searchQuery: tab.returnSearchQuery ?? undefined
+          })
+          return
+        }
       }
 
       const lastViewedImagePath =

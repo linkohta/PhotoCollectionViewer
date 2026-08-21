@@ -8,7 +8,8 @@ interface TabContentProps {
   favorites: FavoriteFolder[]
   onOpenDialog: () => void
   onOpenFolder: (path: string) => void
-  onSelectSubfolder: (path: string) => void
+  onSelectSubfolder: (path: string, searchOrigin?: { originFolderPath: string; query: string }) => void
+  onConsumePendingSearchQuery: () => void
   onOpenSubfolderInNewTab: (path: string) => void
   onHighlightChange: (path: string) => void
   onSelectZip: (zipFile: ZipArchive) => void
@@ -26,6 +27,7 @@ export function TabContent({
   onOpenDialog,
   onOpenFolder,
   onSelectSubfolder,
+  onConsumePendingSearchQuery,
   onOpenSubfolderInNewTab,
   onHighlightChange,
   onSelectZip,
@@ -86,6 +88,8 @@ export function TabContent({
           collection={tab.collection}
           rootFolderPath={tab.rootFolderPath}
           highlightPath={tab.highlightPath}
+          pendingSearchQuery={tab.pendingSearchQuery}
+          onConsumePendingSearchQuery={onConsumePendingSearchQuery}
           onHighlightChange={onHighlightChange}
           onSelect={onSelectImage}
           onSelectSubfolder={onSelectSubfolder}

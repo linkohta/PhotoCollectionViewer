@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { FolderCollection, ImageFile, ZipArchive } from '../../../preload/index'
+import type {
+  FolderCollection,
+  ImageFile,
+  SubfolderSearchResult,
+  ZipArchive
+} from '../../../preload/index'
 import { isTypingTarget } from '../utils/imagePreload'
 import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
 import { ContextMenu } from './ContextMenu'
@@ -12,13 +17,20 @@ import { ZipCard } from './ZipCard'
 // always snapping back to the top.
 const gridScrollPositions = new Map<string, number>()
 
+interface SubfolderSearchOrigin {
+  originFolderPath: string
+  query: string
+}
+
 interface ThumbnailGridProps {
   collection: FolderCollection
   rootFolderPath: string | null
   highlightPath: string | null
+  pendingSearchQuery: string | null
+  onConsumePendingSearchQuery: () => void
   onHighlightChange: (path: string) => void
   onSelect: (index: number) => void
-  onSelectSubfolder: (path: string) => void
+  onSelectSubfolder: (path: string, searchOrigin?: SubfolderSearchOrigin) => void
   onOpenSubfolderInNewTab: (path: string) => void
   onSelectZip: (zipFile: ZipArchive) => void
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
@@ -113,6 +125,8 @@ export function ThumbnailGrid({
   collection,
   rootFolderPath,
   highlightPath,
+  pendingSearchQuery,
+  onConsumePendingSearchQuery,
   onHighlightChange,
   onSelect,
   onSelectSubfolder,
@@ -125,7 +139,55 @@ export function ThumbnailGrid({
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
   const [renaming, setRenaming] = useState<RenamingState | null>(null)
   const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
+  const [subfolderQuery, setSubfolderQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SubfolderSearchResult[] | null>(null)
   const restoredPathRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (pendingSearchQuery) {
+      setSubfolderQuery(pendingSearchQuery)
+      onConsumePendingSearchQuery()
+    } else {
+      setSubfolderQuery('')
+    }
+    setSearchResults(null)
+    // Only re-run when the folder itself changes - pendingSearchQuery is a
+    // one-shot value consumed above, not something to react to independently.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collection.path])
+
+  // Debounced so quick typing doesn't spawn a full-tree filesystem walk per keystroke.
+  useEffect(() => {
+    const query = subfolderQuery.trim()
+    if (!query) {
+      setSearchResults(null)
+      return
+    }
+
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      const results = await window.photoCollection.searchSubfolders(collection.path, query)
+      if (!cancelled) setSearchResults(results)
+    }, 200)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [collection.path, subfolderQuery])
+
+  const isSearching = subfolderQuery.trim().length > 0
+  const filteredSubfolders = useMemo(
+    () =>
+      isSearching
+        ? (searchResults ?? []).map((result) => ({
+            path: result.path,
+            name: result.name,
+            subtitle: result.relativePath.split('/').slice(0, -1).join(' › ') || undefined
+          }))
+        : collection.subfolders.map((subfolder) => ({ ...subfolder, subtitle: undefined })),
+    [isSearching, searchResults, collection.subfolders]
+  )
 
   useEffect(() => {
     if (!scrollRoot || restoredPathRef.current === collection.path) return
@@ -152,7 +214,7 @@ export function ThumbnailGrid({
 
   const navigableItems = useMemo<NavigableItem[]>(
     () => [
-      ...collection.subfolders.map((subfolder) => ({ path: subfolder.path, kind: 'subfolder' as const })),
+      ...filteredSubfolders.map((subfolder) => ({ path: subfolder.path, kind: 'subfolder' as const })),
       ...collection.zipFiles.map((zipFile) => ({ path: zipFile.path, kind: 'zip' as const, zipFile })),
       ...collection.images.map((image, imageIndex) => ({
         path: image.path,
@@ -160,7 +222,7 @@ export function ThumbnailGrid({
         imageIndex
       }))
     ],
-    [collection]
+    [collection, filteredSubfolders]
   )
 
   // Finds the item whose card sits in the next/previous visual row, closest
@@ -242,7 +304,10 @@ export function ThumbnailGrid({
           event.preventDefault()
           const item = navigableItems[currentIndex]
           if (item.kind === 'subfolder') {
-            onSelectSubfolder(item.path)
+            onSelectSubfolder(
+              item.path,
+              isSearching ? { originFolderPath: collection.path, query: subfolderQuery } : undefined
+            )
           } else if (item.kind === 'zip' && item.zipFile) {
             onSelectZip(item.zipFile)
           } else if (item.kind === 'image' && item.imageIndex !== undefined) {
@@ -261,7 +326,10 @@ export function ThumbnailGrid({
     onHighlightChange,
     onSelectSubfolder,
     onSelectZip,
-    onSelect
+    onSelect,
+    isSearching,
+    collection.path,
+    subfolderQuery
   ])
 
   const handleGridScroll = (event: React.UIEvent<HTMLDivElement>): void => {
@@ -324,22 +392,43 @@ export function ThumbnailGrid({
       <div ref={setScrollRoot} className="grid-scroll" onScroll={handleGridScroll}>
         {collection.subfolders.length > 0 && (
           <section className="subfolder-section">
-            <h3 className="section-label">サブフォルダ</h3>
-            <div className="subfolder-grid">
-              {collection.subfolders.map((subfolder) => (
-                <SubfolderCard
-                  key={subfolder.path}
-                  path={subfolder.path}
-                  name={subfolder.name}
-                  isHighlighted={subfolder.path === highlightPath}
-                  isRenaming={renaming?.kind === 'subfolder' && renaming.path === subfolder.path}
-                  onSelect={() => onSelectSubfolder(subfolder.path)}
-                  onContextMenu={(event) => openItemMenu(event, subfolder.path, subfolder.name, 'subfolder')}
-                  onRenameSubmit={handleRenameSubmit}
-                  onRenameCancel={() => setRenaming(null)}
-                />
-              ))}
+            <div className="section-label-row">
+              <h3 className="section-label">サブフォルダ</h3>
+              <input
+                type="text"
+                className="subfolder-search"
+                placeholder="サブフォルダを検索"
+                value={subfolderQuery}
+                onChange={(event) => setSubfolderQuery(event.target.value)}
+              />
             </div>
+            {filteredSubfolders.length > 0 ? (
+              <div className="subfolder-grid">
+                {filteredSubfolders.map((subfolder) => (
+                  <SubfolderCard
+                    key={subfolder.path}
+                    path={subfolder.path}
+                    name={subfolder.name}
+                    subtitle={subfolder.subtitle}
+                    isHighlighted={subfolder.path === highlightPath}
+                    isRenaming={renaming?.kind === 'subfolder' && renaming.path === subfolder.path}
+                    onSelect={() =>
+                      onSelectSubfolder(
+                        subfolder.path,
+                        isSearching ? { originFolderPath: collection.path, query: subfolderQuery } : undefined
+                      )
+                    }
+                    onContextMenu={(event) => openItemMenu(event, subfolder.path, subfolder.name, 'subfolder')}
+                    onRenameSubmit={handleRenameSubmit}
+                    onRenameCancel={() => setRenaming(null)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="subfolder-search-empty">
+                {isSearching && searchResults === null ? '検索中...' : '一致するサブフォルダはありません'}
+              </p>
+            )}
           </section>
         )}
 

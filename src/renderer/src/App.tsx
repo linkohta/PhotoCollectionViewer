@@ -162,7 +162,12 @@ export default function App(): JSX.Element {
             favorites={favorites}
             onOpenDialog={navigation.handleOpenDialog}
             onOpenFolder={navigation.openFolderInActiveTab}
-            onSelectSubfolder={(path) => void navigation.handleSelectSubfolder(activeTab.id, path)}
+            onSelectSubfolder={(path, searchOrigin) =>
+              void navigation.handleSelectSubfolder(activeTab.id, path, searchOrigin)
+            }
+            onConsumePendingSearchQuery={() =>
+              updateTab(activeTab.id, (tab) => ({ ...tab, pendingSearchQuery: null }))
+            }
             onOpenSubfolderInNewTab={(path) =>
               void navigation.handleOpenSubfolderInNewTab(path, activeTab.rootFolderPath)
             }
