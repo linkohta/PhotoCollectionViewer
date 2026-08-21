@@ -62,3 +62,4 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - ESLint / Prettier、テスト（Vitest 等）は現状未整備。導入・整備を進めている途中なので、このファイルおよび直近のコミット履歴を確認し、既に導入済みならそのルールに従うこと。
 - IPCハンドラー（`src/main/ipc/handlers.ts`）は「配線」のみとし、実処理は `main/store/` や `main/utils/` に切り出す。1ファイル1責務を意識する（目安: 1ファイル300行、1関数50行を超えたら分割を検討）。
 - `preload/index.ts` と main 側で型定義が重複しないよう注意する。
+- **ユーザーとの応対は必ず日本語で行うこと**。
