@@ -267,7 +267,16 @@ export function ThumbnailGrid({
 
   useEffect(() => {
     return registerViewerKeyboardHandler((event) => {
-      if (blocksGridKeyNavigation(event.target) || navigableItems.length === 0) return
+      if (blocksGridKeyNavigation(event.target)) return
+
+      if (event.key === 'Escape') {
+        if (!collection.parentPath) return
+        event.preventDefault()
+        onGoUp()
+        return
+      }
+
+      if (navigableItems.length === 0) return
 
       const currentIndex = highlightPath
         ? navigableItems.findIndex((item) => item.path === highlightPath)
@@ -337,8 +346,10 @@ export function ThumbnailGrid({
     onSelectSubfolder,
     onSelectZip,
     onSelect,
+    onGoUp,
     isSearching,
     collection.path,
+    collection.parentPath,
     subfolderQuery
   ])
 
@@ -380,7 +391,7 @@ export function ThumbnailGrid({
                 type="button"
                 className="btn breadcrumb-up"
                 onClick={onGoUp}
-                title="上のフォルダへ"
+                title="上のフォルダへ (Esc)"
               >
                 ↑
               </button>
