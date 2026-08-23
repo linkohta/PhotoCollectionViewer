@@ -1,21 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import type {
-  FolderCollection,
-  ImageFile,
-  SubfolderSearchResult,
-  ZipArchive
-} from '../../../preload/index'
-import { isTypingTarget } from '../utils/imagePreload'
-import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
+import { useState } from 'react'
+import type { FolderCollection, ImageFile, ZipArchive } from '../../../preload/index'
+import { buildBreadcrumb, buildCountLabel } from '../utils/breadcrumb'
+import { useGridScrollRestore } from '../hooks/useGridScrollRestore'
+import { useSubfolderSearch } from '../hooks/useSubfolderSearch'
+import { useGridKeyboardNav } from '../hooks/useGridKeyboardNav'
 import { ContextMenu } from './ContextMenu'
 import { SubfolderCard } from './SubfolderCard'
 import { ThumbnailCard } from './ThumbnailCard'
 import { ZipCard } from './ZipCard'
-
-// Keyed by folder path so returning to a folder (e.g. via "go up" or a
-// breadcrumb) restores the scroll position it was left at, instead of
-// always snapping back to the top.
-const gridScrollPositions = new Map<string, number>()
 
 interface SubfolderSearchOrigin {
   originFolderPath: string
@@ -38,23 +30,6 @@ interface ThumbnailGridProps {
   onRenameItem: (path: string, newName: string) => Promise<void>
 }
 
-interface NavigableItem {
-  path: string
-  kind: 'subfolder' | 'zip' | 'image'
-  zipFile?: ZipArchive
-  imageIndex?: number
-}
-
-// Arrow-key/Enter navigation is only meant to move the highlight between the
-// grid's own cards (identified by their data-path attribute) - buttons
-// elsewhere in the app (sidebar, tab bar, breadcrumbs, toolbar) are plain
-// buttons too and must keep handling their own Enter/Space activation.
-function blocksGridKeyNavigation(target: EventTarget | null): boolean {
-  if (isTypingTarget(target)) return true
-  if (!(target instanceof HTMLElement)) return false
-  return target.tagName === 'BUTTON' && !target.hasAttribute('data-path')
-}
-
 interface ItemMenuState {
   x: number
   y: number
@@ -67,58 +42,6 @@ interface ItemMenuState {
 interface RenamingState {
   kind: 'subfolder' | 'zip' | 'image'
   path: string
-}
-
-function joinPath(base: string, segment: string): string {
-  const sep = base.includes('\\') ? '\\' : '/'
-  const trimmed = base.replace(/[/\\]+$/, '')
-  return `${trimmed}${sep}${segment}`
-}
-
-function buildBreadcrumb(
-  collection: FolderCollection,
-  rootFolderPath: string | null
-): { label: string; path: string }[] {
-  if (!rootFolderPath) return [{ label: collection.name, path: collection.path }]
-
-  const rootNorm = rootFolderPath.replace(/\\/g, '/').toLowerCase()
-  const currentNorm = collection.path.replace(/\\/g, '/')
-  const relative = currentNorm.toLowerCase().startsWith(rootNorm)
-    ? currentNorm.slice(rootFolderPath.length).replace(/^[/\\]/, '')
-    : ''
-
-  const crumbs: { label: string; path: string }[] = [
-    {
-      label: rootFolderPath.split(/[/\\]/).pop() ?? rootFolderPath,
-      path: rootFolderPath
-    }
-  ]
-
-  if (!relative) return crumbs
-
-  const parts = relative.split(/[/\\]/).filter(Boolean)
-  let accumulated = rootFolderPath
-
-  for (const part of parts) {
-    accumulated = joinPath(accumulated, part)
-    crumbs.push({ label: part, path: accumulated })
-  }
-
-  return crumbs
-}
-
-function buildCountLabel(collection: FolderCollection): string {
-  const parts: string[] = []
-
-  if (collection.subfolders.length > 0) {
-    parts.push(`${collection.subfolders.length} フォルダ`)
-  }
-  if (collection.zipFiles.length > 0) {
-    parts.push(`${collection.zipFiles.length} ZIP`)
-  }
-  parts.push(`${collection.images.length} 枚`)
-
-  return parts.join(' · ')
 }
 
 export function ThumbnailGrid({
@@ -138,224 +61,28 @@ export function ThumbnailGrid({
 }: ThumbnailGridProps): JSX.Element {
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
   const [renaming, setRenaming] = useState<RenamingState | null>(null)
-  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null)
-  const [subfolderQuery, setSubfolderQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<SubfolderSearchResult[] | null>(null)
-  const restoredPathRef = useRef<string | null>(null)
 
-  useEffect(() => {
-    if (pendingSearchQuery) {
-      setSubfolderQuery(pendingSearchQuery)
-      onConsumePendingSearchQuery()
-    } else {
-      setSubfolderQuery('')
-    }
-    setSearchResults(null)
-    // Only re-run when the folder itself changes - pendingSearchQuery is a
-    // one-shot value consumed above, not something to react to independently.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collection.path])
-
-  // Debounced so quick typing doesn't spawn a full-tree filesystem walk per keystroke.
-  useEffect(() => {
-    const query = subfolderQuery.trim()
-    if (!query) {
-      setSearchResults(null)
-      return
-    }
-
-    let cancelled = false
-    const timer = setTimeout(async () => {
-      const results = await window.photoCollection.searchSubfolders(collection.path, query)
-      if (!cancelled) setSearchResults(results)
-    }, 200)
-
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [collection.path, subfolderQuery])
-
-  const isSearching = subfolderQuery.trim().length > 0
-  const filteredSubfolders = useMemo(
-    () =>
-      isSearching
-        ? (searchResults ?? []).map((result) => ({
-            path: result.path,
-            name: result.name,
-            subtitle: result.relativePath.split('/').slice(0, -1).join(' › ') || undefined
-          }))
-        : collection.subfolders.map((subfolder) => ({ ...subfolder, subtitle: undefined })),
-    [isSearching, searchResults, collection.subfolders]
+  const { scrollRoot, setScrollRoot, handleGridScroll } = useGridScrollRestore(
+    collection.path,
+    highlightPath
   )
 
-  useEffect(() => {
-    if (!scrollRoot || restoredPathRef.current === collection.path) return
-    restoredPathRef.current = collection.path
+  const { subfolderQuery, setSubfolderQuery, isSearching, searchResults, filteredSubfolders } =
+    useSubfolderSearch({ collection, pendingSearchQuery, onConsumePendingSearchQuery })
 
-    if (highlightPath) {
-      const target = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
-      if (target) {
-        target.scrollIntoView({ block: 'center' })
-        return
-      }
-    }
-
-    scrollRoot.scrollTop = gridScrollPositions.get(collection.path) ?? 0
-  }, [scrollRoot, collection.path, highlightPath])
-
-  // Keeps the highlighted card in view as the user moves the highlight with
-  // arrow keys, without re-triggering the initial mount/restore effect above.
-  useEffect(() => {
-    if (!scrollRoot || !highlightPath || restoredPathRef.current !== collection.path) return
-    const target = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
-    target?.scrollIntoView({ block: 'nearest' })
-  }, [scrollRoot, collection.path, highlightPath])
-
-  const navigableItems = useMemo<NavigableItem[]>(
-    () => [
-      ...filteredSubfolders.map((subfolder) => ({
-        path: subfolder.path,
-        kind: 'subfolder' as const
-      })),
-      ...collection.zipFiles.map((zipFile) => ({
-        path: zipFile.path,
-        kind: 'zip' as const,
-        zipFile
-      })),
-      ...collection.images.map((image, imageIndex) => ({
-        path: image.path,
-        kind: 'image' as const,
-        imageIndex
-      }))
-    ],
-    [collection, filteredSubfolders]
-  )
-
-  // Finds the item whose card sits in the next/previous visual row, closest
-  // horizontally to the current card - unlike flat list order, this follows
-  // the actual multi-column layout (subfolders/zip/images each wrap into
-  // their own row count depending on the window width).
-  const findRowNeighborPath = (direction: 1 | -1): string | null => {
-    if (!scrollRoot || !highlightPath) return null
-    const currentEl = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
-    if (!currentEl) return null
-
-    const currentRect = currentEl.getBoundingClientRect()
-    const centerX = currentRect.left + currentRect.width / 2
-
-    const candidates = Array.from(scrollRoot.querySelectorAll<HTMLElement>('[data-path]'))
-      .filter((el) => el !== currentEl)
-      .map((el) => ({ path: el.dataset.path ?? '', rect: el.getBoundingClientRect() }))
-      .filter(({ rect }) =>
-        direction === 1 ? rect.top > currentRect.top + 1 : rect.top < currentRect.top - 1
-      )
-    if (candidates.length === 0) return null
-
-    const nearestRowTop = candidates.reduce(
-      (best, c) => (direction === 1 ? Math.min(best, c.rect.top) : Math.max(best, c.rect.top)),
-      direction === 1 ? Infinity : -Infinity
-    )
-    const sameRow = candidates.filter((c) => Math.abs(c.rect.top - nearestRowTop) <= 4)
-    sameRow.sort(
-      (a, b) =>
-        Math.abs(a.rect.left + a.rect.width / 2 - centerX) -
-        Math.abs(b.rect.left + b.rect.width / 2 - centerX)
-    )
-    return sameRow[0]?.path ?? null
-  }
-
-  useEffect(() => {
-    return registerViewerKeyboardHandler((event) => {
-      if (blocksGridKeyNavigation(event.target)) return
-
-      if (event.key === 'Escape') {
-        if (!collection.parentPath) return
-        event.preventDefault()
-        onGoUp()
-        return
-      }
-
-      if (navigableItems.length === 0) return
-
-      const currentIndex = highlightPath
-        ? navigableItems.findIndex((item) => item.path === highlightPath)
-        : -1
-
-      switch (event.key) {
-        case 'ArrowRight': {
-          event.preventDefault()
-          const next = navigableItems[(currentIndex + 1) % navigableItems.length]
-          onHighlightChange(next.path)
-          break
-        }
-        case 'ArrowLeft': {
-          event.preventDefault()
-          const prevIndex = currentIndex <= 0 ? navigableItems.length - 1 : currentIndex - 1
-          onHighlightChange(navigableItems[prevIndex].path)
-          break
-        }
-        case 'ArrowDown': {
-          event.preventDefault()
-          if (currentIndex < 0) {
-            onHighlightChange(navigableItems[0].path)
-            break
-          }
-          const next = findRowNeighborPath(1)
-          if (next) onHighlightChange(next)
-          break
-        }
-        case 'ArrowUp': {
-          event.preventDefault()
-          if (currentIndex < 0) {
-            onHighlightChange(navigableItems[navigableItems.length - 1].path)
-            break
-          }
-          const prev = findRowNeighborPath(-1)
-          if (prev) onHighlightChange(prev)
-          break
-        }
-        case 'Enter': {
-          if (currentIndex < 0) return
-          event.preventDefault()
-          const item = navigableItems[currentIndex]
-          if (item.kind === 'subfolder') {
-            onSelectSubfolder(
-              item.path,
-              isSearching ? { originFolderPath: collection.path, query: subfolderQuery } : undefined
-            )
-          } else if (item.kind === 'zip' && item.zipFile) {
-            onSelectZip(item.zipFile)
-          } else if (item.kind === 'image' && item.imageIndex !== undefined) {
-            onSelect(item.imageIndex)
-          }
-          break
-        }
-        default:
-          break
-      }
-    })
-    // findRowNeighborPath is redefined each render but only ever reads scrollRoot/highlightPath,
-    // both already listed below, so re-running the effect on its identity would be redundant.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    navigableItems,
+  useGridKeyboardNav({
+    collection,
+    filteredSubfolders,
     highlightPath,
     scrollRoot,
+    isSearching,
+    subfolderQuery,
     onHighlightChange,
     onSelectSubfolder,
     onSelectZip,
     onSelect,
-    onGoUp,
-    isSearching,
-    collection.path,
-    collection.parentPath,
-    subfolderQuery
-  ])
-
-  const handleGridScroll = (event: React.UIEvent<HTMLDivElement>): void => {
-    gridScrollPositions.set(collection.path, event.currentTarget.scrollTop)
-  }
+    onGoUp
+  })
 
   const handleRenameSubmit = async (newName: string): Promise<void> => {
     if (!renaming) return

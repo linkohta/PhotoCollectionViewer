@@ -2,6 +2,13 @@ import { readdir, stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join, extname, basename, dirname } from 'path'
 import { getZipExtractPath } from '../utils/zipArchive'
+import type {
+  FolderCollection,
+  ImageFile,
+  Subfolder,
+  SubfolderSearchResult,
+  ZipArchive
+} from '../../preload/types'
 
 const IMAGE_EXTENSIONS = new Set([
   '.jpg',
@@ -22,43 +29,6 @@ const IMAGE_EXTENSIONS = new Set([
 // fail on most FLV files, which the renderer surfaces as an error instead of
 // silently omitting the file from the list.
 const VIDEO_EXTENSIONS = new Set(['.mp4', '.flv'])
-
-export interface ImageFile {
-  path: string
-  name: string
-  size: number
-  modified: number
-  mediaType: 'image' | 'video'
-}
-
-export interface Subfolder {
-  path: string
-  name: string
-}
-
-export interface SubfolderSearchResult {
-  path: string
-  name: string
-  relativePath: string
-}
-
-export interface ZipArchive {
-  path: string
-  name: string
-  size: number
-  modified: number
-  extractPath: string
-  isExtracted: boolean
-}
-
-export interface FolderCollection {
-  path: string
-  name: string
-  parentPath: string | null
-  subfolders: Subfolder[]
-  zipFiles: ZipArchive[]
-  images: ImageFile[]
-}
 
 function isImageFile(filename: string): boolean {
   return IMAGE_EXTENSIONS.has(extname(filename).toLowerCase())
