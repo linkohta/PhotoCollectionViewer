@@ -1,6 +1,6 @@
 import type { FolderCollection } from '../../../preload/index'
 
-function joinPath(base: string, segment: string): string {
+const joinPath = (base: string, segment: string): string => {
   const sep = base.includes('\\') ? '\\' : '/'
   const trimmed = base.replace(/[/\\]+$/, '')
   return `${trimmed}${sep}${segment}`

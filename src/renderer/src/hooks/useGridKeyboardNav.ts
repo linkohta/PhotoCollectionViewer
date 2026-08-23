@@ -16,7 +16,7 @@ interface NavigableItem {
 // grid's own cards (identified by their data-path attribute) - buttons
 // elsewhere in the app (sidebar, tab bar, breadcrumbs, toolbar) are plain
 // buttons too and must keep handling their own Enter/Space activation.
-function blocksGridKeyNavigation(target: EventTarget | null): boolean {
+const blocksGridKeyNavigation = (target: EventTarget | null): boolean => {
   if (isTypingTarget(target)) return true
   if (!(target instanceof HTMLElement)) return false
   return target.tagName === 'BUTTON' && !target.hasAttribute('data-path')
@@ -40,11 +40,11 @@ interface UseGridKeyboardNavArgs {
 // horizontally to the current card - unlike flat list order, this follows
 // the actual multi-column layout (subfolders/zip/images each wrap into
 // their own row count depending on the window width).
-function findRowNeighborPath(
+const findRowNeighborPath = (
   scrollRoot: HTMLDivElement | null,
   highlightPath: string | null,
   direction: 1 | -1
-): string | null {
+): string | null => {
   if (!scrollRoot || !highlightPath) return null
   const currentEl = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
   if (!currentEl) return null
