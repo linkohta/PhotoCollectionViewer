@@ -9,11 +9,11 @@ interface UseRenamePropagationArgs {
   browseFolder: BrowseFolder
 }
 
-function remapTabPathsAfterRename(
+const remapTabPathsAfterRename = (
   tab: TabState,
   oldPath: string,
   newPath: string
-): { rootFolderPath: TabState['rootFolderPath']; collection: TabState['collection'] } {
+): { rootFolderPath: TabState['rootFolderPath']; collection: TabState['collection'] } => {
   const nextRoot =
     tab.rootFolderPath && isSameOrChildPath(tab.rootFolderPath, oldPath)
       ? replacePathPrefix(tab.rootFolderPath, oldPath, newPath)
