@@ -1,13 +1,14 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { getFavorites, addFavorite, removeFavorite } from '../store/favorites'
 import { getSession, saveSession, type SessionData } from '../store/session'
-import { exportAppState, importAppState } from '../store/appState'
 import { getOrCreateThumbnailPath, getThumbnailDataUrl } from '../store/thumbnailCache'
 import { setWarmupContext, type WarmupImageDescriptor } from '../store/warmup'
 import { extractZipArchive } from '../utils/zipArchive'
 import { scanFolder, searchSubfolders } from '../services/folderScan'
 import { createImageDataUrl } from '../services/imageDataUrl'
 import { renamePath } from '../services/renamePath'
+import { confirmExtractZip } from '../services/zipDialogs'
+import { exportSettingsViaDialog, importSettingsViaDialog } from '../services/settingsDialogs'
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('dialog:openFolder', async () => {
@@ -33,22 +34,7 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(
     'zip:confirmExtract',
     async (_event, zipName: string, extractPath: string, isExtracted: boolean) => {
-      const result = await dialog.showMessageBox({
-        type: 'question',
-        buttons: isExtracted ? ['開く', 'キャンセル'] : ['解凍', 'キャンセル'],
-        defaultId: 0,
-        cancelId: 1,
-        noLink: true,
-        title: 'ZIPファイル',
-        message: isExtracted
-          ? `「${zipName}」は既に解凍済みです。`
-          : `「${zipName}」を解凍しますか？`,
-        detail: isExtracted
-          ? `解凍先フォルダを開きます。\n${extractPath}`
-          : `ZIP内に同名フォルダがある場合は、その中身を次の場所へ展開します。\n${extractPath}`
-      })
-
-      return result.response === 0
+      return confirmExtractZip(zipName, extractPath, isExtracted)
     }
   )
 
@@ -101,52 +87,10 @@ export function registerIpcHandlers(): void {
   })
 
   ipcMain.handle('settings:export', async () => {
-    const result = await dialog.showSaveDialog({
-      title: '設定をエクスポート',
-      defaultPath: 'photocollection-settings.json',
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    })
-    if (result.canceled || !result.filePath) return false
-
-    try {
-      exportAppState(result.filePath)
-      return true
-    } catch {
-      throw new Error('設定のエクスポートに失敗しました')
-    }
+    return exportSettingsViaDialog()
   })
 
   ipcMain.handle('settings:import', async () => {
-    const result = await dialog.showOpenDialog({
-      title: '設定をインポート',
-      properties: ['openFile'],
-      filters: [{ name: 'JSON', extensions: ['json'] }]
-    })
-    if (result.canceled || result.filePaths.length === 0) return false
-
-    const confirm = await dialog.showMessageBox({
-      type: 'question',
-      buttons: ['インポート', 'キャンセル'],
-      defaultId: 0,
-      cancelId: 1,
-      noLink: true,
-      title: '設定をインポート',
-      message: '現在の設定を上書きしてインポートしますか？',
-      detail: '反映のためアプリの表示を再読み込みします。'
-    })
-    if (confirm.response !== 0) return false
-
-    try {
-      importAppState(result.filePaths[0])
-    } catch {
-      throw new Error('設定ファイルの読み込みに失敗しました。ファイルの内容を確認してください。')
-    }
-
-    // app.relaunch() は開発時(electron-vite)のプロセス管理と噛み合わず再起動に失敗するため、
-    // プロセスは維持したまま各ウィンドウを再読み込みして新しい状態を反映する。
-    for (const win of BrowserWindow.getAllWindows()) {
-      win.reload()
-    }
-    return true
+    return importSettingsViaDialog()
   })
 }
