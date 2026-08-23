@@ -134,7 +134,16 @@ export function useFolderNavigation({
       const tab = tabs.find((item) => item.id === tabId)
       if (!tab) return
 
-      if (tab.returnToParentOnCloseViewer && tab.rootFolderPath) {
+      // A folder containing only images has no grid worth returning to, so
+      // closing the viewer always goes up one level - whether the viewer was
+      // opened automatically (entering such a folder) or by hand (selecting
+      // an image inside one already open).
+      const isImageOnlyFolder =
+        tab.collection != null &&
+        tab.collection.subfolders.length === 0 &&
+        tab.collection.zipFiles.length === 0
+
+      if ((tab.returnToParentOnCloseViewer || isImageOnlyFolder) && tab.rootFolderPath) {
         const targetFolder = tab.returnFolderPath ?? tab.collection?.parentPath ?? null
         if (targetFolder) {
           await browseFolder(tabId, targetFolder, tab.rootFolderPath, {
