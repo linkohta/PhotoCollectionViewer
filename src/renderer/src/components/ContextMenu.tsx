@@ -6,6 +6,7 @@ interface ContextMenuProps {
   label: string
   onOpenInNewTab?: () => void
   onRename?: () => void
+  onMoveToUnnecessary?: () => void
   onClose: () => void
 }
 
@@ -15,6 +16,7 @@ export function ContextMenu({
   label,
   onOpenInNewTab,
   onRename,
+  onMoveToUnnecessary,
   onClose
 }: ContextMenuProps): JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null)
@@ -66,6 +68,18 @@ export function ContextMenu({
           }}
         >
           名前の変更
+        </button>
+      )}
+      {onMoveToUnnecessary && (
+        <button
+          type="button"
+          className="context-menu-item"
+          onClick={() => {
+            onMoveToUnnecessary()
+            onClose()
+          }}
+        >
+          不要フォルダへ移動
         </button>
       )}
     </div>

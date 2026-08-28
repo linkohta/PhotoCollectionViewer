@@ -58,6 +58,12 @@ const api = {
     ipcRenderer.invoke('session:save', session),
   renamePath: (targetPath: string, newName: string): Promise<string> =>
     ipcRenderer.invoke('fs:rename', targetPath, newName),
+  moveToUnnecessary: (targetPath: string): Promise<string> =>
+    ipcRenderer.invoke('fs:moveToUnnecessary', targetPath),
+  getUnnecessaryImagesFolder: (): Promise<string> =>
+    ipcRenderer.invoke('settings:getUnnecessaryImagesFolder'),
+  setUnnecessaryImagesFolder: (folderPath: string | null): Promise<string> =>
+    ipcRenderer.invoke('settings:setUnnecessaryImagesFolder', folderPath),
   setWarmupContext: (images: WarmupImageDescriptor[], maxSize: number): void =>
     ipcRenderer.send('warmup:setContext', images, maxSize),
   exportSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:export'),

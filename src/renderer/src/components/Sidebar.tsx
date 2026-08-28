@@ -14,6 +14,9 @@ interface SidebarProps {
   onToggleFavorite: () => void
   onExportSettings: () => void
   onImportSettings: () => void
+  unnecessaryImagesFolder: string | null
+  onChangeUnnecessaryImagesFolder: () => void
+  onResetUnnecessaryImagesFolder: () => void
 }
 
 interface FavoriteMenuState {
@@ -34,7 +37,10 @@ export function Sidebar({
   onOpenFolderInNewTab,
   onToggleFavorite,
   onExportSettings,
-  onImportSettings
+  onImportSettings,
+  unnecessaryImagesFolder,
+  onChangeUnnecessaryImagesFolder,
+  onResetUnnecessaryImagesFolder
 }: SidebarProps): JSX.Element {
   const [favoriteMenu, setFavoriteMenu] = useState<FavoriteMenuState | null>(null)
 
@@ -108,6 +114,27 @@ export function Sidebar({
             </p>
           </div>
         )}
+
+        <div className="sidebar-section">
+          <h2 className="section-title">不要画像の移動先</h2>
+          <p className="path-text" title={unnecessaryImagesFolder ?? ''}>
+            {unnecessaryImagesFolder ?? ''}
+          </p>
+          <button
+            type="button"
+            className="btn full-width sidebar-secondary"
+            onClick={onChangeUnnecessaryImagesFolder}
+          >
+            フォルダを変更
+          </button>
+          <button
+            type="button"
+            className="btn full-width sidebar-secondary"
+            onClick={onResetUnnecessaryImagesFolder}
+          >
+            既定に戻す
+          </button>
+        </div>
 
         <div className="sidebar-section sidebar-footer">
           <h2 className="section-title">設定</h2>

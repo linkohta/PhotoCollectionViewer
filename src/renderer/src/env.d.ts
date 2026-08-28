@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { PhotoCollectionAPI } from '../../preload/index'
 
 declare global {

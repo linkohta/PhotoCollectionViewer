@@ -41,13 +41,15 @@ export interface AppState {
   favorites: FavoriteFolder[]
   session: SessionData
   windowState: Partial<WindowState>
+  unnecessaryImagesFolder: string | null
 }
 
 function defaultAppState(): AppState {
   return {
     favorites: [],
     session: { tabs: [], activeTabIndex: 0, closedTabs: [] },
-    windowState: {}
+    windowState: {},
+    unnecessaryImagesFolder: null
   }
 }
 
@@ -67,7 +69,9 @@ function readAppState(): AppState {
     return {
       favorites: Array.isArray(data.favorites) ? data.favorites : [],
       session: data.session ?? defaultAppState().session,
-      windowState: data.windowState ?? {}
+      windowState: data.windowState ?? {},
+      unnecessaryImagesFolder:
+        typeof data.unnecessaryImagesFolder === 'string' ? data.unnecessaryImagesFolder : null
     }
   } catch {
     return defaultAppState()
@@ -89,7 +93,9 @@ export function importAppState(srcPath: string): AppState {
   const state: AppState = {
     favorites: Array.isArray(data.favorites) ? data.favorites : [],
     session: data.session ?? defaultAppState().session,
-    windowState: data.windowState ?? {}
+    windowState: data.windowState ?? {},
+    unnecessaryImagesFolder:
+      typeof data.unnecessaryImagesFolder === 'string' ? data.unnecessaryImagesFolder : null
   }
   writeAppState(state)
   return state
