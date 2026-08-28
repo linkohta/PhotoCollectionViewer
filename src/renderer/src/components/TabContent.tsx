@@ -22,6 +22,7 @@ interface TabContentProps {
   onSelectImage: (index: number) => void
   onCloseViewer: () => void
   onNavigate: (direction: -1 | 1) => void
+  onMoveToUnnecessary: (path: string) => void
 }
 
 export function TabContent({
@@ -39,7 +40,8 @@ export function TabContent({
   onRenameItem,
   onSelectImage,
   onCloseViewer,
-  onNavigate
+  onNavigate,
+  onMoveToUnnecessary
 }: TabContentProps): JSX.Element {
   const selectedImage =
     tab.collection && tab.selectedIndex !== null
@@ -101,6 +103,7 @@ export function TabContent({
           onOpenZipInNewTab={onOpenZipInNewTab}
           onGoUp={onGoUp}
           onRenameItem={onRenameItem}
+          onMoveToUnnecessary={onMoveToUnnecessary}
         />
       )}
 
@@ -115,6 +118,7 @@ export function TabContent({
             total={tab.collection.images.length}
             onClose={onCloseViewer}
             onNavigate={onNavigate}
+            onMoveToUnnecessary={() => onMoveToUnnecessary(selectedImage.path)}
           />
         )}
     </div>

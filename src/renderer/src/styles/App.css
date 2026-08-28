@@ -357,6 +357,15 @@
   color: #fff;
 }
 
+.btn.danger {
+  background: #7a2b2b;
+  color: #fff;
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: #9c3838;
+}
+
 .favorite-toggle {
   width: 100%;
   padding: 8px 12px;

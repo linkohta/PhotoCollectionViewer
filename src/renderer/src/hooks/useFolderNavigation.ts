@@ -184,6 +184,41 @@ export function useFolderNavigation({
     [updateTab]
   )
 
+  const handleMoveToUnnecessary = useCallback(
+    async (tabId: string, path: string) => {
+      await window.photoCollection.moveToUnnecessary(path)
+
+      updateTab(tabId, (tab) => {
+        if (!tab.collection) return tab
+
+        const removedIndex = tab.collection.images.findIndex((image) => image.path === path)
+        if (removedIndex === -1) return tab
+
+        const images = tab.collection.images.filter((image) => image.path !== path)
+
+        let nextSelectedIndex = tab.selectedIndex
+        let nextViewMode = tab.viewMode
+        if (tab.selectedIndex !== null) {
+          if (images.length === 0) {
+            nextSelectedIndex = null
+            nextViewMode = 'grid'
+          } else {
+            nextSelectedIndex = Math.min(tab.selectedIndex, images.length - 1)
+          }
+        }
+
+        return {
+          ...tab,
+          collection: { ...tab.collection, images },
+          selectedIndex: nextSelectedIndex,
+          viewMode: nextViewMode,
+          highlightPath: tab.highlightPath === path ? null : tab.highlightPath
+        }
+      })
+    },
+    [updateTab]
+  )
+
   return {
     openFolderInActiveTab,
     handleOpenDialog,
@@ -197,6 +232,7 @@ export function useFolderNavigation({
     handleSelectImage,
     handleCloseViewer,
     handleNavigate,
-    handleRenameItem
+    handleRenameItem,
+    handleMoveToUnnecessary
   }
 }

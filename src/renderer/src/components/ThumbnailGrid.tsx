@@ -28,6 +28,7 @@ interface ThumbnailGridProps {
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
   onRenameItem: (path: string, newName: string) => Promise<void>
+  onMoveToUnnecessary: (path: string) => void
 }
 
 interface ItemMenuState {
@@ -57,7 +58,8 @@ export function ThumbnailGrid({
   onSelectZip,
   onOpenZipInNewTab,
   onGoUp,
-  onRenameItem
+  onRenameItem,
+  onMoveToUnnecessary
 }: ThumbnailGridProps): JSX.Element {
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
   const [renaming, setRenaming] = useState<RenamingState | null>(null)
@@ -258,6 +260,9 @@ export function ThumbnailGrid({
                     : onOpenSubfolderInNewTab(itemMenu.path)
           }
           onRename={() => setRenaming({ kind: itemMenu.kind, path: itemMenu.path })}
+          onMoveToUnnecessary={
+            itemMenu.kind === 'image' ? () => onMoveToUnnecessary(itemMenu.path) : undefined
+          }
           onClose={() => setItemMenu(null)}
         />
       )}

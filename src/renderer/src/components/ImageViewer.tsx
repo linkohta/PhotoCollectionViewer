@@ -14,6 +14,7 @@ interface ImageViewerProps {
   total: number
   onClose: () => void
   onNavigate: (direction: -1 | 1) => void
+  onMoveToUnnecessary: () => void
 }
 
 export function ImageViewer({
@@ -22,14 +23,17 @@ export function ImageViewer({
   index,
   total,
   onClose,
-  onNavigate
+  onNavigate,
+  onMoveToUnnecessary
 }: ImageViewerProps): JSX.Element {
   const isVideo = image.mediaType === 'video'
   const viewerRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   const onNavigateRef = useRef(onNavigate)
+  const onMoveToUnnecessaryRef = useRef(onMoveToUnnecessary)
   onCloseRef.current = onClose
   onNavigateRef.current = onNavigate
+  onMoveToUnnecessaryRef.current = onMoveToUnnecessary
 
   const fullUrl = useMemo(() => toLocalFileUrl(image.path), [image.path])
   const [videoError, setVideoError] = useState(false)
@@ -95,6 +99,10 @@ export function ImageViewer({
         case 'R':
           if (!isVideo) transform.rotateCounterClockwise()
           break
+        case 'Delete':
+          event.preventDefault()
+          onMoveToUnnecessaryRef.current()
+          break
         default:
           break
       }
@@ -123,6 +131,7 @@ export function ImageViewer({
         onZoomOut={() => transform.zoom(-0.2)}
         onRotate={transform.rotateClockwise}
         onReset={transform.resetView}
+        onMoveToUnnecessary={onMoveToUnnecessary}
       />
 
       {isVideo ? (

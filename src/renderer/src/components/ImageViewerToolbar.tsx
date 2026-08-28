@@ -15,6 +15,7 @@ interface ImageViewerToolbarProps {
   onZoomOut: () => void
   onRotate: () => void
   onReset: () => void
+  onMoveToUnnecessary: () => void
 }
 
 export function ImageViewerToolbar({
@@ -31,7 +32,8 @@ export function ImageViewerToolbar({
   onZoomIn,
   onZoomOut,
   onRotate,
-  onReset
+  onReset,
+  onMoveToUnnecessary
 }: ImageViewerToolbarProps): JSX.Element {
   return (
     <div className="viewer-toolbar">
@@ -102,6 +104,16 @@ export function ImageViewerToolbar({
           </button>
         </div>
       )}
+
+      <button
+        type="button"
+        className="btn danger"
+        onClick={onMoveToUnnecessary}
+        title="不要フォルダへ移動 (Delete)"
+        tabIndex={-1}
+      >
+        不要フォルダへ移動
+      </button>
 
       <span className="viewer-filename" title={imagePath}>
         {imageName}
