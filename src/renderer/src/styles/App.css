@@ -660,9 +660,21 @@
   margin-bottom: 16px;
 }
 
+.grid-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
 .image-count {
   font-size: 13px;
   color: #888;
+}
+
+.grid-refresh {
+  font-size: 13px;
+  padding: 4px 10px;
 }
 
 .thumbnail-grid {

@@ -159,6 +159,13 @@ export function useFolderNavigation({
           ? (tab.collection?.images[tab.selectedIndex]?.path ?? null)
           : null
 
+      if (tab.collection && tab.rootFolderPath) {
+        await browseFolder(tabId, tab.collection.path, tab.rootFolderPath, {
+          highlightPath: lastViewedImagePath ?? undefined
+        })
+        return
+      }
+
       updateTab(tabId, (current) => ({
         ...current,
         viewMode: 'grid',
@@ -167,6 +174,17 @@ export function useFolderNavigation({
       }))
     },
     [tabs, browseFolder, updateTab]
+  )
+
+  const handleRefreshFolder = useCallback(
+    async (tabId: string) => {
+      const tab = tabs.find((item) => item.id === tabId)
+      if (!tab?.collection || !tab.rootFolderPath) return
+      await browseFolder(tabId, tab.collection.path, tab.rootFolderPath, {
+        highlightPath: tab.highlightPath ?? undefined
+      })
+    },
+    [tabs, browseFolder]
   )
 
   const handleNavigate = useCallback(
@@ -233,6 +251,7 @@ export function useFolderNavigation({
     handleCloseViewer,
     handleNavigate,
     handleRenameItem,
-    handleMoveToUnnecessary
+    handleMoveToUnnecessary,
+    handleRefreshFolder
   }
 }
