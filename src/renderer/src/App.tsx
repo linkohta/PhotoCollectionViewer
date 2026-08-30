@@ -214,6 +214,7 @@ export default function App(): JSX.Element {
             onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}
             onNavigate={(direction) => navigation.handleNavigate(activeTab.id, direction)}
             onMoveToUnnecessary={(path) => void handleMoveToUnnecessary(path)}
+            onRefreshFolder={() => void navigation.handleRefreshFolder(activeTab.id)}
           />
         </main>
       </div>

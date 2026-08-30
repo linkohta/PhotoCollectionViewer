@@ -23,6 +23,7 @@ interface TabContentProps {
   onCloseViewer: () => void
   onNavigate: (direction: -1 | 1) => void
   onMoveToUnnecessary: (path: string) => void
+  onRefreshFolder: () => void
 }
 
 export function TabContent({
@@ -41,7 +42,8 @@ export function TabContent({
   onSelectImage,
   onCloseViewer,
   onNavigate,
-  onMoveToUnnecessary
+  onMoveToUnnecessary,
+  onRefreshFolder
 }: TabContentProps): JSX.Element {
   const selectedImage =
     tab.collection && tab.selectedIndex !== null
@@ -104,6 +106,7 @@ export function TabContent({
           onGoUp={onGoUp}
           onRenameItem={onRenameItem}
           onMoveToUnnecessary={onMoveToUnnecessary}
+          onRefreshFolder={onRefreshFolder}
         />
       )}
 

@@ -29,6 +29,7 @@ interface ThumbnailGridProps {
   onGoUp: () => void
   onRenameItem: (path: string, newName: string) => Promise<void>
   onMoveToUnnecessary: (path: string) => void
+  onRefreshFolder: () => void
 }
 
 interface ItemMenuState {
@@ -59,7 +60,8 @@ export function ThumbnailGrid({
   onOpenZipInNewTab,
   onGoUp,
   onRenameItem,
-  onMoveToUnnecessary
+  onMoveToUnnecessary,
+  onRefreshFolder
 }: ThumbnailGridProps): JSX.Element {
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
   const [renaming, setRenaming] = useState<RenamingState | null>(null)
@@ -140,7 +142,17 @@ export function ThumbnailGrid({
               </span>
             ))}
           </nav>
-          <span className="image-count">{buildCountLabel(collection)}</span>
+          <div className="grid-header-actions">
+            <span className="image-count">{buildCountLabel(collection)}</span>
+            <button
+              type="button"
+              className="btn grid-refresh"
+              onClick={onRefreshFolder}
+              title="一覧を更新"
+            >
+              ⟳ 更新
+            </button>
+          </div>
         </div>
       </header>
 
