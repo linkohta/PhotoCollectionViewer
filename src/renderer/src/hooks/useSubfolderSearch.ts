@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FolderCollection, SubfolderSearchResult } from '../../../preload/index'
+import { isSameOrChildPath } from '../utils/files'
 
 interface UseSubfolderSearchArgs {
   collection: FolderCollection
@@ -23,6 +24,7 @@ export function useSubfolderSearch({
   isSearching: boolean
   searchResults: SubfolderSearchResult[] | null
   filteredSubfolders: SearchableSubfolder[]
+  removeSearchResult: (path: string) => void
 } {
   const [subfolderQuery, setSubfolderQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SubfolderSearchResult[] | null>(null)
@@ -60,6 +62,14 @@ export function useSubfolderSearch({
     }
   }, [collection.path, subfolderQuery])
 
+  // Drops a deleted folder (and anything under it) from the current search
+  // results without re-walking the whole tree.
+  const removeSearchResult = useCallback((path: string) => {
+    setSearchResults((current) =>
+      current ? current.filter((result) => !isSameOrChildPath(result.path, path)) : current
+    )
+  }, [])
+
   const isSearching = subfolderQuery.trim().length > 0
   const filteredSubfolders = useMemo(
     () =>
@@ -73,5 +83,12 @@ export function useSubfolderSearch({
     [isSearching, searchResults, collection.subfolders]
   )
 
-  return { subfolderQuery, setSubfolderQuery, isSearching, searchResults, filteredSubfolders }
+  return {
+    subfolderQuery,
+    setSubfolderQuery,
+    isSearching,
+    searchResults,
+    filteredSubfolders,
+    removeSearchResult
+  }
 }

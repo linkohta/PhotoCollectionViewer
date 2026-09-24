@@ -156,6 +156,18 @@ export default function App(): JSX.Element {
     [navigation, activeTab.id]
   )
 
+  const handleDeleteSubfolder = useCallback(
+    async (path: string): Promise<boolean> => {
+      try {
+        return await navigation.handleDeleteSubfolder(activeTab.id, path)
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : 'フォルダの削除に失敗しました')
+        return false
+      }
+    },
+    [navigation, activeTab.id]
+  )
+
   return (
     <div className="app">
       <Sidebar
@@ -214,6 +226,7 @@ export default function App(): JSX.Element {
             onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}
             onNavigate={(direction) => navigation.handleNavigate(activeTab.id, direction)}
             onMoveToUnnecessary={(path) => void handleMoveToUnnecessary(path)}
+            onDeleteSubfolder={handleDeleteSubfolder}
             onRefreshFolder={() => void navigation.handleRefreshFolder(activeTab.id)}
           />
         </main>

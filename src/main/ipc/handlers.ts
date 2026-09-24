@@ -7,6 +7,7 @@ import { extractZipArchive } from '../utils/zipArchive'
 import { scanFolder, searchSubfolders } from '../services/folderScan'
 import { createImageDataUrl } from '../services/imageDataUrl'
 import { renamePath } from '../services/renamePath'
+import { confirmAndDeleteFolder } from '../services/deleteFolder'
 import {
   moveToUnnecessary,
   getUnnecessaryImagesFolder,
@@ -89,6 +90,10 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('fs:rename', async (_event, targetPath: string, newName: string) => {
     return renamePath(targetPath, newName)
+  })
+
+  ipcMain.handle('fs:deleteFolder', async (_event, folderPath: string) => {
+    return confirmAndDeleteFolder(folderPath)
   })
 
   ipcMain.handle('fs:moveToUnnecessary', async (_event, targetPath: string) => {

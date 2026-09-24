@@ -29,6 +29,7 @@ interface ThumbnailGridProps {
   onGoUp: () => void
   onRenameItem: (path: string, newName: string) => Promise<void>
   onMoveToUnnecessary: (path: string) => void
+  onDeleteSubfolder: (path: string) => Promise<boolean>
   onRefreshFolder: () => void
 }
 
@@ -61,6 +62,7 @@ export function ThumbnailGrid({
   onGoUp,
   onRenameItem,
   onMoveToUnnecessary,
+  onDeleteSubfolder,
   onRefreshFolder
 }: ThumbnailGridProps): JSX.Element {
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
@@ -71,8 +73,14 @@ export function ThumbnailGrid({
     highlightPath
   )
 
-  const { subfolderQuery, setSubfolderQuery, isSearching, searchResults, filteredSubfolders } =
-    useSubfolderSearch({ collection, pendingSearchQuery, onConsumePendingSearchQuery })
+  const {
+    subfolderQuery,
+    setSubfolderQuery,
+    isSearching,
+    searchResults,
+    filteredSubfolders,
+    removeSearchResult
+  } = useSubfolderSearch({ collection, pendingSearchQuery, onConsumePendingSearchQuery })
 
   useGridKeyboardNav({
     collection,
@@ -92,6 +100,10 @@ export function ThumbnailGrid({
     if (!renaming) return
     await onRenameItem(renaming.path, newName)
     setRenaming(null)
+  }
+
+  const handleDeleteSubfolder = async (path: string): Promise<void> => {
+    if (await onDeleteSubfolder(path)) removeSearchResult(path)
   }
 
   const openItemMenu = (
@@ -274,6 +286,11 @@ export function ThumbnailGrid({
           onRename={() => setRenaming({ kind: itemMenu.kind, path: itemMenu.path })}
           onMoveToUnnecessary={
             itemMenu.kind === 'image' ? () => onMoveToUnnecessary(itemMenu.path) : undefined
+          }
+          onDelete={
+            itemMenu.kind === 'subfolder'
+              ? () => void handleDeleteSubfolder(itemMenu.path)
+              : undefined
           }
           onClose={() => setItemMenu(null)}
         />
