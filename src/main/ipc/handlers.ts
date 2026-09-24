@@ -7,11 +7,7 @@ import { extractZipArchive } from '../utils/zipArchive'
 import { scanFolder, searchSubfolders, findFolderPreviewImage } from '../services/folderScan'
 import { createImageDataUrl } from '../services/imageDataUrl'
 import { renamePath } from '../services/renamePath'
-import {
-  moveToUnnecessary,
-  getUnnecessaryImagesFolder,
-  setUnnecessaryImagesFolder
-} from '../services/moveToUnnecessary'
+import { moveToUnnecessary } from '../services/moveToUnnecessary'
 import { confirmExtractZip } from '../services/zipDialogs'
 import { exportSettingsViaDialog, importSettingsViaDialog } from '../services/settingsDialogs'
 
@@ -98,17 +94,6 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('fs:moveToUnnecessary', async (_event, targetPath: string) => {
     return moveToUnnecessary(targetPath)
   })
-
-  ipcMain.handle('settings:getUnnecessaryImagesFolder', async () => {
-    return getUnnecessaryImagesFolder()
-  })
-
-  ipcMain.handle(
-    'settings:setUnnecessaryImagesFolder',
-    async (_event, folderPath: string | null) => {
-      return setUnnecessaryImagesFolder(folderPath)
-    }
-  )
 
   ipcMain.handle('settings:export', async () => {
     return exportSettingsViaDialog()

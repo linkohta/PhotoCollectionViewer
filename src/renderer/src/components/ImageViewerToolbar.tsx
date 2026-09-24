@@ -109,10 +109,10 @@ export function ImageViewerToolbar({
         type="button"
         className="btn danger"
         onClick={onMoveToUnnecessary}
-        title="不要フォルダへ移動 (Delete)"
+        title="ごみ箱へ移動 (Delete)"
         tabIndex={-1}
       >
-        不要フォルダへ移動
+        ごみ箱へ移動
       </button>
 
       <span className="viewer-filename" title={imagePath}>
