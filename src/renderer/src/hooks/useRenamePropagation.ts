@@ -13,7 +13,14 @@ const remapTabPathsAfterRename = (
   tab: TabState,
   oldPath: string,
   newPath: string
-): { rootFolderPath: TabState['rootFolderPath']; collection: TabState['collection'] } => {
+): Pick<TabState, 'rootFolderPath' | 'collection' | 'history'> => {
+  const remap = (path: string): string =>
+    isSameOrChildPath(path, oldPath) ? replacePathPrefix(path, oldPath, newPath) : path
+  const history = tab.history.map((entry) => ({
+    folderPath: remap(entry.folderPath),
+    rootFolderPath: remap(entry.rootFolderPath)
+  }))
+
   const nextRoot =
     tab.rootFolderPath && isSameOrChildPath(tab.rootFolderPath, oldPath)
       ? replacePathPrefix(tab.rootFolderPath, oldPath, newPath)
@@ -32,7 +39,7 @@ const remapTabPathsAfterRename = (
         }
       : tab.collection
 
-  return { rootFolderPath: nextRoot, collection: nextCollection }
+  return { rootFolderPath: nextRoot, collection: nextCollection, history }
 }
 
 // When a rename affects a path any open tab is currently showing (or is
@@ -48,14 +55,24 @@ export function useRenamePropagation({ tabs, updateTab, browseFolder }: UseRenam
       for (const tab of tabs) {
         const rootMatches = tab.rootFolderPath && isSameOrChildPath(tab.rootFolderPath, oldPath)
         const collectionMatches = tab.collection && isSameOrChildPath(tab.collection.path, oldPath)
-        if (!rootMatches && !collectionMatches) continue
+        const historyMatches = tab.history.some(
+          (entry) =>
+            isSameOrChildPath(entry.folderPath, oldPath) ||
+            isSameOrChildPath(entry.rootFolderPath, oldPath)
+        )
+        if (!rootMatches && !collectionMatches && !historyMatches) continue
 
         updateTab(tab.id, (current) => {
-          const { rootFolderPath, collection } = remapTabPathsAfterRename(current, oldPath, newPath)
+          const { rootFolderPath, collection, history } = remapTabPathsAfterRename(
+            current,
+            oldPath,
+            newPath
+          )
           return {
             ...current,
             rootFolderPath,
             collection,
+            history,
             title: getTabTitle(collection, rootFolderPath)
           }
         })

@@ -27,6 +27,8 @@ interface ThumbnailGridProps {
   onSelectZip: (zipFile: ZipArchive) => void
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
+  canGoBack: boolean
+  onGoBack: () => void
   onRenameItem: (path: string, newName: string) => Promise<void>
   onMoveToUnnecessary: (path: string) => void
   onRefreshFolder: () => void
@@ -59,6 +61,8 @@ export function ThumbnailGrid({
   onSelectZip,
   onOpenZipInNewTab,
   onGoUp,
+  canGoBack,
+  onGoBack,
   onRenameItem,
   onMoveToUnnecessary,
   onRefreshFolder
@@ -85,7 +89,9 @@ export function ThumbnailGrid({
     onSelectSubfolder,
     onSelectZip,
     onSelect,
-    onGoUp
+    onGoUp,
+    canGoBack,
+    onGoBack
   })
 
   const handleRenameSubmit = async (newName: string): Promise<void> => {
@@ -113,10 +119,27 @@ export function ThumbnailGrid({
   const hasSectionsAboveImages = collection.subfolders.length > 0 || collection.zipFiles.length > 0
 
   return (
-    <div className="grid-container">
+    <div
+      className="grid-container"
+      onMouseUp={(event) => {
+        // Mouse "back" side button, same as the "←" button
+        if (event.button !== 3 || !canGoBack) return
+        event.preventDefault()
+        onGoBack()
+      }}
+    >
       <header className="grid-header">
         <div className="grid-header-main">
           <nav className="breadcrumb" aria-label="フォルダパス">
+            <button
+              type="button"
+              className="btn breadcrumb-back"
+              onClick={onGoBack}
+              disabled={!canGoBack}
+              title="前のフォルダに戻る (Alt+← / Backspace)"
+            >
+              ←
+            </button>
             {collection.parentPath && (
               <button
                 type="button"
@@ -170,13 +193,14 @@ export function ThumbnailGrid({
               />
             </div>
             {filteredSubfolders.length > 0 ? (
-              <div className="subfolder-grid">
+              <div className="subfolder-grid folder-grid">
                 {filteredSubfolders.map((subfolder) => (
                   <SubfolderCard
                     key={subfolder.path}
                     path={subfolder.path}
                     name={subfolder.name}
                     subtitle={subfolder.subtitle}
+                    scrollRoot={scrollRoot}
                     isHighlighted={subfolder.path === highlightPath}
                     isRenaming={renaming?.kind === 'subfolder' && renaming.path === subfolder.path}
                     onSelect={() =>

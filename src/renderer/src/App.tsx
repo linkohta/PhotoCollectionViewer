@@ -209,6 +209,7 @@ export default function App(): JSX.Element {
               void navigation.handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)
             }
             onGoUp={() => void navigation.handleGoUp(activeTab.id)}
+            onGoBack={() => void navigation.handleGoBack(activeTab.id)}
             onRenameItem={handleRenameItem}
             onSelectImage={handleSelectImage}
             onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}

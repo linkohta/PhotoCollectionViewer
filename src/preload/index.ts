@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   FavoriteFolder,
   FolderCollection,
+  ImageFile,
   SessionData,
   SubfolderSearchResult,
   WarmupImageDescriptor
@@ -25,6 +26,8 @@ const api = {
     ipcRenderer.invoke('folder:scan', folderPath, rootPath),
   searchSubfolders: (folderPath: string, query: string): Promise<SubfolderSearchResult[]> =>
     ipcRenderer.invoke('folder:searchSubfolders', folderPath, query),
+  getFolderPreviewImage: (folderPath: string): Promise<ImageFile | null> =>
+    ipcRenderer.invoke('folder:previewImage', folderPath),
   extractZip: (zipPath: string): Promise<string> => ipcRenderer.invoke('zip:extract', zipPath),
   confirmExtractZip: (
     zipName: string,

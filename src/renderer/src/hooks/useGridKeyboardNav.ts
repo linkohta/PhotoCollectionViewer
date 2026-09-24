@@ -34,6 +34,8 @@ interface UseGridKeyboardNavArgs {
   onSelectZip: (zipFile: ZipArchive) => void
   onSelect: (index: number) => void
   onGoUp: () => void
+  canGoBack: boolean
+  onGoBack: () => void
 }
 
 // Finds the item whose card sits in the next/previous visual row, closest
@@ -74,8 +76,8 @@ const findRowNeighborPath = (
 }
 
 // Wires arrow-key/Enter navigation between grid cards, plus Escape to go up
-// a folder - mirrors the "↑" breadcrumb button so keyboard users get the
-// same shortcut.
+// a folder and Alt+Left / Backspace to go back - mirrors the "↑" and "←"
+// breadcrumb buttons so keyboard users get the same shortcuts.
 export function useGridKeyboardNav({
   collection,
   filteredSubfolders,
@@ -87,7 +89,9 @@ export function useGridKeyboardNav({
   onSelectSubfolder,
   onSelectZip,
   onSelect,
-  onGoUp
+  onGoUp,
+  canGoBack,
+  onGoBack
 }: UseGridKeyboardNavArgs): void {
   const navigableItems = useMemo<NavigableItem[]>(
     () => [
@@ -112,6 +116,13 @@ export function useGridKeyboardNav({
   useEffect(() => {
     return registerViewerKeyboardHandler((event) => {
       if (blocksGridKeyNavigation(event.target)) return
+
+      if (event.key === 'Backspace' || (event.altKey && event.key === 'ArrowLeft')) {
+        if (!canGoBack) return
+        event.preventDefault()
+        onGoBack()
+        return
+      }
 
       if (event.key === 'Escape') {
         if (!collection.parentPath) return
@@ -188,6 +199,8 @@ export function useGridKeyboardNav({
     onSelectZip,
     onSelect,
     onGoUp,
+    canGoBack,
+    onGoBack,
     isSearching,
     collection.path,
     collection.parentPath,

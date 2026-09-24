@@ -32,6 +32,14 @@ export interface TabState {
   // Search query to restore into the grid's subfolder search box the next
   // time this folder is shown, consumed (set back to null) once applied.
   pendingSearchQuery: string | null
+  // Folders previously shown in this tab (oldest first), walked back through
+  // by the grid's "←" button. Kept in memory only, not saved in the session.
+  history: FolderHistoryEntry[]
+}
+
+export interface FolderHistoryEntry {
+  folderPath: string
+  rootFolderPath: string
 }
 
 export function createEmptyTab(): TabState {
@@ -48,7 +56,8 @@ export function createEmptyTab(): TabState {
     highlightPath: null,
     returnFolderPath: null,
     returnSearchQuery: null,
-    pendingSearchQuery: null
+    pendingSearchQuery: null,
+    history: []
   }
 }
 
