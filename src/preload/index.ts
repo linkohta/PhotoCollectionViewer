@@ -1,5 +1,7 @@
-import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import type {
+  ConfirmationKind,
+  ConfirmationSettings,
   FavoriteFolder,
   FolderCollection,
   ImageFile,
@@ -9,6 +11,8 @@ import type {
 } from './types'
 
 export type {
+  ConfirmationKind,
+  ConfirmationSettings,
   ImageFile,
   Subfolder,
   SubfolderSearchResult,
@@ -69,6 +73,20 @@ const api = {
     ipcRenderer.invoke('fs:moveToUnnecessary', targetPath),
   setWarmupContext: (images: WarmupImageDescriptor[], maxSize: number): void =>
     ipcRenderer.send('warmup:setContext', images, maxSize),
+  getConfirmations: (): Promise<ConfirmationSettings> =>
+    ipcRenderer.invoke('settings:getConfirmations'),
+  setConfirmation: (kind: ConfirmationKind, enabled: boolean): Promise<ConfirmationSettings> =>
+    ipcRenderer.invoke('settings:setConfirmation', kind, enabled),
+  // Fires when a dialog's "don't show again" checkbox changes the settings.
+  // Returns an unsubscribe function.
+  onConfirmationsChanged: (callback: (settings: ConfirmationSettings) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, settings: ConfirmationSettings): void =>
+      callback(settings)
+    ipcRenderer.on('settings:confirmationsChanged', listener)
+    return () => {
+      ipcRenderer.removeListener('settings:confirmationsChanged', listener)
+    }
+  },
   exportSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:export'),
   importSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:import')
 }

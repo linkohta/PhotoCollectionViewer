@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { FavoriteFolder } from '../../../preload/index'
+import type { ConfirmationKind, ConfirmationSettings, FavoriteFolder } from '../../../preload/index'
 import { ContextMenu } from './ContextMenu'
 
 interface SidebarProps {
@@ -14,6 +14,14 @@ interface SidebarProps {
   onToggleFavorite: () => void
   onExportSettings: () => void
   onImportSettings: () => void
+  confirmations: ConfirmationSettings | null
+  onChangeConfirmation: (kind: ConfirmationKind, enabled: boolean) => void
+}
+
+const CONFIRMATION_LABELS: Record<ConfirmationKind, string> = {
+  extractZip: 'ZIPの解凍前に確認する',
+  deleteFolder: 'フォルダの削除前に確認する',
+  importSettings: '設定のインポート前に確認する'
 }
 
 interface FavoriteMenuState {
@@ -34,7 +42,9 @@ export function Sidebar({
   onOpenFolderInNewTab,
   onToggleFavorite,
   onExportSettings,
-  onImportSettings
+  onImportSettings,
+  confirmations,
+  onChangeConfirmation
 }: SidebarProps): JSX.Element {
   const [favoriteMenu, setFavoriteMenu] = useState<FavoriteMenuState | null>(null)
 
@@ -125,6 +135,20 @@ export function Sidebar({
           >
             設定をインポート
           </button>
+          {confirmations && (
+            <div className="confirmation-options">
+              {(Object.keys(CONFIRMATION_LABELS) as ConfirmationKind[]).map((kind) => (
+                <label key={kind} className="confirmation-option">
+                  <input
+                    type="checkbox"
+                    checked={confirmations[kind]}
+                    onChange={(event) => onChangeConfirmation(kind, event.target.checked)}
+                  />
+                  {CONFIRMATION_LABELS[kind]}
+                </label>
+              ))}
+            </div>
+          )}
         </div>
       </aside>
 

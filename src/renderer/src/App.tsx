@@ -8,6 +8,7 @@ import { useTabs } from './hooks/useTabs'
 import { useSessionPersistence } from './hooks/useSessionPersistence'
 import { useFavorites } from './hooks/useFavorites'
 import { useFolderNavigation } from './hooks/useFolderNavigation'
+import { useConfirmationSettings } from './hooks/useConfirmationSettings'
 import './styles/App.css'
 
 export default function App(): JSX.Element {
@@ -38,6 +39,7 @@ export default function App(): JSX.Element {
 
   const { favorites, toggleFavorite, refreshFavorites } = useFavorites()
   const navigation = useFolderNavigation({ tabs, activeTabId, updateTab, addTab })
+  const { confirmations, setConfirmation } = useConfirmationSettings()
 
   const handleRenameItem = useCallback(
     async (path: string, newName: string) => {
@@ -164,6 +166,8 @@ export default function App(): JSX.Element {
         canFavorite={!!activeTab.rootFolderPath}
         onExportSettings={() => void handleExportSettings()}
         onImportSettings={() => void handleImportSettings()}
+        confirmations={confirmations}
+        onChangeConfirmation={(kind, enabled) => void setConfirmation(kind, enabled)}
       />
 
       <div className="main-area">
