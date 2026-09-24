@@ -55,6 +55,16 @@ export interface SessionData {
   closedTabs: TabSnapshot[]
 }
 
+// Which confirmation dialogs are shown. false means the action proceeds
+// without asking ("今後この確認を表示しない").
+export interface ConfirmationSettings {
+  extractZip: boolean
+  deleteFolder: boolean
+  importSettings: boolean
+}
+
+export type ConfirmationKind = keyof ConfirmationSettings
+
 export interface WarmupImageDescriptor {
   path: string
   modified: number

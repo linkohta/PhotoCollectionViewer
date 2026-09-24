@@ -248,6 +248,22 @@
   margin-top: 8px;
 }
 
+.confirmation-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.confirmation-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #bbb;
+  cursor: pointer;
+}
+
 /* Sidebar */
 .sidebar {
   width: 260px;

@@ -1,5 +1,6 @@
 import { dialog, BrowserWindow } from 'electron'
 import { exportAppState, importAppState } from '../store/appState'
+import { confirmUnlessDisabled } from './confirmDialog'
 
 export async function exportSettingsViaDialog(): Promise<boolean> {
   const result = await dialog.showSaveDialog({
@@ -25,7 +26,7 @@ export async function importSettingsViaDialog(): Promise<boolean> {
   })
   if (result.canceled || result.filePaths.length === 0) return false
 
-  const confirm = await dialog.showMessageBox({
+  const confirmed = await confirmUnlessDisabled('importSettings', {
     type: 'question',
     buttons: ['インポート', 'キャンセル'],
     defaultId: 0,
@@ -35,7 +36,7 @@ export async function importSettingsViaDialog(): Promise<boolean> {
     message: '現在の設定を上書きしてインポートしますか？',
     detail: '反映のためアプリの表示を再読み込みします。'
   })
-  if (confirm.response !== 0) return false
+  if (!confirmed) return false
 
   try {
     importAppState(result.filePaths[0])

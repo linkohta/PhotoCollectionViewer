@@ -1,11 +1,11 @@
-import { dialog } from 'electron'
+import { confirmUnlessDisabled } from './confirmDialog'
 
 export async function confirmExtractZip(
   zipName: string,
   extractPath: string,
   isExtracted: boolean
 ): Promise<boolean> {
-  const result = await dialog.showMessageBox({
+  return confirmUnlessDisabled('extractZip', {
     type: 'question',
     buttons: isExtracted ? ['開く', 'キャンセル'] : ['解凍', 'キャンセル'],
     defaultId: 0,
@@ -17,6 +17,4 @@ export async function confirmExtractZip(
       ? `解凍先フォルダを開きます。\n${extractPath}`
       : `ZIP内に同名フォルダがある場合は、その中身を次の場所へ展開します。\n${extractPath}`
   })
-
-  return result.response === 0
 }

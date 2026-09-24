@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { getAppRootFilePath, getLegacyAppRootDir } from './appRoot'
+import type { ConfirmationSettings } from '../../preload/types'
 
 const LEGACY_FAVORITES_FILE = 'favorites.json'
 const LEGACY_SESSION_FILE = 'session.json'
@@ -41,13 +42,36 @@ export interface AppState {
   favorites: FavoriteFolder[]
   session: SessionData
   windowState: Partial<WindowState>
+  confirmations: ConfirmationSettings
+}
+
+const DEFAULT_CONFIRMATIONS: ConfirmationSettings = {
+  extractZip: true,
+  deleteFolder: true,
+  importSettings: true
 }
 
 function defaultAppState(): AppState {
   return {
     favorites: [],
     session: { tabs: [], activeTabIndex: 0, closedTabs: [] },
-    windowState: {}
+    windowState: {},
+    confirmations: { ...DEFAULT_CONFIRMATIONS }
+  }
+}
+
+// Missing or non-boolean entries (e.g. an app-state.json written by an older
+// version) fall back to showing the dialog.
+function normalizeConfirmations(value: unknown): ConfirmationSettings {
+  const data = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  const pick = (key: keyof ConfirmationSettings): boolean => {
+    const entry = data[key]
+    return typeof entry === 'boolean' ? entry : DEFAULT_CONFIRMATIONS[key]
+  }
+  return {
+    extractZip: pick('extractZip'),
+    deleteFolder: pick('deleteFolder'),
+    importSettings: pick('importSettings')
   }
 }
 
@@ -67,7 +91,8 @@ function readAppState(): AppState {
     return {
       favorites: Array.isArray(data.favorites) ? data.favorites : [],
       session: data.session ?? defaultAppState().session,
-      windowState: data.windowState ?? {}
+      windowState: data.windowState ?? {},
+      confirmations: normalizeConfirmations(data.confirmations)
     }
   } catch {
     return defaultAppState()
@@ -89,7 +114,8 @@ export function importAppState(srcPath: string): AppState {
   const state: AppState = {
     favorites: Array.isArray(data.favorites) ? data.favorites : [],
     session: data.session ?? defaultAppState().session,
-    windowState: data.windowState ?? {}
+    windowState: data.windowState ?? {},
+    confirmations: normalizeConfirmations(data.confirmations)
   }
   writeAppState(state)
   return state

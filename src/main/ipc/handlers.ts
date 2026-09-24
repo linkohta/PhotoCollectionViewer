@@ -1,6 +1,11 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { getFavorites, addFavorite, removeFavorite } from '../store/favorites'
 import { getSession, saveSession, type SessionData } from '../store/session'
+import {
+  getConfirmations,
+  setConfirmationEnabled,
+  type ConfirmationKind
+} from '../store/confirmations'
 import { getOrCreateThumbnailPath, getThumbnailDataUrl } from '../store/thumbnailCache'
 import { setWarmupContext, type WarmupImageDescriptor } from '../store/warmup'
 import { extractZipArchive } from '../utils/zipArchive'
@@ -99,6 +104,17 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('fs:moveToUnnecessary', async (_event, targetPath: string) => {
     return moveToUnnecessary(targetPath)
   })
+
+  ipcMain.handle('settings:getConfirmations', async () => {
+    return getConfirmations()
+  })
+
+  ipcMain.handle(
+    'settings:setConfirmation',
+    async (_event, kind: ConfirmationKind, enabled: boolean) => {
+      return setConfirmationEnabled(kind, enabled)
+    }
+  )
 
   ipcMain.handle('settings:export', async () => {
     return exportSettingsViaDialog()
