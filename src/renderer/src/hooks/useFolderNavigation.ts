@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import type { TabState } from '../types/tab'
+import { isSameOrChildPath } from '../utils/files'
 import { useBrowseFolder } from './useBrowseFolder'
 import { useZipNavigation } from './useZipNavigation'
 import { useRenamePropagation } from './useRenamePropagation'
@@ -252,6 +253,36 @@ export function useFolderNavigation({
     [updateTab]
   )
 
+  // Resolves false when the user cancels the confirmation dialog. On success
+  // the folder is dropped from the grid in place instead of rescanning.
+  const handleDeleteSubfolder = useCallback(
+    async (tabId: string, path: string): Promise<boolean> => {
+      const deleted = await window.photoCollection.deleteFolder(path)
+      if (!deleted) return false
+
+      updateTab(tabId, (tab) => {
+        if (!tab.collection) return tab
+        return {
+          ...tab,
+          collection: {
+            ...tab.collection,
+            subfolders: tab.collection.subfolders.filter(
+              (subfolder) => !isSameOrChildPath(subfolder.path, path)
+            )
+          },
+          highlightPath:
+            tab.highlightPath && isSameOrChildPath(tab.highlightPath, path)
+              ? null
+              : tab.highlightPath,
+          // "←" must not lead back into the deleted folder.
+          history: tab.history.filter((entry) => !isSameOrChildPath(entry.folderPath, path))
+        }
+      })
+      return true
+    },
+    [updateTab]
+  )
+
   return {
     openFolderInActiveTab,
     handleOpenDialog,
@@ -268,6 +299,7 @@ export function useFolderNavigation({
     handleNavigate,
     handleRenameItem,
     handleMoveToUnnecessary,
+    handleDeleteSubfolder,
     handleRefreshFolder
   }
 }

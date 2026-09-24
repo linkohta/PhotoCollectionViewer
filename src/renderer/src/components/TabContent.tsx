@@ -24,6 +24,7 @@ interface TabContentProps {
   onCloseViewer: () => void
   onNavigate: (direction: -1 | 1) => void
   onMoveToUnnecessary: (path: string) => void
+  onDeleteSubfolder: (path: string) => Promise<boolean>
   onRefreshFolder: () => void
 }
 
@@ -45,6 +46,7 @@ export function TabContent({
   onCloseViewer,
   onNavigate,
   onMoveToUnnecessary,
+  onDeleteSubfolder,
   onRefreshFolder
 }: TabContentProps): JSX.Element {
   const selectedImage =
@@ -110,6 +112,7 @@ export function TabContent({
           onGoBack={onGoBack}
           onRenameItem={onRenameItem}
           onMoveToUnnecessary={onMoveToUnnecessary}
+          onDeleteSubfolder={onDeleteSubfolder}
           onRefreshFolder={onRefreshFolder}
         />
       )}

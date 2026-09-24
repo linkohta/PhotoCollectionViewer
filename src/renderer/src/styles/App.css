@@ -81,6 +81,14 @@
   background: #3a3a3a;
 }
 
+.context-menu-item.danger {
+  color: #ff7b7b;
+}
+
+.context-menu-item.danger:hover {
+  background: #4a2626;
+}
+
 .rename-input-wrap {
   display: flex;
   flex-direction: column;

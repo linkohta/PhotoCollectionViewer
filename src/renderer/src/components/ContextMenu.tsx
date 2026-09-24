@@ -7,6 +7,7 @@ interface ContextMenuProps {
   onOpenInNewTab?: () => void
   onRename?: () => void
   onMoveToUnnecessary?: () => void
+  onDelete?: () => void
   onClose: () => void
 }
 
@@ -17,6 +18,7 @@ export function ContextMenu({
   onOpenInNewTab,
   onRename,
   onMoveToUnnecessary,
+  onDelete,
   onClose
 }: ContextMenuProps): JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null)
@@ -80,6 +82,18 @@ export function ContextMenu({
           }}
         >
           ごみ箱へ移動
+        </button>
+      )}
+      {onDelete && (
+        <button
+          type="button"
+          className="context-menu-item danger"
+          onClick={() => {
+            onDelete()
+            onClose()
+          }}
+        >
+          削除
         </button>
       )}
     </div>

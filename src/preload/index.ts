@@ -61,6 +61,9 @@ const api = {
     ipcRenderer.invoke('session:save', session),
   renamePath: (targetPath: string, newName: string): Promise<string> =>
     ipcRenderer.invoke('fs:rename', targetPath, newName),
+  // Resolves false when the user cancels the confirmation dialog.
+  deleteFolder: (folderPath: string): Promise<boolean> =>
+    ipcRenderer.invoke('fs:deleteFolder', folderPath),
   // Moves the file to the Recycle Bin.
   moveToUnnecessary: (targetPath: string): Promise<void> =>
     ipcRenderer.invoke('fs:moveToUnnecessary', targetPath),
