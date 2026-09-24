@@ -1,8 +1,13 @@
 import { useCallback } from 'react'
 import { getTabTitle, type TabState } from '../types/tab'
+import { nextFolderHistory, type HistoryMode } from '../utils/folderHistory'
 
 export interface BrowseOptions {
   resetRoot?: boolean
+  // Use rootPath as the tab's root as-is (going back to a folder that was
+  // opened under a different root), instead of keeping the current root.
+  replaceRoot?: boolean
+  historyMode?: HistoryMode
   fromSubfolder?: boolean
   highlightPath?: string
   returnFolderPath?: string
@@ -47,23 +52,25 @@ export function useBrowseFolder({ updateTab }: UseBrowseFolderArgs): BrowseFolde
           result.images.length > 0
         )
 
-        updateTab(tabId, (tab) => ({
-          ...tab,
-          loading: false,
-          rootFolderPath: options.resetRoot ? folderPath : (tab.rootFolderPath ?? nextRoot),
-          collection: result,
-          title: getTabTitle(
-            result,
-            options.resetRoot ? folderPath : (tab.rootFolderPath ?? nextRoot)
-          ),
-          selectedIndex: shouldAutoOpenViewer ? 0 : null,
-          viewMode: shouldAutoOpenViewer ? 'viewer' : 'grid',
-          returnToParentOnCloseViewer: shouldAutoOpenViewer,
-          highlightPath: shouldAutoOpenViewer ? null : (options.highlightPath ?? null),
-          returnFolderPath: options.returnFolderPath ?? null,
-          returnSearchQuery: options.returnSearchQuery ?? null,
-          pendingSearchQuery: options.searchQuery ?? null
-        }))
+        updateTab(tabId, (tab) => {
+          const resolvedRoot =
+            options.resetRoot || options.replaceRoot ? nextRoot : (tab.rootFolderPath ?? nextRoot)
+          return {
+            ...tab,
+            loading: false,
+            rootFolderPath: resolvedRoot,
+            collection: result,
+            title: getTabTitle(result, resolvedRoot),
+            history: nextFolderHistory(tab, folderPath, options.historyMode ?? 'push'),
+            selectedIndex: shouldAutoOpenViewer ? 0 : null,
+            viewMode: shouldAutoOpenViewer ? 'viewer' : 'grid',
+            returnToParentOnCloseViewer: shouldAutoOpenViewer,
+            highlightPath: shouldAutoOpenViewer ? null : (options.highlightPath ?? null),
+            returnFolderPath: options.returnFolderPath ?? null,
+            returnSearchQuery: options.returnSearchQuery ?? null,
+            pendingSearchQuery: options.searchQuery ?? null
+          }
+        })
       } catch {
         updateTab(tabId, (tab) => ({
           ...tab,

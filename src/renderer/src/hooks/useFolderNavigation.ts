@@ -117,6 +117,20 @@ export function useFolderNavigation({
     [tabs, browseFolder]
   )
 
+  const handleGoBack = useCallback(
+    async (tabId: string) => {
+      const tab = tabs.find((item) => item.id === tabId)
+      const entry = tab?.history[tab.history.length - 1]
+      if (!tab || !entry) return
+      await browseFolder(tabId, entry.folderPath, entry.rootFolderPath, {
+        replaceRoot: true,
+        highlightPath: tab.collection?.path,
+        historyMode: 'back'
+      })
+    },
+    [tabs, browseFolder]
+  )
+
   const handleSelectImage = useCallback(
     (tabId: string, index: number) => {
       updateTab(tabId, (tab) => ({
@@ -149,7 +163,8 @@ export function useFolderNavigation({
         if (targetFolder) {
           await browseFolder(tabId, targetFolder, tab.rootFolderPath, {
             highlightPath: tab.collection?.path,
-            searchQuery: tab.returnSearchQuery ?? undefined
+            searchQuery: tab.returnSearchQuery ?? undefined,
+            historyMode: 'back'
           })
           return
         }
@@ -258,7 +273,9 @@ export function useFolderNavigation({
           highlightPath:
             tab.highlightPath && isSameOrChildPath(tab.highlightPath, path)
               ? null
-              : tab.highlightPath
+              : tab.highlightPath,
+          // "←" must not lead back into the deleted folder.
+          history: tab.history.filter((entry) => !isSameOrChildPath(entry.folderPath, path))
         }
       })
       return true
@@ -276,6 +293,7 @@ export function useFolderNavigation({
     handleSelectZip,
     handleOpenZipInNewTab,
     handleGoUp,
+    handleGoBack,
     handleSelectImage,
     handleCloseViewer,
     handleNavigate,

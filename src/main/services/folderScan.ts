@@ -158,3 +158,61 @@ export async function searchSubfolders(
   results.sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true }))
   return results
 }
+
+// How many folder levels below the target findFolderPreviewImage descends
+// when the folder itself has no images, mirroring how Explorer still shows a
+// preview for folders that only hold image subfolders.
+const PREVIEW_SEARCH_DEPTH = 2
+
+// Returns the first image (by the same name ordering as scanFolder) to use as
+// the folder card's preview, falling back to the first image found in its
+// subfolders. Videos are skipped since they have no sharp thumbnail.
+export async function findFolderPreviewImage(
+  folderPath: string,
+  depth = PREVIEW_SEARCH_DEPTH
+): Promise<ImageFile | null> {
+  let entries
+  try {
+    entries = await readdir(folderPath, { withFileTypes: true })
+  } catch {
+    return null
+  }
+
+  const compareNames = (a: string, b: string): number =>
+    a.localeCompare(b, undefined, { numeric: true })
+
+  const imageNames = entries
+    .filter((entry) => entry.isFile() && isImageFile(entry.name))
+    .map((entry) => entry.name)
+    .sort(compareNames)
+
+  for (const name of imageNames) {
+    const filePath = join(folderPath, name)
+    try {
+      const fileStat = await stat(filePath)
+      return {
+        path: filePath,
+        name,
+        size: fileStat.size,
+        modified: fileStat.mtimeMs,
+        mediaType: 'image'
+      }
+    } catch {
+      // try the next image
+    }
+  }
+
+  if (depth <= 0) return null
+
+  const subfolderNames = entries
+    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+    .map((entry) => entry.name)
+    .sort(compareNames)
+
+  for (const name of subfolderNames) {
+    const found = await findFolderPreviewImage(join(folderPath, name), depth - 1)
+    if (found) return found
+  }
+
+  return null
+}

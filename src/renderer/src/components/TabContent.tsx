@@ -18,6 +18,7 @@ interface TabContentProps {
   onSelectZip: (zipFile: ZipArchive) => void
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
   onGoUp: () => void
+  onGoBack: () => void
   onRenameItem: (path: string, newName: string) => Promise<void>
   onSelectImage: (index: number) => void
   onCloseViewer: () => void
@@ -39,6 +40,7 @@ export function TabContent({
   onSelectZip,
   onOpenZipInNewTab,
   onGoUp,
+  onGoBack,
   onRenameItem,
   onSelectImage,
   onCloseViewer,
@@ -106,6 +108,8 @@ export function TabContent({
           onSelectZip={onSelectZip}
           onOpenZipInNewTab={onOpenZipInNewTab}
           onGoUp={onGoUp}
+          canGoBack={tab.history.length > 0}
+          onGoBack={onGoBack}
           onRenameItem={onRenameItem}
           onMoveToUnnecessary={onMoveToUnnecessary}
           onDeleteSubfolder={onDeleteSubfolder}

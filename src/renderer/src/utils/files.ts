@@ -33,3 +33,8 @@ export function replacePathPrefix(path: string, oldPrefix: string, newPrefix: st
   if (path === oldPrefix) return newPrefix
   return newPrefix + path.slice(oldPrefix.length)
 }
+
+export function isSamePath(a: string, b: string): boolean {
+  const normalize = (value: string): string => value.replace(/\\/g, '/').toLowerCase()
+  return normalize(a) === normalize(b)
+}

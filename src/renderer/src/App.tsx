@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { TabContent } from './components/TabContent'
@@ -127,30 +127,12 @@ export default function App(): JSX.Element {
     }
   }, [])
 
-  const [unnecessaryImagesFolder, setUnnecessaryImagesFolder] = useState<string | null>(null)
-
-  useEffect(() => {
-    void window.photoCollection.getUnnecessaryImagesFolder().then(setUnnecessaryImagesFolder)
-  }, [])
-
-  const handleChangeUnnecessaryImagesFolder = useCallback(async () => {
-    const folderPath = await window.photoCollection.openFolderDialog()
-    if (!folderPath) return
-    const updated = await window.photoCollection.setUnnecessaryImagesFolder(folderPath)
-    setUnnecessaryImagesFolder(updated)
-  }, [])
-
-  const handleResetUnnecessaryImagesFolder = useCallback(async () => {
-    const updated = await window.photoCollection.setUnnecessaryImagesFolder(null)
-    setUnnecessaryImagesFolder(updated)
-  }, [])
-
   const handleMoveToUnnecessary = useCallback(
     async (path: string) => {
       try {
         await navigation.handleMoveToUnnecessary(activeTab.id, path)
       } catch (error) {
-        window.alert(error instanceof Error ? error.message : '画像の移動に失敗しました')
+        window.alert(error instanceof Error ? error.message : '画像をごみ箱へ移動できませんでした')
       }
     },
     [navigation, activeTab.id]
@@ -182,9 +164,6 @@ export default function App(): JSX.Element {
         canFavorite={!!activeTab.rootFolderPath}
         onExportSettings={() => void handleExportSettings()}
         onImportSettings={() => void handleImportSettings()}
-        unnecessaryImagesFolder={unnecessaryImagesFolder}
-        onChangeUnnecessaryImagesFolder={() => void handleChangeUnnecessaryImagesFolder()}
-        onResetUnnecessaryImagesFolder={() => void handleResetUnnecessaryImagesFolder()}
       />
 
       <div className="main-area">
@@ -221,6 +200,7 @@ export default function App(): JSX.Element {
               void navigation.handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)
             }
             onGoUp={() => void navigation.handleGoUp(activeTab.id)}
+            onGoBack={() => void navigation.handleGoBack(activeTab.id)}
             onRenameItem={handleRenameItem}
             onSelectImage={handleSelectImage}
             onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}

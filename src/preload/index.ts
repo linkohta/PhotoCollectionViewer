@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type {
   FavoriteFolder,
   FolderCollection,
+  ImageFile,
   SessionData,
   SubfolderSearchResult,
   WarmupImageDescriptor
@@ -25,6 +26,8 @@ const api = {
     ipcRenderer.invoke('folder:scan', folderPath, rootPath),
   searchSubfolders: (folderPath: string, query: string): Promise<SubfolderSearchResult[]> =>
     ipcRenderer.invoke('folder:searchSubfolders', folderPath, query),
+  getFolderPreviewImage: (folderPath: string): Promise<ImageFile | null> =>
+    ipcRenderer.invoke('folder:previewImage', folderPath),
   extractZip: (zipPath: string): Promise<string> => ipcRenderer.invoke('zip:extract', zipPath),
   confirmExtractZip: (
     zipName: string,
@@ -61,12 +64,9 @@ const api = {
   // Resolves false when the user cancels the confirmation dialog.
   deleteFolder: (folderPath: string): Promise<boolean> =>
     ipcRenderer.invoke('fs:deleteFolder', folderPath),
-  moveToUnnecessary: (targetPath: string): Promise<string> =>
+  // Moves the file to the Recycle Bin.
+  moveToUnnecessary: (targetPath: string): Promise<void> =>
     ipcRenderer.invoke('fs:moveToUnnecessary', targetPath),
-  getUnnecessaryImagesFolder: (): Promise<string> =>
-    ipcRenderer.invoke('settings:getUnnecessaryImagesFolder'),
-  setUnnecessaryImagesFolder: (folderPath: string | null): Promise<string> =>
-    ipcRenderer.invoke('settings:setUnnecessaryImagesFolder', folderPath),
   setWarmupContext: (images: WarmupImageDescriptor[], maxSize: number): void =>
     ipcRenderer.send('warmup:setContext', images, maxSize),
   exportSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:export'),
