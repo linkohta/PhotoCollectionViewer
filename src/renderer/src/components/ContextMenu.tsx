@@ -79,7 +79,7 @@ export function ContextMenu({
             onClose()
           }}
         >
-          不要フォルダへ移動
+          ごみ箱へ移動
         </button>
       )}
     </div>
