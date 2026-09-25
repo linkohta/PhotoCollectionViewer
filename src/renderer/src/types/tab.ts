@@ -1,4 +1,4 @@
-import type { FolderCollection } from '../../../preload/index'
+import type { FolderCollection, TabKind, YouTubeSource, YouTubeVideo } from '../../../preload/index'
 
 export type ViewMode = 'grid' | 'viewer'
 
@@ -8,10 +8,29 @@ export interface TabSnapshot {
   currentFolderPath: string | null
   selectedIndex: number | null
   viewMode: ViewMode
+  kind?: TabKind
+  youtubeSource?: YouTubeSource | null
+}
+
+// Contents of a YouTube tab. Only `source` is saved in the session; the video
+// list is fetched again (lazily, when the tab is first shown) after restore.
+export interface YouTubeTabState {
+  source: YouTubeSource
+  videos: YouTubeVideo[]
+  nextPageToken: string | null
+  // Whether the first page has been fetched for the current source.
+  loaded: boolean
+  loadingMore: boolean
+  playingVideoId: string | null
+  // Highlighted in the grid after returning from the player.
+  lastPlayedVideoId: string | null
 }
 
 export interface TabState {
   id: string
+  kind: TabKind
+  // Set when kind is 'youtube', null for folder tabs.
+  youtube: YouTubeTabState | null
   title: string
   collection: FolderCollection | null
   rootFolderPath: string | null
@@ -45,6 +64,8 @@ export interface FolderHistoryEntry {
 export function createEmptyTab(): TabState {
   return {
     id: crypto.randomUUID(),
+    kind: 'folder',
+    youtube: null,
     title: '新しいタブ',
     collection: null,
     rootFolderPath: null,
@@ -73,7 +94,40 @@ export function getTabTitle(
   return '新しいタブ'
 }
 
+export function getYouTubeTabTitle(source: YouTubeSource): string {
+  return source.type === 'channel' ? source.title : `検索: ${source.query}`
+}
+
+export function createYouTubeTab(source: YouTubeSource): TabState {
+  return {
+    ...createEmptyTab(),
+    kind: 'youtube',
+    title: getYouTubeTabTitle(source),
+    youtube: {
+      source,
+      videos: [],
+      nextPageToken: null,
+      loaded: false,
+      loadingMore: false,
+      playingVideoId: null,
+      lastPlayedVideoId: null
+    }
+  }
+}
+
 export function tabToSnapshot(tab: TabState): TabSnapshot {
+  if (tab.kind === 'youtube' && tab.youtube) {
+    return {
+      title: tab.title,
+      rootFolderPath: null,
+      currentFolderPath: null,
+      selectedIndex: null,
+      viewMode: 'grid',
+      kind: 'youtube',
+      youtubeSource: tab.youtube.source
+    }
+  }
+
   return {
     title: tab.title,
     rootFolderPath: tab.rootFolderPath,
@@ -84,10 +138,15 @@ export function tabToSnapshot(tab: TabState): TabSnapshot {
 }
 
 export function hasRestorableContent(tab: TabState): boolean {
+  if (tab.kind === 'youtube') return tab.youtube !== null
   return tab.collection !== null || tab.rootFolderPath !== null
 }
 
 export async function restoreTabFromSnapshot(snapshot: TabSnapshot): Promise<TabState> {
+  if (snapshot.kind === 'youtube' && snapshot.youtubeSource) {
+    return createYouTubeTab(snapshot.youtubeSource)
+  }
+
   const tab = createEmptyTab()
   tab.title = snapshot.title
   tab.rootFolderPath = snapshot.rootFolderPath

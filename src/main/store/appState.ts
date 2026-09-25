@@ -2,7 +2,12 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { getAppRootFilePath, getLegacyAppRootDir } from './appRoot'
-import type { ConfirmationSettings } from '../../preload/types'
+import type {
+  ConfirmationSettings,
+  TabKind,
+  YouTubeChannel,
+  YouTubeSource
+} from '../../preload/types'
 
 const LEGACY_FAVORITES_FILE = 'favorites.json'
 const LEGACY_SESSION_FILE = 'session.json'
@@ -22,6 +27,8 @@ export interface TabSnapshot {
   currentFolderPath: string | null
   selectedIndex: number | null
   viewMode: ViewMode
+  kind?: TabKind
+  youtubeSource?: YouTubeSource | null
 }
 
 export interface SessionData {
@@ -38,11 +45,19 @@ export interface WindowState {
   isMaximized?: boolean
 }
 
+export interface YouTubeState {
+  // base64 of safeStorage.encryptString(apiKey). Machine/user-bound, so it is
+  // left out of exported settings files.
+  encryptedApiKey: string | null
+  channels: YouTubeChannel[]
+}
+
 export interface AppState {
   favorites: FavoriteFolder[]
   session: SessionData
   windowState: Partial<WindowState>
   confirmations: ConfirmationSettings
+  youtube: YouTubeState
 }
 
 const DEFAULT_CONFIRMATIONS: ConfirmationSettings = {
@@ -56,7 +71,8 @@ function defaultAppState(): AppState {
     favorites: [],
     session: { tabs: [], activeTabIndex: 0, closedTabs: [] },
     windowState: {},
-    confirmations: { ...DEFAULT_CONFIRMATIONS }
+    confirmations: { ...DEFAULT_CONFIRMATIONS },
+    youtube: { encryptedApiKey: null, channels: [] }
   }
 }
 
@@ -72,6 +88,26 @@ function normalizeConfirmations(value: unknown): ConfirmationSettings {
     extractZip: pick('extractZip'),
     deleteFolder: pick('deleteFolder'),
     importSettings: pick('importSettings')
+  }
+}
+
+function isYouTubeChannel(value: unknown): value is YouTubeChannel {
+  if (typeof value !== 'object' || value === null) return false
+  const channel = value as Record<string, unknown>
+  return typeof channel['id'] === 'string' && typeof channel['title'] === 'string'
+}
+
+function normalizeYouTube(value: unknown): YouTubeState {
+  const data = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
+  const channels = Array.isArray(data['channels']) ? data['channels'] : []
+  return {
+    encryptedApiKey: typeof data['encryptedApiKey'] === 'string' ? data['encryptedApiKey'] : null,
+    channels: channels.filter(isYouTubeChannel).map((channel) => ({
+      id: channel.id,
+      title: channel.title,
+      thumbnailUrl: typeof channel.thumbnailUrl === 'string' ? channel.thumbnailUrl : null,
+      addedAt: typeof channel.addedAt === 'number' ? channel.addedAt : 0
+    }))
   }
 }
 
@@ -92,7 +128,8 @@ function readAppState(): AppState {
       favorites: Array.isArray(data.favorites) ? data.favorites : [],
       session: data.session ?? defaultAppState().session,
       windowState: data.windowState ?? {},
-      confirmations: normalizeConfirmations(data.confirmations)
+      confirmations: normalizeConfirmations(data.confirmations),
+      youtube: normalizeYouTube(data.youtube)
     }
   } catch {
     return defaultAppState()
@@ -105,7 +142,8 @@ function writeAppState(state: AppState): void {
 
 export function exportAppState(destPath: string): void {
   const state = readAppState()
-  writeFileSync(destPath, JSON.stringify(state, null, 2), 'utf-8')
+  const exported: AppState = { ...state, youtube: { ...state.youtube, encryptedApiKey: null } }
+  writeFileSync(destPath, JSON.stringify(exported, null, 2), 'utf-8')
 }
 
 export function importAppState(srcPath: string): AppState {
@@ -115,7 +153,13 @@ export function importAppState(srcPath: string): AppState {
     favorites: Array.isArray(data.favorites) ? data.favorites : [],
     session: data.session ?? defaultAppState().session,
     windowState: data.windowState ?? {},
-    confirmations: normalizeConfirmations(data.confirmations)
+    confirmations: normalizeConfirmations(data.confirmations),
+    // The encrypted API key only decrypts on the machine that stored it, so
+    // keep this machine's key and take just the channel list from the file.
+    youtube: {
+      encryptedApiKey: readAppState().youtube.encryptedApiKey,
+      channels: normalizeYouTube(data.youtube).channels
+    }
   }
   writeAppState(state)
   return state

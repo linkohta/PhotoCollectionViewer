@@ -33,6 +33,9 @@ export function useBrowseFolder({ updateTab }: UseBrowseFolderArgs): BrowseFolde
     async (tabId, folderPath, rootPath, options = {}) => {
       updateTab(tabId, (tab) => ({
         ...tab,
+        // Opening a folder in a YouTube tab turns it into a folder tab.
+        kind: 'folder',
+        youtube: null,
         loading: true,
         error: null,
         selectedIndex: null,

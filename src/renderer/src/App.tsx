@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { Sidebar } from './components/Sidebar'
 import { TabBar } from './components/TabBar'
 import { TabContent } from './components/TabContent'
+import { YouTubeTabContent } from './components/YouTubeTabContent'
 import { clearImagePreloadCache } from './utils/imagePreload'
 import { installViewerKeyboardListener } from './utils/viewerKeyboard'
 import { useTabs } from './hooks/useTabs'
@@ -9,6 +10,9 @@ import { useSessionPersistence } from './hooks/useSessionPersistence'
 import { useFavorites } from './hooks/useFavorites'
 import { useFolderNavigation } from './hooks/useFolderNavigation'
 import { useConfirmationSettings } from './hooks/useConfirmationSettings'
+import { useYouTubeSettings } from './hooks/useYouTubeSettings'
+import { useYouTubeNavigation } from './hooks/useYouTubeNavigation'
+import type { YouTubeSource } from '../../preload/index'
 import './styles/App.css'
 
 export default function App(): JSX.Element {
@@ -40,6 +44,10 @@ export default function App(): JSX.Element {
   const { favorites, toggleFavorite, refreshFavorites } = useFavorites()
   const navigation = useFolderNavigation({ tabs, activeTabId, updateTab, addTab })
   const { confirmations, setConfirmation } = useConfirmationSettings()
+  const { youtubeSettings, saveApiKey, clearApiKey, addChannel, removeChannel } =
+    useYouTubeSettings()
+  const youtubeNavigation = useYouTubeNavigation({ tabs, activeTabId, updateTab, addTab })
+  const activeYouTube = activeTab.kind === 'youtube' ? activeTab.youtube : null
 
   const handleRenameItem = useCallback(
     async (path: string, newName: string) => {
@@ -129,6 +137,18 @@ export default function App(): JSX.Element {
     }
   }, [])
 
+  const handleOpenYouTube = useCallback(
+    (source: YouTubeSource, newTab: boolean) => {
+      clearImagePreloadCache()
+      youtubeNavigation.openSource(source, { newTab })
+    },
+    [youtubeNavigation]
+  )
+
+  const handleLoadYouTubeFirstPage = useCallback(() => {
+    if (activeYouTube) void youtubeNavigation.loadFirstPage(activeTab.id, activeYouTube.source)
+  }, [youtubeNavigation, activeTab.id, activeYouTube])
+
   const handleMoveToUnnecessary = useCallback(
     async (path: string) => {
       try {
@@ -168,6 +188,15 @@ export default function App(): JSX.Element {
         onImportSettings={() => void handleImportSettings()}
         confirmations={confirmations}
         onChangeConfirmation={(kind, enabled) => void setConfirmation(kind, enabled)}
+        youtubeSettings={youtubeSettings}
+        activeYouTubeChannelId={
+          activeYouTube?.source.type === 'channel' ? activeYouTube.source.channelId : null
+        }
+        onOpenYouTube={handleOpenYouTube}
+        onAddYouTubeChannel={addChannel}
+        onRemoveYouTubeChannel={(channelId) => void removeChannel(channelId)}
+        onSaveYouTubeApiKey={saveApiKey}
+        onClearYouTubeApiKey={clearApiKey}
       />
 
       <div className="main-area">
@@ -183,36 +212,48 @@ export default function App(): JSX.Element {
         />
 
         <main ref={mainRef} className="main-content" tabIndex={-1}>
-          <TabContent
-            key={activeTab.id}
-            tab={activeTab}
-            favorites={favorites}
-            onOpenDialog={navigation.handleOpenDialog}
-            onOpenFolder={navigation.openFolderInActiveTab}
-            onSelectSubfolder={(path, searchOrigin) =>
-              void navigation.handleSelectSubfolder(activeTab.id, path, searchOrigin)
-            }
-            onConsumePendingSearchQuery={() =>
-              updateTab(activeTab.id, (tab) => ({ ...tab, pendingSearchQuery: null }))
-            }
-            onOpenSubfolderInNewTab={(path) =>
-              void navigation.handleOpenSubfolderInNewTab(path, activeTab.rootFolderPath)
-            }
-            onHighlightChange={handleHighlightChange}
-            onSelectZip={(zipFile) => void navigation.handleSelectZip(activeTab.id, zipFile)}
-            onOpenZipInNewTab={(zipFile) =>
-              void navigation.handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)
-            }
-            onGoUp={() => void navigation.handleGoUp(activeTab.id)}
-            onGoBack={() => void navigation.handleGoBack(activeTab.id)}
-            onRenameItem={handleRenameItem}
-            onSelectImage={handleSelectImage}
-            onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}
-            onNavigate={(direction) => navigation.handleNavigate(activeTab.id, direction)}
-            onMoveToUnnecessary={(path) => void handleMoveToUnnecessary(path)}
-            onDeleteSubfolder={handleDeleteSubfolder}
-            onRefreshFolder={() => void navigation.handleRefreshFolder(activeTab.id)}
-          />
+          {activeYouTube ? (
+            <YouTubeTabContent
+              key={activeTab.id}
+              tab={{ ...activeTab, youtube: activeYouTube }}
+              onLoadFirstPage={handleLoadYouTubeFirstPage}
+              onLoadMore={() => void youtubeNavigation.loadMore(activeTab.id)}
+              onReload={() => youtubeNavigation.reload(activeTab.id)}
+              onPlay={(videoId) => youtubeNavigation.setPlayingVideo(activeTab.id, videoId)}
+              onClosePlayer={() => youtubeNavigation.setPlayingVideo(activeTab.id, null)}
+            />
+          ) : (
+            <TabContent
+              key={activeTab.id}
+              tab={activeTab}
+              favorites={favorites}
+              onOpenDialog={navigation.handleOpenDialog}
+              onOpenFolder={navigation.openFolderInActiveTab}
+              onSelectSubfolder={(path, searchOrigin) =>
+                void navigation.handleSelectSubfolder(activeTab.id, path, searchOrigin)
+              }
+              onConsumePendingSearchQuery={() =>
+                updateTab(activeTab.id, (tab) => ({ ...tab, pendingSearchQuery: null }))
+              }
+              onOpenSubfolderInNewTab={(path) =>
+                void navigation.handleOpenSubfolderInNewTab(path, activeTab.rootFolderPath)
+              }
+              onHighlightChange={handleHighlightChange}
+              onSelectZip={(zipFile) => void navigation.handleSelectZip(activeTab.id, zipFile)}
+              onOpenZipInNewTab={(zipFile) =>
+                void navigation.handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)
+              }
+              onGoUp={() => void navigation.handleGoUp(activeTab.id)}
+              onGoBack={() => void navigation.handleGoBack(activeTab.id)}
+              onRenameItem={handleRenameItem}
+              onSelectImage={handleSelectImage}
+              onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}
+              onNavigate={(direction) => navigation.handleNavigate(activeTab.id, direction)}
+              onMoveToUnnecessary={(path) => void handleMoveToUnnecessary(path)}
+              onDeleteSubfolder={handleDeleteSubfolder}
+              onRefreshFolder={() => void navigation.handleRefreshFolder(activeTab.id)}
+            />
+          )}
         </main>
       </div>
     </div>

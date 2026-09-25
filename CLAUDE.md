@@ -35,6 +35,7 @@ npx tsc --noEmit -p tsconfig.web.json   # 型チェック: レンダラー（src
 - **ZIPファイル**: 一覧表示、クリックで確認ダイアログ→解凍（同名フォルダは平坦化、パストラバーサル対策あり）、解凍済みなら再解凍せず開く
 - **タブ管理**: 追加・削除・切り替え・ドラッグ&ドロップ並び替え、閉じたタブの復元（`Ctrl+Shift+T`、最大25件）
 - **お気に入りフォルダ**: 登録・左クリックでアクティブタブに開く・右クリックで新規タブ
+- **YouTube 連携**: YouTube Data API v3 で登録チャンネルの動画・配信一覧／キーワード検索結果をグリッド表示し、公式埋め込みプレーヤー（`youtube-nocookie.com` の iframe）で再生する。動画ファイルの取得（ダウンロード）は規約上行わない。API キーは `safeStorage` で暗号化して保存し、main プロセスの外には出さない（エクスポートにも含めない）。本番は `file://` 起点のため、埋め込みページへのリクエストに `Referer` を付与している（無いと再生エラー153）
 - **設定の永続化**: `app-state.json`（`session` / `windowState` / `favorites`）を Electron の `userData` フォルダに保存（開発時はプロジェクトルート）。**実行ファイルと同じインストールディレクトリには保存しない**——アップデートインストールで設定が消える不具合が過去にあったため。旧バージョンの保存先からは初回起動時に自動移行する。
 - **設定のインポート/エクスポート**: サイドバーから `app-state.json` の内容をファイルとして書き出し/取り込みできる。インポート後は反映のためウィンドウを再読み込みする（`app.relaunch()` は electron-vite の開発時プロセス管理と衝突して失敗するため使わない）。
 
@@ -47,13 +48,13 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - `src/main/` — メインプロセス（Node.js）
   - `index.ts` — エントリポイント。`local-file://` カスタムプロトコル（`fs.readFile` で画像を返す。Windowsのドライブレター絡みの URL 正規化の癖に注意 — コード内コメント参照）、ウィンドウ生成、起動時の設定移行呼び出し
   - `ipc/handlers.ts` — `ipcMain.handle` の配線のみ。実処理は `services/` や `store/` に委譲する
-  - `services/` — IPCハンドラーから呼ばれる実処理本体。`folderScan.ts`（フォルダ・ZIP・画像の一覧取得）、`imageDataUrl.ts`（sharp/nativeImageによる画像データURL生成）、`renamePath.ts`（ファイル・フォルダのリネーム、お気に入りパス追従）
-  - `store/` — 永続化層。`appRoot.ts`（保存先ディレクトリの解決）、`appState.ts`（`app-state.json` の読み書き・レガシー移行・インポート/エクスポート）、`favorites.ts` / `session.ts` / `windowState.ts`（`appState.ts` 経由の薄いラッパー）、`thumbnailCache.ts`（サムネイルディスクキャッシュ）、`warmup.ts`（フォーカス復帰時のキャッシュ再ウォームアップ）
+  - `services/` — IPCハンドラーから呼ばれる実処理本体。`folderScan.ts`（フォルダ・ZIP・画像の一覧取得）、`imageDataUrl.ts`（sharp/nativeImageによる画像データURL生成）、`renamePath.ts`（ファイル・フォルダのリネーム、お気に入りパス追従）、`youtubeApi.ts`（YouTube Data API 呼び出し。クォータ節約のためチャンネル一覧は `search` ではなくアップロード再生リスト＋`videos.list` を使う）、`youtubeEmbed.ts`（埋め込みプレーヤー用の Referer 付与）
+  - `store/` — 永続化層。`appRoot.ts`（保存先ディレクトリの解決）、`appState.ts`（`app-state.json` の読み書き・レガシー移行・インポート/エクスポート）、`favorites.ts` / `session.ts` / `windowState.ts` / `youtube.ts`（`appState.ts` 経由の薄いラッパー。`youtube.ts` は API キーの暗号化も担当）、`thumbnailCache.ts`（サムネイルディスクキャッシュ）、`warmup.ts`（フォーカス復帰時のキャッシュ再ウォームアップ）
   - `utils/zipArchive.ts` — ZIP 展開ロジック
 - `src/preload/index.ts` — `contextBridge` で `window.photoCollection` API を公開。ここに定義された型（`ImageFile`, `FavoriteFolder` 等）がレンダラー側の型のソースになっている
 - `src/renderer/src/` — React + TypeScript の UI
   - `App.tsx` — トップレベルのタブ状態管理とハンドラーの合成
-  - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useProgressiveImageSource` 等）。**コンポーネントは表示、hooksがロジック**という分担
+  - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useProgressiveImageSource`, `useYouTubeSettings`, `useYouTubeNavigation` 等）。タブは `types/tab.ts` の `kind`（`'folder' | 'youtube'`）で種類を区別し、App.tsx で `TabContent` / `YouTubeTabContent` を出し分ける。**コンポーネントは表示、hooksがロジック**という分担
   - `components/` — 表示コンポーネント（`Sidebar`, `TabBar`, `TabContent`, `ThumbnailGrid`, `ImageViewer`, `ContextMenu` 等）
 
 プロセス間のデータフローは常に「renderer → `window.photoCollection.xxx()`（preload） → `ipcMain.handle`（main） → `store/` or `utils/`」の一方向。新しい機能を追加する際は、この3層（preload型定義 / IPCハンドラー / storeまたはutils本体）を揃えて実装すること。

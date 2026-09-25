@@ -8,6 +8,7 @@ interface ContextMenuProps {
   onRename?: () => void
   onMoveToUnnecessary?: () => void
   onDelete?: () => void
+  deleteLabel?: string
   onClose: () => void
 }
 
@@ -19,6 +20,7 @@ export function ContextMenu({
   onRename,
   onMoveToUnnecessary,
   onDelete,
+  deleteLabel = '削除',
   onClose
 }: ContextMenuProps): JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null)
@@ -93,7 +95,7 @@ export function ContextMenu({
             onClose()
           }}
         >
-          削除
+          {deleteLabel}
         </button>
       )}
     </div>

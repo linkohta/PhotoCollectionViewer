@@ -7,6 +7,7 @@ import { registerIpcHandlers } from './ipc/handlers'
 import { getWindowState, trackWindowState } from './store/windowState'
 import { migrateLegacyStoreFiles } from './store/appState'
 import { clearWarmupContext, startPeriodicWarmup, warmupWindow } from './store/warmup'
+import { installYouTubeEmbedReferer } from './services/youtubeEmbed'
 
 // Must run before app.whenReady() - Chromium resolves the userData path (and
 // with it, where the GPU shader disk cache lives) from the app name during
@@ -156,6 +157,7 @@ app.whenReady().then(() => {
   })
 
   migrateLegacyStoreFiles()
+  installYouTubeEmbedReferer()
   registerIpcHandlers()
   createWindow()
 

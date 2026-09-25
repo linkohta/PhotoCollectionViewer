@@ -41,12 +41,17 @@ export interface FavoriteFolder {
   addedAt: number
 }
 
+export type TabKind = 'folder' | 'youtube'
+
 export interface TabSnapshot {
   title: string
   rootFolderPath: string | null
   currentFolderPath: string | null
   selectedIndex: number | null
   viewMode: 'grid' | 'viewer'
+  // Missing in sessions saved before YouTube tabs existed - treated as 'folder'.
+  kind?: TabKind
+  youtubeSource?: YouTubeSource | null
 }
 
 export interface SessionData {
@@ -70,3 +75,40 @@ export interface WarmupImageDescriptor {
   modified: number
   size: number
 }
+
+export interface YouTubeChannel {
+  id: string
+  title: string
+  thumbnailUrl: string | null
+  addedAt: number
+}
+
+export type YouTubeLiveStatus = 'none' | 'live' | 'upcoming'
+
+export interface YouTubeVideo {
+  id: string
+  title: string
+  channelId: string
+  channelTitle: string
+  thumbnailUrl: string | null
+  publishedAt: string
+  durationSeconds: number | null
+  liveStatus: YouTubeLiveStatus
+  scheduledStartTime: string | null
+}
+
+export interface YouTubeVideoPage {
+  videos: YouTubeVideo[]
+  nextPageToken: string | null
+}
+
+// The API key itself never leaves the main process - the renderer only
+// learns whether one is stored.
+export interface YouTubeSettings {
+  hasApiKey: boolean
+  channels: YouTubeChannel[]
+}
+
+// What a YouTube tab lists: a registered channel's uploads or a keyword search.
+export type YouTubeSource =
+  { type: 'channel'; channelId: string; title: string } | { type: 'search'; query: string }

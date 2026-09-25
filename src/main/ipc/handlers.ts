@@ -16,6 +16,14 @@ import { confirmAndDeleteFolder } from '../services/deleteFolder'
 import { moveToUnnecessary } from '../services/moveToUnnecessary'
 import { confirmExtractZip } from '../services/zipDialogs'
 import { exportSettingsViaDialog, importSettingsViaDialog } from '../services/settingsDialogs'
+import {
+  getYouTubeSettings,
+  setApiKey,
+  clearApiKey,
+  addChannel,
+  removeChannel
+} from '../store/youtube'
+import { resolveChannel, listChannelVideos, searchVideos } from '../services/youtubeApi'
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('dialog:openFolder', async () => {
@@ -122,5 +130,36 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('settings:import', async () => {
     return importSettingsViaDialog()
+  })
+
+  ipcMain.handle('youtube:getSettings', async () => {
+    return getYouTubeSettings()
+  })
+
+  ipcMain.handle('youtube:setApiKey', async (_event, apiKey: string) => {
+    return setApiKey(apiKey)
+  })
+
+  ipcMain.handle('youtube:clearApiKey', async () => {
+    return clearApiKey()
+  })
+
+  ipcMain.handle('youtube:addChannel', async (_event, input: string) => {
+    return addChannel(await resolveChannel(input))
+  })
+
+  ipcMain.handle('youtube:removeChannel', async (_event, channelId: string) => {
+    return removeChannel(channelId)
+  })
+
+  ipcMain.handle(
+    'youtube:listChannelVideos',
+    async (_event, channelId: string, pageToken?: string) => {
+      return listChannelVideos(channelId, pageToken)
+    }
+  )
+
+  ipcMain.handle('youtube:search', async (_event, query: string, pageToken?: string) => {
+    return searchVideos(query, pageToken)
   })
 }

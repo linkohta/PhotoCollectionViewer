@@ -1,6 +1,14 @@
 import { useState } from 'react'
-import type { ConfirmationKind, ConfirmationSettings, FavoriteFolder } from '../../../preload/index'
+import type {
+  ConfirmationKind,
+  ConfirmationSettings,
+  FavoriteFolder,
+  YouTubeSettings,
+  YouTubeSource
+} from '../../../preload/index'
 import { ContextMenu } from './ContextMenu'
+import { SidebarYouTubeSection } from './SidebarYouTubeSection'
+import { YouTubeApiKeyDialog } from './YouTubeApiKeyDialog'
 
 interface SidebarProps {
   favorites: FavoriteFolder[]
@@ -16,6 +24,13 @@ interface SidebarProps {
   onImportSettings: () => void
   confirmations: ConfirmationSettings | null
   onChangeConfirmation: (kind: ConfirmationKind, enabled: boolean) => void
+  youtubeSettings: YouTubeSettings
+  activeYouTubeChannelId: string | null
+  onOpenYouTube: (source: YouTubeSource, newTab: boolean) => void
+  onAddYouTubeChannel: (input: string) => Promise<void>
+  onRemoveYouTubeChannel: (channelId: string) => void
+  onSaveYouTubeApiKey: (apiKey: string) => Promise<void>
+  onClearYouTubeApiKey: () => Promise<void>
 }
 
 const CONFIRMATION_LABELS: Record<ConfirmationKind, string> = {
@@ -44,9 +59,17 @@ export function Sidebar({
   onExportSettings,
   onImportSettings,
   confirmations,
-  onChangeConfirmation
+  onChangeConfirmation,
+  youtubeSettings,
+  activeYouTubeChannelId,
+  onOpenYouTube,
+  onAddYouTubeChannel,
+  onRemoveYouTubeChannel,
+  onSaveYouTubeApiKey,
+  onClearYouTubeApiKey
 }: SidebarProps): JSX.Element {
   const [favoriteMenu, setFavoriteMenu] = useState<FavoriteMenuState | null>(null)
+  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false)
 
   return (
     <>
@@ -110,6 +133,15 @@ export function Sidebar({
           )}
         </div>
 
+        <SidebarYouTubeSection
+          settings={youtubeSettings}
+          activeChannelId={activeYouTubeChannelId}
+          onOpen={onOpenYouTube}
+          onAddChannel={onAddYouTubeChannel}
+          onRemoveChannel={onRemoveYouTubeChannel}
+          onOpenApiKeyDialog={() => setApiKeyDialogOpen(true)}
+        />
+
         {currentFolder && (
           <div className="sidebar-section current-path">
             <h2 className="section-title">現在のコレクション</h2>
@@ -135,6 +167,13 @@ export function Sidebar({
           >
             設定をインポート
           </button>
+          <button
+            type="button"
+            className="btn full-width sidebar-secondary"
+            onClick={() => setApiKeyDialogOpen(true)}
+          >
+            YouTube APIキー設定
+          </button>
           {confirmations && (
             <div className="confirmation-options">
               {(Object.keys(CONFIRMATION_LABELS) as ConfirmationKind[]).map((kind) => (
@@ -159,6 +198,15 @@ export function Sidebar({
           label={favoriteMenu.name}
           onOpenInNewTab={() => onOpenFolderInNewTab(favoriteMenu.path)}
           onClose={() => setFavoriteMenu(null)}
+        />
+      )}
+
+      {apiKeyDialogOpen && (
+        <YouTubeApiKeyDialog
+          hasApiKey={youtubeSettings.hasApiKey}
+          onSave={onSaveYouTubeApiKey}
+          onClear={onClearYouTubeApiKey}
+          onClose={() => setApiKeyDialogOpen(false)}
         />
       )}
     </>

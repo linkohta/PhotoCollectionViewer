@@ -7,7 +7,9 @@ import type {
   ImageFile,
   SessionData,
   SubfolderSearchResult,
-  WarmupImageDescriptor
+  WarmupImageDescriptor,
+  YouTubeSettings,
+  YouTubeVideoPage
 } from './types'
 
 export type {
@@ -21,7 +23,14 @@ export type {
   FavoriteFolder,
   TabSnapshot,
   SessionData,
-  WarmupImageDescriptor
+  TabKind,
+  WarmupImageDescriptor,
+  YouTubeChannel,
+  YouTubeLiveStatus,
+  YouTubeVideo,
+  YouTubeVideoPage,
+  YouTubeSettings,
+  YouTubeSource
 } from './types'
 
 const api = {
@@ -88,7 +97,20 @@ const api = {
     }
   },
   exportSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:export'),
-  importSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:import')
+  importSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:import'),
+  getYouTubeSettings: (): Promise<YouTubeSettings> => ipcRenderer.invoke('youtube:getSettings'),
+  setYouTubeApiKey: (apiKey: string): Promise<YouTubeSettings> =>
+    ipcRenderer.invoke('youtube:setApiKey', apiKey),
+  clearYouTubeApiKey: (): Promise<YouTubeSettings> => ipcRenderer.invoke('youtube:clearApiKey'),
+  // `input` is a channel URL, @handle or channel ID; resolved via the API.
+  addYouTubeChannel: (input: string): Promise<YouTubeSettings> =>
+    ipcRenderer.invoke('youtube:addChannel', input),
+  removeYouTubeChannel: (channelId: string): Promise<YouTubeSettings> =>
+    ipcRenderer.invoke('youtube:removeChannel', channelId),
+  listYouTubeChannelVideos: (channelId: string, pageToken?: string): Promise<YouTubeVideoPage> =>
+    ipcRenderer.invoke('youtube:listChannelVideos', channelId, pageToken),
+  searchYouTube: (query: string, pageToken?: string): Promise<YouTubeVideoPage> =>
+    ipcRenderer.invoke('youtube:search', query, pageToken)
 }
 
 contextBridge.exposeInMainWorld('photoCollection', api)
