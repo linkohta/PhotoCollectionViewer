@@ -77,6 +77,7 @@
 ```bash
 npm install
 npm run dev
+npm run check   # lint・フォーマット・型チェック・テストをまとめて実行
 ```
 
 ## ビルド
