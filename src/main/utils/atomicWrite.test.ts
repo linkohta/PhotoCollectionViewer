@@ -4,6 +4,24 @@ import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { retrySync, writeFileAtomicSync } from './atomicWrite'
 
+// Error codes the next renameSync calls fail with, the way Windows sometimes
+// does; once the list is empty the real renameSync runs again.
+const renameFailures = vi.hoisted(() => [] as string[])
+
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>()
+  return {
+    ...actual,
+    renameSync: (from: string, to: string): void => {
+      const code = renameFailures.shift()
+      if (code === undefined) return actual.renameSync(from, to)
+      // ENOENT stands for the temporary file being gone before the rename.
+      if (code === 'ENOENT') actual.rmSync(from, { force: true })
+      throw Object.assign(new Error(code), { code })
+    }
+  }
+})
+
 let workDir: string
 
 beforeEach(() => {
@@ -12,6 +30,7 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(workDir, { recursive: true, force: true })
+  renameFailures.length = 0
 })
 
 const errorWithCode = (code: string): NodeJS.ErrnoException =>
@@ -41,6 +60,37 @@ describe('writeFileAtomicSync', () => {
     mkdirSync(targetPath)
 
     expect(() => writeFileAtomicSync(targetPath, 'new')).toThrow()
+    expect(readdirSync(workDir)).toEqual(['state.json'])
+  })
+
+  it('writes the temporary file again when it is gone before the rename', () => {
+    const filePath = join(workDir, 'state.json')
+    renameFailures.push('ENOENT')
+
+    writeFileAtomicSync(filePath, 'new')
+
+    expect(readFileSync(filePath, 'utf-8')).toBe('new')
+    expect(readdirSync(workDir)).toEqual(['state.json'])
+  })
+
+  it('retries while another process briefly holds the target open', () => {
+    const filePath = join(workDir, 'state.json')
+    writeFileSync(filePath, 'old')
+    renameFailures.push('EPERM', 'EBUSY')
+
+    writeFileAtomicSync(filePath, 'new')
+
+    expect(readFileSync(filePath, 'utf-8')).toBe('new')
+    expect(readdirSync(workDir)).toEqual(['state.json'])
+  })
+
+  it('gives up after a few attempts, keeping the old contents and no temporary file', () => {
+    const filePath = join(workDir, 'state.json')
+    writeFileSync(filePath, 'old')
+    renameFailures.push(...Array<string>(10).fill('EBUSY'))
+
+    expect(() => writeFileAtomicSync(filePath, 'new')).toThrow('EBUSY')
+    expect(readFileSync(filePath, 'utf-8')).toBe('old')
     expect(readdirSync(workDir)).toEqual(['state.json'])
   })
 })
