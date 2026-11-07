@@ -1,0 +1,49 @@
+/* App shell: overall layout and tab panels, plus the tab bar's restore button (kept here so the rule order stays the same). */
+.app {
+  display: flex;
+  height: 100%;
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #121212;
+  min-height: 0;
+  outline: none;
+}
+
+.tab-content {
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-panel {
+  height: 100%;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.tab-restore {
+  padding: 0 12px;
+  border-left: 1px solid #333;
+  border-radius: 0;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tab-restore:disabled {
+  opacity: 0.35;
+}

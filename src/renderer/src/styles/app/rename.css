@@ -1,0 +1,29 @@
+/* RenameInput, and cards while they are being renamed */
+.rename-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rename-input {
+  width: 100%;
+  padding: 2px 4px;
+  font-size: 12px;
+  background: #111;
+  color: #fff;
+  border: 1px solid #5a8cff;
+  border-radius: 4px;
+}
+
+.rename-input-error {
+  font-size: 11px;
+  color: #ff6b6b;
+  white-space: normal;
+  word-break: break-all;
+}
+
+.subfolder-card.renaming,
+.thumbnail-card.renaming {
+  cursor: default;
+}

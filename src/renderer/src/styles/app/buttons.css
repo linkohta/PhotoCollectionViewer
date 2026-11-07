@@ -1,0 +1,53 @@
+/* Shared .btn styles, plus the sidebar's favorite toggle */
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #333;
+  color: #e8e8e8;
+  transition: background 0.15s;
+  font-size: 13px;
+}
+
+.btn:hover:not(:disabled) {
+  background: #444;
+}
+
+.btn.primary {
+  background: #4a6cf7;
+  color: #fff;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: #5a7cff;
+}
+
+.btn.full-width {
+  width: 100%;
+}
+
+.btn.active {
+  background: #4a6cf7;
+  color: #fff;
+}
+
+.btn.danger {
+  background: #7a2b2b;
+  color: #fff;
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: #9c3838;
+}
+
+.favorite-toggle {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #2a2a2a;
+  text-align: center;
+}
+
+.favorite-toggle.active {
+  background: #3d3520;
+  color: #ffd700;
+}
