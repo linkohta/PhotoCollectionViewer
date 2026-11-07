@@ -78,6 +78,7 @@
 npm install
 npm run dev
 npm run check   # lint・フォーマット・型チェック・テストをまとめて実行
+npm run test:e2e   # 実際のアプリを起動して画面の操作を確認（E2E）
 ```
 
 ## ビルド

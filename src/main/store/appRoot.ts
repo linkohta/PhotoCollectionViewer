@@ -3,7 +3,10 @@ import { dirname, join } from 'path'
 import { app } from 'electron'
 
 export function getAppRootDir(): string {
-  if (app.isPackaged) {
+  // In development app-state.json sits in the project root, except during E2E
+  // runs, which point userData at a throwaway profile (PCV_USER_DATA_DIR, see
+  // main/index.ts) and keep the settings there too.
+  if (app.isPackaged || process.env['PCV_USER_DATA_DIR']) {
     return app.getPath('userData')
   }
 

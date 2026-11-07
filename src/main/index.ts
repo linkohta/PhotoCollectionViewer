@@ -14,6 +14,15 @@ import { clearWarmupContext, startPeriodicWarmup, warmupWindow } from './store/w
 // name late doesn't retroactively fix a cache path Chromium already picked.
 app.setName('PhotoCollectionViewer')
 
+// The E2E tests (e2e/) run the built app against a throwaway profile, so they
+// never touch the developer's settings or thumbnail cache. Like setName this
+// has to happen before Chromium picks the userData path. Packaged builds
+// ignore it.
+const e2eUserDataDir = process.env['PCV_USER_DATA_DIR']
+if (e2eUserDataDir && !app.isPackaged) {
+  app.setPath('userData', e2eUserDataDir)
+}
+
 // Silences a benign but noisy Windows warning ("Unable to create cache" /
 // "Gpu Cache Creation failed: -2") that shows up when electron-vite's dev
 // hot-reload restarts the main process while a previous instance still holds
