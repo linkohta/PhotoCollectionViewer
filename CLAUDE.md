@@ -12,16 +12,20 @@ npm run build:vite    # electron-vite build のみ（ビルド成果物の確認
 npm run preview / npm start  # electron-vite preview（ビルド後のプレビュー起動）
 ```
 
-コミット前に通すチェック（詳細は下記「開発ルール」参照。テスト（Vitest等）は未整備）:
+コミット前に通すチェック（詳細は下記「開発ルール」「テスト」参照）:
 
 ```bash
+npm run check       # lint・format:check・typecheck・test をまとめて実行（コミット前はこれを通す）
 npm run lint        # ESLint（警告0件が必須。--max-warnings=0）
 npm run lint:fix     # ESLint の自動修正
 npm run format       # Prettier で全体を整形
 npm run format:check   # Prettier のフォーマットチェックのみ（書き換えなし）
-npx tsc --noEmit -p tsconfig.node.json  # 型チェック: メインプロセス（src/main, src/preload）
-npx tsc --noEmit -p tsconfig.web.json   # 型チェック: レンダラー（src/renderer）
+npm run typecheck     # 型チェック（tsconfig.node.json: src/main・src/preload / tsconfig.web.json: src/renderer）
+npm run test        # Vitest を1回実行
+npm run test:watch    # Vitest をウォッチモードで実行
 ```
+
+CI（`.github/workflows/ci.yml`、windows-latest）が PR と `master` への push ごとに lint・format:check・typecheck・test・build:vite を実行する。
 
 ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer-Setup-*.exe`）が生成される。
 
@@ -65,8 +69,16 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - **修正を行う際は必ず作業用ブランチを切ること**。`master` に直接コミットしない。
 - **ブランチは原則として `master` から作成し、PR のベースブランチも指示がない限り常に `master` にすること**。未マージの作業ブランチを起点に新しいブランチを切ると、そのPRが `master` にマージされてもベースブランチ側の変更が反映されず、機能が消えたように見える事故につながる（実際に ESLint 導入PRが `refactor/split-ipc-handlers` をベースにマージされ、`master` に反映されないまま放置される事故が発生した）。他のブランチを意図的にベースにする場合は、その旨をPR説明に明記すること。
 - ブランチ名は用途に応じた prefix を付ける: 新機能は `feature/`、不具合修正は `fix/`、挙動を変えない整理は `refactor/`、ビルド・ツール・設定まわりは `chore/`。
-- ESLint（`eslint.config.mjs`、flat config）と Prettier（`.prettierrc.json`）を導入済み。**コミット前に必ず `npm run lint`・`npm run format:check`（または `format`）・両方の `tsc --noEmit`（上記コマンド参照）を通すこと**。テスト（Vitest 等）は未整備。
+- ESLint（`eslint.config.mjs`、flat config）・Prettier（`.prettierrc.json`）・Vitest（`vitest.config.ts`）を導入済み。**コミット前に必ず `npm run check`（lint・format:check・typecheck・test）を通すこと**。
 - IPCハンドラー（`src/main/ipc/handlers.ts`）は「配線」のみとし、実処理は `main/store/` や `main/utils/` に切り出す。1ファイル1責務を意識する（目安: 1ファイル300行、1関数50行を超えたら分割を検討）。
 - `preload/index.ts` と main 側で型定義が重複しないよう注意する。
 - 関数の書き方を統一する: **公開コンポーネント（`export function Foo() {}` の形で他ファイルから使われるReactコンポーネント）は `function` 宣言**、**イベントハンドラーや短いコールバック（`onClick={() => ...}` やコンポーネント内のローカルなヘルパー関数など）はアロー関数**で書く。
 - **ユーザーとの応対は必ず日本語で行うこと**。
+
+## テスト
+
+- Vitest を node 環境で使う。テストは対象ファイルの隣に `*.test.ts` として置く（`vitest.config.ts` の `include` は `src/**/*.test.ts`）。
+- React のフックやコンポーネントは直接テストしない（jsdom は使わない）。判定や計算は React・Electron・DOM に依存しない純粋関数に切り出し、その関数をテストする。
+- `electron` を import するモジュールは `vi.mock('electron', ...)` で差し替える（`vi.mock` はファイルのトップレベルに書く。Vitest 5 では入れ子にするとエラーになる）。ファイル操作は `os.tmpdir()` 配下の一時ディレクトリで行い、テストごとに削除する。
+- 既知の不具合は「本来あるべき挙動」を `it.fails` で書いて固定し、修正する PR で `it` に戻す。`it.fails` はテストの書き間違いでも成功扱いになるため、1つの `it.fails` には不具合を示すアサーションを1つだけ置く。
+- ドライブレターや大文字小文字を区別しないファイル名など、Windows の挙動を前提にしたテストがあるため、CI は windows-latest で実行する。
