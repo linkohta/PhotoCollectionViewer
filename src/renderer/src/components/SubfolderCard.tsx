@@ -17,13 +17,13 @@ interface SubfolderCardProps {
 
 // Explorer-style folder icon: the folder's first image is sandwiched between
 // the back panel (with its tab) and the front flap.
-const FolderIcon = ({
+function FolderIcon({
   path,
   scrollRoot
 }: {
   path: string
   scrollRoot: HTMLElement | null
-}): JSX.Element => {
+}): JSX.Element {
   const iconRef = useRef<HTMLDivElement>(null)
   const previewSrc = useFolderPreview(path, iconRef, scrollRoot)
 

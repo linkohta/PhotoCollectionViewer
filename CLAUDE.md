@@ -69,4 +69,8 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - IPCハンドラー（`src/main/ipc/handlers.ts`）は「配線」のみとし、実処理は `main/store/` や `main/utils/` に切り出す。1ファイル1責務を意識する（目安: 1ファイル300行、1関数50行を超えたら分割を検討）。
 - `preload/index.ts` と main 側で型定義が重複しないよう注意する。
 - 関数の書き方を統一する: **公開コンポーネント（`export function Foo() {}` の形で他ファイルから使われるReactコンポーネント）は `function` 宣言**、**イベントハンドラーや短いコールバック（`onClick={() => ...}` やコンポーネント内のローカルなヘルパー関数など）はアロー関数**で書く。
+- 次のルールは ESLint で検査している（違反すると `npm run lint` がエラーになる）。
+  - React コンポーネントは、公開・非公開を問わず `function` 宣言にする（`react/function-component-definition`）。
+  - 1ファイル300行まで（`max-lines`）。既に超えているファイルは `eslint.config.mjs` の例外リストに載せてあり、分割したらリストから外す。
+  - プロセスをまたぐ import の禁止（`no-restricted-imports`）: renderer から `electron`・main、main から renderer、preload から main・renderer。
 - **ユーザーとの応対は必ず日本語で行うこと**。
