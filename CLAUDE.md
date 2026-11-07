@@ -94,4 +94,5 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - テストごとに一時フォルダへ、画像・サブフォルダ・ZIP を含むライブラリと `app-state.json` を生成する（`e2e/support/environment.ts`）。環境変数 `PCV_USER_DATA_DIR` で保存先（userData）をそこへ切り替えるため、開発時の設定（プロジェクトルートの `app-state.json`）やサムネイルキャッシュには触れない。この切り替えはパッケージ版では無効。
 - 確認ダイアログは事前に用意した設定でオフにしてある。ネイティブダイアログを出す操作を試すときは、`electronApp.evaluate` で `dialog` を差し替える。
 - VS Code のターミナルなどでは `ELECTRON_RUN_AS_NODE` が設定されていて、そのままだと Electron が Node として起動してしまう。起動時にこの変数を取り除いている（`e2e/support/app.ts`）。
+- メインプロセスで未処理の例外が起きると、Electron のエラーダイアログが出てアプリが終了しなくなり、テストはタイムアウトまで止まってしまう。そのため起動したアプリには、未処理の例外を標準エラーへ書き出させる処理を入れてある。テストの最後に1件でもあれば、そのテストを失敗にする（`e2e/support/test.ts` の `noMainProcessErrors`）。
 - 既知の不具合は `test.fail()` で固定し、修正する PR で外す（単体テストの `it.fails` と同じ扱い）。

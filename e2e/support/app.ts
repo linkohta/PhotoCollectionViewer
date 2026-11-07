@@ -14,10 +14,44 @@ const projectRoot = join(__dirname, '..', '..')
 // ELECTRON_RENDERER_URL would make the app load a dev server instead of out/.
 const IGNORED_ENV = new Set(['ELECTRON_RUN_AS_NODE', 'ELECTRON_RENDERER_URL'])
 
+// An uncaught error in the main process would normally show Electron's error
+// dialog, which keeps the app from quitting, so the test would just hang until
+// it times out. Each launched app reports such errors on stderr under this
+// marker instead, and the test fails on them once it is over (see test.ts).
+const MAIN_ERROR_MARKER = '[e2e:main-process-error]'
+const mainProcessErrors: string[] = []
+
+// Returns the errors reported since the last call, and forgets them.
+export function takeMainProcessErrors(): string[] {
+  return mainProcessErrors.splice(0)
+}
+
 export interface RunningApp {
   electronApp: ElectronApplication
   window: Page
 }
+
+const collectMainProcessErrors = (electronApp: ElectronApplication): void => {
+  let pending = ''
+  electronApp.process().stderr?.on('data', (chunk: Buffer) => {
+    pending += chunk.toString()
+    const lines = pending.split(/\r?\n/)
+    pending = lines.pop() ?? ''
+    for (const line of lines) {
+      if (line.includes(MAIN_ERROR_MARKER)) mainProcessErrors.push(line.trim())
+    }
+  })
+}
+
+const reportMainProcessErrors = (electronApp: ElectronApplication): Promise<void> =>
+  electronApp.evaluate((_electron, marker) => {
+    const report = (error: unknown): void => {
+      const text = error instanceof Error ? (error.stack ?? error.message) : String(error)
+      console.error(`${marker} ${text.replace(/\s*\n\s*/g, ' | ')}`)
+    }
+    process.on('uncaughtException', report)
+    process.on('unhandledRejection', report)
+  }, MAIN_ERROR_MARKER)
 
 // Starts the built app (npm run build:vite) against the environment's
 // throwaway profile.
@@ -33,6 +67,8 @@ export async function launchApp(env: TestEnvironment): Promise<RunningApp> {
     cwd: projectRoot,
     env: childEnv
   })
+  collectMainProcessErrors(electronApp)
+  await reportMainProcessErrors(electronApp)
   const window = await electronApp.firstWindow()
   return { electronApp, window }
 }
