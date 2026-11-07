@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { toUserMessage } from '../utils/errorMessage'
 
 interface RenameInputProps {
   initialName: string
@@ -31,7 +32,7 @@ export function RenameInput({ initialName, onSubmit, onCancel }: RenameInputProp
     try {
       await onSubmit(trimmed)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '名前の変更に失敗しました')
+      setError(toUserMessage(err, '名前の変更に失敗しました'))
       setSubmitting(false)
     }
   }

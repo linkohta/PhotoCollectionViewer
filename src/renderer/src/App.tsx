@@ -4,6 +4,7 @@ import { TabBar } from './components/TabBar'
 import { TabContent } from './components/TabContent'
 import { clearImagePreloadCache } from './utils/imagePreload'
 import { installViewerKeyboardListener } from './utils/viewerKeyboard'
+import { toUserMessage } from './utils/errorMessage'
 import { useTabs } from './hooks/useTabs'
 import { useSessionPersistence } from './hooks/useSessionPersistence'
 import { useFavorites } from './hooks/useFavorites'
@@ -117,7 +118,7 @@ export default function App(): JSX.Element {
         window.alert('設定をエクスポートしました。')
       }
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : '設定のエクスポートに失敗しました')
+      window.alert(toUserMessage(error, '設定のエクスポートに失敗しました'))
     }
   }, [])
 
@@ -125,7 +126,7 @@ export default function App(): JSX.Element {
     try {
       await window.photoCollection.importSettings()
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : '設定のインポートに失敗しました')
+      window.alert(toUserMessage(error, '設定のインポートに失敗しました'))
     }
   }, [])
 
@@ -134,7 +135,7 @@ export default function App(): JSX.Element {
       try {
         await navigation.handleMoveToUnnecessary(activeTab.id, path)
       } catch (error) {
-        window.alert(error instanceof Error ? error.message : '画像をごみ箱へ移動できませんでした')
+        window.alert(toUserMessage(error, '画像をごみ箱へ移動できませんでした'))
       }
     },
     [navigation, activeTab.id]
@@ -145,7 +146,7 @@ export default function App(): JSX.Element {
       try {
         return await navigation.handleDeleteSubfolder(activeTab.id, path)
       } catch (error) {
-        window.alert(error instanceof Error ? error.message : 'フォルダの削除に失敗しました')
+        window.alert(toUserMessage(error, 'フォルダの削除に失敗しました'))
         return false
       }
     },
