@@ -10,16 +10,12 @@ interface UseZipNavigationArgs {
   browseFolder: BrowseFolder
 }
 
+const confirmOpenZip = (zipFile: ZipArchive): Promise<boolean> =>
+  window.photoCollection.confirmExtractZip(zipFile.name, zipFile.extractPath, zipFile.isExtracted)
+
 export function useZipNavigation({ tabs, updateTab, addTab, browseFolder }: UseZipNavigationArgs) {
   const openZipInTab = useCallback(
     async (tabId: string, zipFile: ZipArchive, rootFolderPath: string) => {
-      const confirmed = await window.photoCollection.confirmExtractZip(
-        zipFile.name,
-        zipFile.extractPath,
-        zipFile.isExtracted
-      )
-      if (!confirmed) return
-
       updateTab(tabId, (tab) => ({
         ...tab,
         loading: true,
@@ -44,6 +40,7 @@ export function useZipNavigation({ tabs, updateTab, addTab, browseFolder }: UseZ
     async (tabId: string, zipFile: ZipArchive) => {
       const tab = tabs.find((item) => item.id === tabId)
       if (!tab?.rootFolderPath) return
+      if (!(await confirmOpenZip(zipFile))) return
       await openZipInTab(tabId, zipFile, tab.rootFolderPath)
     },
     [tabs, openZipInTab]
@@ -52,6 +49,8 @@ export function useZipNavigation({ tabs, updateTab, addTab, browseFolder }: UseZ
   const handleOpenZipInNewTab = useCallback(
     async (zipFile: ZipArchive, rootFolderPath: string | null) => {
       if (!rootFolderPath) return
+      // Ask before creating the tab, so cancelling leaves no empty tab behind.
+      if (!(await confirmOpenZip(zipFile))) return
 
       const tab = addTab()
       await openZipInTab(tab.id, zipFile, rootFolderPath)

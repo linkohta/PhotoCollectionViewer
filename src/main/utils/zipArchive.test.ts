@@ -28,8 +28,16 @@ const writeZip = (name: string, entries: Record<string, string>): string => {
 // adm-zip strips "../" from names passed to addFile, so a zip holding a
 // parent-directory entry is made by renaming a same-length entry in the raw
 // bytes (the name appears in both the local header and the central directory).
-const writeZipWithRawEntryName = (name: string, placeholder: string, rawName: string): string => {
+const writeZipWithRawEntryName = (
+  name: string,
+  placeholder: string,
+  rawName: string,
+  otherEntries: Record<string, string> = {}
+): string => {
   const zip = new AdmZip()
+  for (const [entryName, content] of Object.entries(otherEntries)) {
+    zip.addFile(entryName, Buffer.from(content))
+  }
   zip.addFile(placeholder, Buffer.from('payload'))
   const bytes = zip.toBuffer()
   const from = Buffer.from(placeholder)
@@ -116,9 +124,9 @@ describe('extractZipArchive', () => {
     expect(() => extractZipArchive(zipPath)).toThrow()
   })
 
-  // F6: the folder is created before the zip is read, so a failed extraction
-  // leaves it behind and the zip is then treated as already extracted.
-  it.fails('leaves no folder behind when the zip cannot be read', () => {
+  // A folder left behind by a failed attempt would be taken for an extracted
+  // copy from then on.
+  it('leaves no folder behind when the zip cannot be read', () => {
     const zipPath = join(workDir, 'broken.zip')
     writeFileSync(zipPath, 'not a zip')
 
@@ -127,11 +135,21 @@ describe('extractZipArchive', () => {
     expect(existsSync(getZipExtractPath(zipPath))).toBe(false)
   })
 
-  it.fails('leaves no folder behind when an unsafe entry stops the extraction', () => {
-    const zipPath = writeZipWithRawEntryName('evil.zip', 'aa/evil.txt', '../evil.txt')
+  it('writes nothing when any entry is unsafe, even the safe ones', () => {
+    const zipPath = writeZipWithRawEntryName('evil.zip', 'aa/evil.txt', '../evil.txt', {
+      'ok.jpg': 'ok'
+    })
 
     extractIgnoringErrors(zipPath)
 
+    expect(existsSync(getZipExtractPath(zipPath))).toBe(false)
+  })
+
+  it('removes the folder again when writing fails part-way', () => {
+    // "a" is written as a file, after which "a/b.jpg" cannot get its folder.
+    const zipPath = writeZip('clash.zip', { a: 'file', 'a/b.jpg': 'image' })
+
+    expect(() => extractZipArchive(zipPath)).toThrow()
     expect(existsSync(getZipExtractPath(zipPath))).toBe(false)
   })
 })

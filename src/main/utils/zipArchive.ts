@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs'
 import { basename, dirname, extname, join, resolve, sep } from 'path'
 import AdmZip from 'adm-zip'
 
@@ -36,14 +36,7 @@ function detectMatchingRootPrefix(entries: AdmZip.IZipEntry[], zipBaseName: stri
       return null
     }
 
-    if (matchedPrefix === null) {
-      matchedPrefix = `${root}/`
-      continue
-    }
-
-    if (matchedPrefix.toLowerCase() !== `${root}/`.toLowerCase()) {
-      return null
-    }
+    matchedPrefix ??= `${root}/`
   }
 
   return matchedPrefix
@@ -67,13 +60,16 @@ export function extractZipArchive(zipPath: string): string {
     return extractPath
   }
 
-  mkdirSync(extractPath, { recursive: true })
-
+  // An existing folder is taken to mean "already extracted" (above, and in
+  // folderScan), so a failed attempt must not leave one behind: the archive is
+  // read and every entry checked before the folder is created, and the folder
+  // is removed again if writing fails part-way.
   const zip = new AdmZip(zipPath)
-  const zipBaseName = basename(zipPath, extname(zipPath))
-  const stripPrefix = detectMatchingRootPrefix(zip.getEntries(), zipBaseName)
+  const entries = zip.getEntries()
+  const stripPrefix = detectMatchingRootPrefix(entries, basename(zipPath, extname(zipPath)))
 
-  for (const entry of zip.getEntries()) {
+  const files: { entry: AdmZip.IZipEntry; destination: string }[] = []
+  for (const entry of entries) {
     if (entry.isDirectory) continue
 
     const relativePath = getRelativeExtractPath(entry.entryName, stripPrefix)
@@ -83,9 +79,18 @@ export function extractZipArchive(zipPath: string): string {
     if (!isPathInsideDirectory(destination, extractPath)) {
       throw new Error('Unsafe ZIP entry path')
     }
+    files.push({ entry, destination })
+  }
 
-    mkdirSync(dirname(destination), { recursive: true })
-    writeFileSync(destination, entry.getData())
+  mkdirSync(extractPath, { recursive: true })
+  try {
+    for (const { entry, destination } of files) {
+      mkdirSync(dirname(destination), { recursive: true })
+      writeFileSync(destination, entry.getData())
+    }
+  } catch (error) {
+    rmSync(extractPath, { recursive: true, force: true })
+    throw error
   }
 
   return extractPath
