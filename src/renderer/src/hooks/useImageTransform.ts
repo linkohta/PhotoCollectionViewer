@@ -4,7 +4,10 @@ import { getFitScale, getRotatedSize, type Size } from '../utils/viewerGeometry'
 export type FitMode = 'fit' | 'actual' | 'custom'
 
 export function useImageTransform(imagePath: string) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  // Kept as state (set through a callback ref) rather than in a ref object, so
+  // the size observer below follows the canvas element: ImageViewer swaps it
+  // out while a video is shown and mounts a new one for the next image.
+  const [container, setContainer] = useState<HTMLDivElement | null>(null)
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 })
 
   const [fitMode, setFitMode] = useState<FitMode>('fit')
@@ -71,18 +74,20 @@ export function useImageTransform(imagePath: string) {
   }, [imagePath, resetView])
 
   useEffect(() => {
-    const element = containerRef.current
-    if (!element) return
+    if (!container) {
+      setContainerSize({ width: 0, height: 0 })
+      return
+    }
 
     const updateSize = (): void => {
-      setContainerSize({ width: element.clientWidth, height: element.clientHeight })
+      setContainerSize({ width: container.clientWidth, height: container.clientHeight })
     }
 
     updateSize()
     const observer = new ResizeObserver(updateSize)
-    observer.observe(element)
+    observer.observe(container)
     return () => observer.disconnect()
-  }, [])
+  }, [container])
 
   const displayScale = (() => {
     if (!naturalSize) return 1
@@ -139,18 +144,20 @@ export function useImageTransform(imagePath: string) {
 
   const handleMouseUp = useCallback(() => setDragging(false), [])
 
-  const handleImageLoad = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => {
-      const img = e.currentTarget
-      if (img.naturalWidth > 0 && img.naturalHeight > 0 && !naturalSize) {
-        setNaturalSize({ width: img.naturalWidth, height: img.naturalHeight })
-      }
-    },
-    [naturalSize]
-  )
+  // Only fills in a size while none is known yet (e.g. from the preview). The
+  // updater form matters: the full image's size, reported through
+  // setNaturalSize, can be queued just before this runs for the preview, and a
+  // "no size yet" check read from the last render would then overwrite it with
+  // the preview's smaller size.
+  const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth, naturalHeight } = e.currentTarget
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setNaturalSize((current) => current ?? { width: naturalWidth, height: naturalHeight })
+    }
+  }, [])
 
   return {
-    containerRef,
+    containerRef: setContainer,
     fitMode,
     offset,
     rotation,
