@@ -1,0 +1,125 @@
+/* TabBar */
+.tab-bar {
+  display: flex;
+  align-items: stretch;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+  min-height: 38px;
+}
+
+.tab-list {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+}
+
+.tab-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 220px;
+  min-width: 120px;
+  border-right: 1px solid #2a2a2a;
+  background: #222;
+  transition: background 0.15s;
+  cursor: grab;
+}
+
+.tab-item.dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.tab-item.drop-before::before,
+.tab-item.drop-after::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: #4a6cf7;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.tab-item.drop-before::before {
+  left: 0;
+}
+
+.tab-item.drop-after::after {
+  right: 0;
+}
+
+.tab-item:hover {
+  background: #2a2a2a;
+}
+
+.tab-item.active {
+  background: #121212;
+  border-bottom: 2px solid #4a6cf7;
+}
+
+.tab-item.loading .tab-title {
+  opacity: 0.7;
+}
+
+.tab-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 8px 8px 12px;
+  min-width: 0;
+  text-align: left;
+}
+
+.tab-spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #555;
+  border-top-color: #4a6cf7;
+  border-radius: 50%;
+  animation: tab-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes tab-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.tab-close {
+  padding: 4px 8px;
+  margin-right: 4px;
+  border-radius: 4px;
+  color: #888;
+  font-size: 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tab-close:hover {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.tab-new {
+  padding: 0 14px;
+  border-left: 1px solid #333;
+  border-radius: 0;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}

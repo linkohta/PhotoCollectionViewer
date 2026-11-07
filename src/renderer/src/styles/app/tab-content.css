@@ -1,0 +1,69 @@
+/* TabContent: welcome screen and the loading / error overlay */
+.welcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.welcome-card {
+  text-align: center;
+  max-width: 420px;
+  padding: 40px;
+}
+
+.welcome-card h1 {
+  font-size: 28px;
+  margin-bottom: 12px;
+}
+
+.welcome-card p {
+  color: #888;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.welcome-favorites {
+  margin-top: 32px;
+  text-align: left;
+}
+
+.welcome-favorites h2 {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 8px;
+}
+
+.welcome-favorites ul {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.welcome-favorites button {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: left;
+  background: #222;
+  transition: background 0.15s;
+}
+
+.welcome-favorites button:hover {
+  background: #333;
+}
+
+/* Status */
+.status-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10;
+}
+
+.status-overlay.error {
+  color: #ff6b6b;
+}
