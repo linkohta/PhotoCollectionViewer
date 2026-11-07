@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { suspendViewerKeyboardHandler } from '../utils/viewerKeyboard'
 
 interface ContextMenuProps {
   x: number
@@ -22,6 +23,10 @@ export function ContextMenu({
   onClose
 }: ContextMenuProps): JSX.Element {
   const menuRef = useRef<HTMLDivElement>(null)
+
+  // Keys pressed while the menu is open are for the menu, not for the grid or
+  // the viewer behind it.
+  useEffect(() => suspendViewerKeyboardHandler(), [])
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent): void => {
