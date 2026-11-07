@@ -7,8 +7,8 @@ import { renamePath } from './renamePath'
 
 vi.mock('../store/favorites', () => ({ renameFavoritePaths: vi.fn() }))
 
-// F7 only shows up where file names are case-insensitive (NTFS on Windows):
-// there the "already exists" check finds the item being renamed itself.
+// Whether file names are case-insensitive here (NTFS on Windows), in which
+// case two items cannot differ only in letter case.
 const isCaseInsensitiveFileSystem = ((): boolean => {
   const probeDir = mkdtempSync(join(tmpdir(), 'pcv-case-'))
   try {
@@ -82,11 +82,32 @@ describe('renamePath', () => {
     )
   })
 
-  const caseOnlyRenameTest = isCaseInsensitiveFileSystem ? it.fails : it
+  it('allows changing only the letter case of a name', async () => {
+    const targetPath = join(workDir, 'photo.jpg')
+    const newPath = join(workDir, 'Photo.jpg')
 
-  caseOnlyRenameTest('allows changing only the letter case of a name', async () => {
-    await expect(renamePath(join(workDir, 'photo.jpg'), 'Photo.jpg')).resolves.toBe(
-      join(workDir, 'Photo.jpg')
-    )
+    await expect(renamePath(targetPath, 'Photo.jpg')).resolves.toBe(newPath)
+    expect(readdirSync(workDir)).toEqual(['Photo.jpg'])
+    expect(renameFavoritePaths).toHaveBeenCalledWith(targetPath, newPath)
   })
+
+  it('allows changing only the letter case of a folder name', async () => {
+    mkdirSync(join(workDir, 'album'))
+
+    await expect(renamePath(join(workDir, 'album'), 'Album')).resolves.toBe(join(workDir, 'Album'))
+    expect(readdirSync(workDir)).toContain('Album')
+  })
+
+  // Only possible where file names are case-sensitive: two separate items
+  // whose names differ only in letter case.
+  it.skipIf(isCaseInsensitiveFileSystem)(
+    'still refuses another item whose name differs only in letter case',
+    async () => {
+      writeFileSync(join(workDir, 'Photo.jpg'), 'other')
+
+      await expect(renamePath(join(workDir, 'photo.jpg'), 'Photo.jpg')).rejects.toThrow(
+        '同名のファイル・フォルダが既に存在します'
+      )
+    }
+  )
 })
