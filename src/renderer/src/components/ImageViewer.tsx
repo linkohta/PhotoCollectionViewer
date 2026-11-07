@@ -93,6 +93,9 @@ export function ImageViewer({
         case 'F':
           if (!isVideo) transform.fitToScreen()
           break
+        case '1':
+          if (!isVideo) transform.showActualSize()
+          break
         case 'r':
           if (!isVideo) transform.rotateClockwise()
           break
@@ -127,6 +130,7 @@ export function ImageViewer({
         onClose={onClose}
         onNavigate={onNavigate}
         onFit={transform.fitToScreen}
+        onActualSize={transform.showActualSize}
         onZoomIn={() => transform.zoom(0.2)}
         onZoomOut={() => transform.zoom(-0.2)}
         onRotate={transform.rotateClockwise}

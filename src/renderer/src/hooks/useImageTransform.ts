@@ -28,10 +28,33 @@ export function useImageTransform(imagePath: string) {
     setOffset({ x: 0, y: 0 })
   }, [])
 
-  const zoom = useCallback((delta: number) => {
-    setFitMode('custom')
-    setZoomFactor((current) => Math.min(Math.max(current + delta, 0.1), 10))
+  const showActualSize = useCallback(() => {
+    setFitMode('actual')
+    setZoomFactor(1)
+    setOffset({ x: 0, y: 0 })
   }, [])
+
+  const fitScale = naturalSize
+    ? getFitScale(getRotatedSize(naturalSize, rotation), containerSize)
+    : 1
+
+  // zoomFactor is relative to the fit scale. When zooming from actual-size
+  // mode, start from the factor equivalent to 1:1 so the zoom continues from
+  // what's on screen instead of jumping back to near the fitted size. The
+  // upper bound is widened to that factor too, so for very tall/wide images
+  // (where 1:1 is already beyond 10x the fit scale) zooming in never shrinks.
+  const zoom = useCallback(
+    (delta: number) => {
+      const actualFactor = 1 / fitScale
+      const maxFactor = Math.max(10, actualFactor)
+      const startFromActual = fitMode === 'actual'
+      setFitMode('custom')
+      setZoomFactor((current) =>
+        Math.min(Math.max((startFromActual ? actualFactor : current) + delta, 0.1), maxFactor)
+      )
+    },
+    [fitMode, fitScale]
+  )
 
   const toggleActualSize = useCallback(() => {
     setFitMode((current) => (current === 'fit' ? 'actual' : 'fit'))
@@ -63,10 +86,7 @@ export function useImageTransform(imagePath: string) {
 
   const displayScale = (() => {
     if (!naturalSize) return 1
-    const boundsSize = getRotatedSize(naturalSize, rotation)
-    const fitScale = getFitScale(boundsSize, containerSize)
-
-    if (fitMode === 'actual') return Math.min(1, fitScale)
+    if (fitMode === 'actual') return 1
     if (fitMode === 'fit') return fitScale
     return fitScale * zoomFactor
   })()
@@ -139,6 +159,7 @@ export function useImageTransform(imagePath: string) {
     setNaturalSize,
     resetView,
     fitToScreen,
+    showActualSize,
     zoom,
     toggleActualSize,
     rotateClockwise,

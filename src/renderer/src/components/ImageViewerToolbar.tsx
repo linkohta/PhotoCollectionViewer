@@ -11,6 +11,7 @@ interface ImageViewerToolbarProps {
   onClose: () => void
   onNavigate: (direction: -1 | 1) => void
   onFit: () => void
+  onActualSize: () => void
   onZoomIn: () => void
   onZoomOut: () => void
   onRotate: () => void
@@ -29,6 +30,7 @@ export function ImageViewerToolbar({
   onClose,
   onNavigate,
   onFit,
+  onActualSize,
   onZoomIn,
   onZoomOut,
   onRotate,
@@ -83,6 +85,15 @@ export function ImageViewerToolbar({
             tabIndex={-1}
           >
             フィット
+          </button>
+          <button
+            type="button"
+            className={`btn ${fitMode === 'actual' ? 'active' : ''}`}
+            onClick={onActualSize}
+            title="元のサイズで表示 (1)"
+            tabIndex={-1}
+          >
+            原寸
           </button>
           <button type="button" className="btn" onClick={onZoomIn} title="拡大 (+)" tabIndex={-1}>
             ＋
