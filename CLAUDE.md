@@ -23,9 +23,10 @@ npm run format:check   # Prettier のフォーマットチェックのみ（書�
 npm run typecheck     # 型チェック（tsconfig.node.json: src/main・src/preload / tsconfig.web.json: src/renderer）
 npm run test        # Vitest を1回実行
 npm run test:watch    # Vitest をウォッチモードで実行
+npm run test:e2e     # E2E（ビルドしてから Playwright で実際のアプリを起動。check には含まない）
 ```
 
-CI（`.github/workflows/ci.yml`、windows-latest）が PR と `master` への push ごとに lint・format:check・typecheck・test・build:vite を実行する。
+CI（`.github/workflows/ci.yml`、windows-latest）が PR と `master` への push ごとに lint・format:check・typecheck・test・build:vite と、別ジョブで E2E を実行する。
 
 ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer-Setup-*.exe`）が生成される。
 
@@ -86,3 +87,12 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - `electron` を import するモジュールは `vi.mock('electron', ...)` で差し替える（`vi.mock` はファイルのトップレベルに書く。Vitest 5 では入れ子にするとエラーになる）。ファイル操作は `os.tmpdir()` 配下の一時ディレクトリで行い、テストごとに削除する。
 - 既知の不具合は「本来あるべき挙動」を `it.fails` で書いて固定し、修正する PR で `it` に戻す。`it.fails` はテストの書き間違いでも成功扱いになるため、1つの `it.fails` には不具合を示すアサーションを1つだけ置く。
 - ドライブレターや大文字小文字を区別しないファイル名など、Windows の挙動を前提にしたテストがあるため、CI は windows-latest で実行する。
+
+### E2E（`e2e/`）
+
+- Playwright の Electron サポートで、ビルド済みのアプリ（`out/`）をテストごとに起動する。単体テストでは確かめられない画面の操作（キー操作、ビューワー、タブ、ZIP、永続化など）を対象にし、本数は少なく保つ。画面の操作や表示に関わる変更では `npm run test:e2e` も通すこと。
+- テストごとに一時フォルダへ、画像・サブフォルダ・ZIP を含むライブラリと `app-state.json` を生成する（`e2e/support/environment.ts`）。環境変数 `PCV_USER_DATA_DIR` で保存先（userData）をそこへ切り替えるため、開発時の設定（プロジェクトルートの `app-state.json`）やサムネイルキャッシュには触れない。この切り替えはパッケージ版では無効。
+- 確認ダイアログは事前に用意した設定でオフにしてある。ネイティブダイアログを出す操作を試すときは、`electronApp.evaluate` で `dialog` を差し替える。
+- VS Code のターミナルなどでは `ELECTRON_RUN_AS_NODE` が設定されていて、そのままだと Electron が Node として起動してしまう。起動時にこの変数を取り除いている（`e2e/support/app.ts`）。
+- メインプロセスで未処理の例外が起きると、Electron のエラーダイアログが出てアプリが終了しなくなり、テストはタイムアウトまで止まってしまう。そのため起動したアプリには、未処理の例外を標準エラーへ書き出させる処理を入れてある。テストの最後に1件でもあれば、そのテストを失敗にする（`e2e/support/test.ts` の `noMainProcessErrors`）。
+- 既知の不具合は `test.fail()` で固定し、修正する PR で外す（単体テストの `it.fails` と同じ扱い）。
