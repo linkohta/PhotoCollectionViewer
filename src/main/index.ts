@@ -155,7 +155,13 @@ app.whenReady().then(() => {
     }
   })
 
-  migrateLegacyStoreFiles()
+  // A failed migration must not keep the app from starting - an exception
+  // here would skip the IPC handlers and the window below.
+  try {
+    migrateLegacyStoreFiles()
+  } catch (error) {
+    console.error('Failed to migrate settings from an older version', error)
+  }
   registerIpcHandlers()
   createWindow()
 

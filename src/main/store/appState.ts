@@ -1,6 +1,7 @@
-import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'fs'
+import { readFileSync, renameSync, writeFileSync, existsSync, unlinkSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
+import { writeFileAtomicSync } from '../utils/atomicWrite'
 import { getAppRootFilePath, getLegacyAppRootDir } from './appRoot'
 import type { ConfirmationSettings } from '../../preload/types'
 
@@ -79,28 +80,65 @@ function getStorePath(): string {
   return getAppRootFilePath('app-state.json')
 }
 
-function readAppState(): AppState {
+interface LoadedAppState {
+  state: AppState
+  // false when app-state.json exists but could neither be read nor moved
+  // aside: writing then would replace settings that are still on disk.
+  writable: boolean
+}
+
+function loadAppState(): LoadedAppState {
   const storePath = getStorePath()
-  if (!existsSync(storePath)) {
-    return defaultAppState()
+
+  let raw: string
+  try {
+    raw = readFileSync(storePath, 'utf-8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { state: defaultAppState(), writable: true }
+    }
+    console.warn('app-state.json could not be read, so changes will not be saved', error)
+    return { state: defaultAppState(), writable: false }
   }
 
   try {
-    const raw = readFileSync(storePath, 'utf-8')
     const data = JSON.parse(raw) as Partial<AppState>
     return {
-      favorites: Array.isArray(data.favorites) ? data.favorites : [],
-      session: data.session ?? defaultAppState().session,
-      windowState: data.windowState ?? {},
-      confirmations: normalizeConfirmations(data.confirmations)
+      state: {
+        favorites: Array.isArray(data.favorites) ? data.favorites : [],
+        session: data.session ?? defaultAppState().session,
+        windowState: data.windowState ?? {},
+        confirmations: normalizeConfirmations(data.confirmations)
+      },
+      writable: true
     }
   } catch {
-    return defaultAppState()
+    return { state: defaultAppState(), writable: moveCorruptStoreAside(storePath) }
   }
 }
 
+// An app-state.json that is not valid JSON is renamed instead of being
+// overwritten with the defaults, so what it held (favorites, session) can
+// still be recovered by hand.
+function moveCorruptStoreAside(storePath: string): boolean {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const backupPath = getAppRootFilePath(`app-state.corrupt-${stamp}.json`)
+  try {
+    renameSync(storePath, backupPath)
+    console.warn(`app-state.json was not valid JSON and has been moved to ${backupPath}`)
+    return true
+  } catch (error) {
+    console.warn('app-state.json is not valid JSON and could not be moved aside', error)
+    return false
+  }
+}
+
+function readAppState(): AppState {
+  return loadAppState().state
+}
+
 function writeAppState(state: AppState): void {
-  writeFileSync(getStorePath(), JSON.stringify(state, null, 2), 'utf-8')
+  writeFileAtomicSync(getStorePath(), JSON.stringify(state, null, 2))
 }
 
 export function exportAppState(destPath: string): void {
@@ -126,7 +164,8 @@ export function readAppStateSlice<K extends keyof AppState>(key: K): AppState[K]
 }
 
 export function writeAppStateSlice<K extends keyof AppState>(key: K, value: AppState[K]): void {
-  const state = readAppState()
+  const { state, writable } = loadAppState()
+  if (!writable) return
   state[key] = value
   writeAppState(state)
 }
@@ -158,7 +197,7 @@ function migrateLegacyAppStateFile(): void {
 
   try {
     const raw = readFileSync(legacyStorePath, 'utf-8')
-    writeFileSync(currentStorePath, raw, 'utf-8')
+    writeFileAtomicSync(currentStorePath, raw)
   } catch {
     // 読み込みに失敗した場合は何もしない(初期状態で起動)
   }
@@ -172,7 +211,8 @@ export function migrateLegacyStoreFiles(): void {
   )
   if (!legacyPaths.some((path) => existsSync(path))) return
 
-  const state = readAppState()
+  const { state, writable } = loadAppState()
+  if (!writable) return
 
   const legacyFavorites = readLegacyJson<FavoriteFolder[]>(LEGACY_FAVORITES_FILE)
   if (Array.isArray(legacyFavorites)) {
