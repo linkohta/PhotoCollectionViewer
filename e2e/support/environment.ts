@@ -3,7 +3,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import AdmZip from 'adm-zip'
 import sharp from 'sharp'
-import type { SessionData } from '../../src/preload/types'
+import type { ConfirmationSettings, FavoriteFolder, SessionData } from '../../src/preload/types'
 
 export interface TestEnvironment {
   baseDir: string
@@ -76,17 +76,36 @@ export async function createTestEnvironment(): Promise<TestEnvironment> {
   return { baseDir, libraryDir, userDataDir }
 }
 
+// Adds a single-colour PNG to the library root (before the app is started,
+// or the grid will not show it until it is refreshed).
+export async function addImage(
+  env: TestEnvironment,
+  name: string,
+  width: number,
+  height: number
+): Promise<void> {
+  await writePng(join(env.libraryDir, name), width, height, '#2c3e50')
+}
+
 export function removeTestEnvironment(env: TestEnvironment): void {
   // The app may take a moment to release its files after it exits.
   rmSync(env.baseDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 })
 }
 
-const settingsPath = (env: TestEnvironment): string => join(env.userDataDir, 'app-state.json')
+export const settingsPath = (env: TestEnvironment): string =>
+  join(env.userDataDir, 'app-state.json')
+
+interface Settings {
+  favorites: FavoriteFolder[]
+  session: SessionData
+  windowState: { width: number; height: number }
+  confirmations: ConfirmationSettings
+}
 
 // Starts the app on a single tab showing the library root, with every
 // confirmation dialog turned off so no native dialog blocks the tests.
 export function writeSettings(env: TestEnvironment): void {
-  const settings = {
+  const settings: Settings = {
     favorites: [],
     session: {
       tabs: [
@@ -104,6 +123,13 @@ export function writeSettings(env: TestEnvironment): void {
     windowState: { width: 1280, height: 800 },
     confirmations: { extractZip: false, deleteFolder: false, importSettings: false }
   }
+  writeFileSync(settingsPath(env), JSON.stringify(settings, null, 2))
+}
+
+// Changes the seeded settings; only takes effect for apps started afterwards.
+export function updateSettings(env: TestEnvironment, change: (settings: Settings) => void): void {
+  const settings = JSON.parse(readFileSync(settingsPath(env), 'utf-8')) as Settings
+  change(settings)
   writeFileSync(settingsPath(env), JSON.stringify(settings, null, 2))
 }
 
