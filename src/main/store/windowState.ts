@@ -84,13 +84,20 @@ export function trackWindowState(window: BrowserWindow): void {
     const isMaximized = window.isMaximized()
     const bounds = isMaximized ? window.getNormalBounds() : window.getBounds()
 
-    saveWindowState({
-      width: bounds.width,
-      height: bounds.height,
-      x: bounds.x,
-      y: bounds.y,
-      isMaximized
-    })
+    // Runs from a timer and from the window's close event, where an uncaught
+    // error would end up in Electron's error dialog and keep the app from
+    // quitting. Missing one window-size update is harmless.
+    try {
+      saveWindowState({
+        width: bounds.width,
+        height: bounds.height,
+        x: bounds.x,
+        y: bounds.y,
+        isMaximized
+      })
+    } catch (error) {
+      console.warn('Could not save the window state', error)
+    }
   }
 
   const debouncedPersist = (): void => {

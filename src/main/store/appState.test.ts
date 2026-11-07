@@ -1,4 +1,13 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -44,15 +53,20 @@ const snapshot: TabSnapshot = {
 const storePath = (): string => join(env.appRootDir, 'app-state.json')
 const writeJson = (path: string, value: unknown): void => writeFileSync(path, JSON.stringify(value))
 
+const corruptBackups = (): string[] =>
+  readdirSync(env.appRootDir).filter((name) => /^app-state\.corrupt-.+\.json$/.test(name))
+
 beforeEach(() => {
   env.appRootDir = mkdtempSync(join(tmpdir(), 'pcv-state-'))
   env.legacyAppRootDir = mkdtempSync(join(tmpdir(), 'pcv-legacy-'))
   env.isPackaged = false
+  vi.spyOn(console, 'warn').mockImplementation(() => undefined)
 })
 
 afterEach(() => {
   rmSync(env.appRootDir, { recursive: true, force: true })
   rmSync(env.legacyAppRootDir, { recursive: true, force: true })
+  vi.restoreAllMocks()
 })
 
 describe('reading and writing slices', () => {
@@ -110,9 +124,7 @@ describe('reading and writing slices', () => {
     expect(readAppStateSlice('favorites')).toEqual([])
   })
 
-  // F1: the next write replaces the unreadable file with the defaults, so its
-  // contents (favorites, session) are lost for good.
-  it.fails('keeps the contents of an unreadable settings file when writing', () => {
+  it('keeps the contents of a file that cannot be parsed when writing', () => {
     const corrupt = `{"favorites": [${JSON.stringify(favorite)}`
     writeFileSync(storePath(), corrupt)
 
@@ -122,6 +134,35 @@ describe('reading and writing slices', () => {
       (name) => readFileSync(join(env.appRootDir, name), 'utf-8') === corrupt
     )
     expect(preserved).toBe(true)
+  })
+
+  it('moves a file that cannot be parsed aside and starts again from the defaults', () => {
+    const corrupt = '{"favorites": ['
+    writeFileSync(storePath(), corrupt)
+
+    expect(readAppStateSlice('favorites')).toEqual([])
+
+    const backups = corruptBackups()
+    expect(backups).toHaveLength(1)
+    expect(readFileSync(join(env.appRootDir, backups[0] ?? ''), 'utf-8')).toBe(corrupt)
+    expect(existsSync(storePath())).toBe(false)
+    expect(console.warn).toHaveBeenCalled()
+  })
+
+  it('does not replace a settings file that exists but cannot be read', () => {
+    mkdirSync(storePath())
+
+    writeAppStateSlice('favorites', [favorite])
+
+    expect(statSync(storePath()).isDirectory()).toBe(true)
+    expect(readdirSync(env.appRootDir)).toEqual(['app-state.json'])
+  })
+
+  it('leaves no temporary file behind after writing', () => {
+    writeAppStateSlice('favorites', [favorite])
+    writeAppStateSlice('favorites', [])
+
+    expect(readdirSync(env.appRootDir)).toEqual(['app-state.json'])
   })
 })
 
@@ -208,6 +249,16 @@ describe('migrating settings from older versions', () => {
     })
     expect(readAppStateSlice('windowState')).toEqual({ width: 1200, height: 800 })
     expect(readdirSync(env.appRootDir)).toEqual(['app-state.json'])
+  })
+
+  it('leaves the separate files alone when the current settings file cannot be read', () => {
+    mkdirSync(storePath())
+    writeJson(join(env.appRootDir, 'favorites.json'), [favorite])
+
+    migrateLegacyStoreFiles()
+
+    expect(existsSync(join(env.appRootDir, 'favorites.json'))).toBe(true)
+    expect(statSync(storePath()).isDirectory()).toBe(true)
   })
 
   it('skips separate files that cannot be parsed but still deletes them', () => {
