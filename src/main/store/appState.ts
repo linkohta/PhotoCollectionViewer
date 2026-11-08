@@ -58,13 +58,16 @@ function normalizeConfirmations(value: unknown): ConfirmationSettings {
 function normalizeAppState(data: Partial<AppState>): AppState {
   return {
     favorites: Array.isArray(data.favorites) ? data.favorites : [],
-    session: data.session ?? defaultAppState().session,
+    session: normalizeSession(data.session),
     windowState: data.windowState ?? {},
     confirmations: normalizeConfirmations(data.confirmations)
   }
 }
 
-function normalizeSession(data: Partial<SessionData>): SessionData {
+// The renderer restores tabs straight from the session, so it always gets
+// lists and a number, whatever the file holds.
+function normalizeSession(value: unknown): SessionData {
+  const data = (typeof value === 'object' && value !== null ? value : {}) as Partial<SessionData>
   return {
     tabs: Array.isArray(data.tabs) ? data.tabs : [],
     activeTabIndex: typeof data.activeTabIndex === 'number' ? data.activeTabIndex : 0,
