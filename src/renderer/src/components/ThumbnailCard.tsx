@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MouseEvent, RefObject } from 'react'
 import type { ImageFile } from '../../../shared/types'
-import { formatFileSize, toLocalFileUrl } from '../utils/files'
+import { toLocalFileUrl } from '../../../shared/localFileUrl'
+import { formatFileSize } from '../utils/files'
 import { RenameInput } from './RenameInput'
 
 interface ThumbnailCardProps {

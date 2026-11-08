@@ -1,5 +1,5 @@
 import type { FolderHistoryEntry, TabState } from '../types/tab'
-import { isSamePath } from './files'
+import { isSamePath } from './paths'
 
 // Caps how many previous folders the "←" back button can walk through per tab.
 const HISTORY_LIMIT = 50

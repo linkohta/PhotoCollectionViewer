@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
-import { toLocalFileUrl } from '../utils/files'
+import { toLocalFileUrl } from '../../../shared/localFileUrl'
 
 const PREVIEW_THUMBNAIL_SIZE = 200
 

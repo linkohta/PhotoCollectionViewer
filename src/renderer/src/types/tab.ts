@@ -1,4 +1,5 @@
 import type { FolderCollection, TabSnapshot, ViewMode } from '../../../shared/types'
+import { pathBaseName } from '../utils/paths'
 
 export interface TabState {
   id: string
@@ -60,10 +61,7 @@ export function getTabTitle(
   rootFolderPath: string | null
 ): string {
   if (collection) return collection.name
-  if (rootFolderPath) {
-    const parts = rootFolderPath.split(/[/\\]/).filter(Boolean)
-    return parts[parts.length - 1] ?? rootFolderPath
-  }
+  if (rootFolderPath) return pathBaseName(rootFolderPath) || rootFolderPath
   return '新しいタブ'
 }
 

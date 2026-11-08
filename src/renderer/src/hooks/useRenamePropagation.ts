@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { findTab } from '../state/tabTransitions'
 import { getTabTitle, type TabState, type UpdateTab } from '../types/tab'
-import { isSameOrChildPath, replacePathPrefix } from '../utils/files'
+import { isSameOrChildPath, pathBaseName, replacePathPrefix } from '../utils/paths'
 import type { BrowseFolder } from './useBrowseFolder'
 
 interface UseRenamePropagationArgs {
@@ -33,10 +33,8 @@ const remapTabPathsAfterRename = (
           ...tab.collection,
           path: replacePathPrefix(tab.collection.path, oldPath, newPath),
           name:
-            replacePathPrefix(tab.collection.path, oldPath, newPath)
-              .split(/[/\\]/)
-              .filter(Boolean)
-              .pop() ?? tab.collection.name
+            pathBaseName(replacePathPrefix(tab.collection.path, oldPath, newPath)) ||
+            tab.collection.name
         }
       : tab.collection
 
