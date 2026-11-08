@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { TabSnapshot } from '../../../shared/types'
 import { restoreTabFromSnapshot, tabToSnapshot, type TabState } from '../types/tab'
 
@@ -8,18 +8,14 @@ interface UseSessionPersistenceArgs {
   tabs: TabState[]
   activeTabId: string
   closedTabs: TabSnapshot[]
-  setTabs: Dispatch<SetStateAction<TabState[]>>
-  setActiveTabId: Dispatch<SetStateAction<string>>
-  setClosedTabs: Dispatch<SetStateAction<TabSnapshot[]>>
+  restoreSession: (tabs: TabState[], activeTabIndex: number, closedTabs: TabSnapshot[]) => void
 }
 
 export function useSessionPersistence({
   tabs,
   activeTabId,
   closedTabs,
-  setTabs,
-  setActiveTabId,
-  setClosedTabs
+  restoreSession
 }: UseSessionPersistenceArgs): { sessionReady: boolean } {
   const [sessionReady, setSessionReady] = useState(false)
 
@@ -30,19 +26,12 @@ export function useSessionPersistence({
       const session = await window.photoCollection.getSession()
       if (cancelled) return
 
-      if (session.tabs.length > 0) {
-        const restoredTabs = await Promise.all(
-          session.tabs.map((snapshot) => restoreTabFromSnapshot(snapshot))
-        )
-        if (cancelled) return
+      const restoredTabs = await Promise.all(
+        session.tabs.map((snapshot) => restoreTabFromSnapshot(snapshot))
+      )
+      if (cancelled) return
 
-        const safeIndex = Math.min(Math.max(session.activeTabIndex, 0), restoredTabs.length - 1)
-
-        setTabs(restoredTabs)
-        setActiveTabId(restoredTabs[safeIndex]!.id)
-      }
-
-      setClosedTabs(session.closedTabs)
+      restoreSession(restoredTabs, session.activeTabIndex, session.closedTabs)
       setSessionReady(true)
     }
 
