@@ -52,7 +52,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - `src/main/` — メインプロセス（Node.js）
   - `index.ts` — エントリポイント。アプリのライフサイクルの配線（準備完了後のプロトコル・IPC・ウィンドウの開始、起動時の設定移行の呼び出し）だけを置く
   - `bootstrap.ts` — アプリの準備完了前に済ませる必要がある設定（`setName`、E2E 用の userData の切り替え、Chromium のスイッチ、libuv のスレッドプール、スキームの特権登録）。**`index.ts` の最初の import から外さない**（後から設定しても効かないものがあるため）
-  - `window/mainWindow.ts` — メインウィンドウの生成
+  - `window/` — `mainWindow.ts`（メインウィンドウの生成。レンダラーは sandbox で動かす）、`navigation.ts`（既定のブラウザで開いてよい URL を http/https に限る判定と、ページ遷移を同じページの再読み込みだけに限る判定。ファイルをウィンドウへドロップしたときなどにアプリの画面が置き換わるのを防ぐ）
   - `protocol/` — `local-file://` カスタムプロトコル。`localFileProtocol.ts`（`fs` でファイルを読んで返す。動画のシーク用に Range にも応じる）、`rangeRequest.ts`（Range ヘッダーの解析）
   - `ipc/handlers.ts` — `ipcMain.handle` の配線のみ。実処理は `services/` や `store/` に委譲する
   - `services/` — IPCハンドラーから呼ばれる実処理本体。`folderScan.ts`（フォルダ・ZIP・画像の一覧取得）、`imageDataUrl.ts`（sharp/nativeImageによる画像データURL生成）、`renamePath.ts`（ファイル・フォルダのリネーム、お気に入りパス追従）、`deleteFolder.ts` / `moveToUnnecessary.ts`（ごみ箱への移動）、`confirmDialog.ts`（「今後表示しない」付きの確認ダイアログ）、`zipDialogs.ts` / `settingsDialogs.ts` / `folderDialogs.ts`（ZIP 解凍の確認、設定のエクスポート/インポート、フォルダ選択のダイアログ）、`trash.ts`（ごみ箱への移動の共通処理）、`thumbnails.ts`（サムネイルの生成と、パス・JPEG のバイト列のメモリ上のキャッシュ）、`warmup.ts`（フォーカス復帰時・定期的なキャッシュの再ウォームアップ）
