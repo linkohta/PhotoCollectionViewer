@@ -60,6 +60,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - `src/renderer/src/` — React + TypeScript の UI
   - `App.tsx` — トップレベルのタブ状態管理とハンドラーの合成
   - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useProgressiveImageSource` 等）。**コンポーネントは表示、hooksがロジック**という分担
+  - `state/` — React に依存しない純粋な reducer（`tabsReducer.ts`: タブの一覧・アクティブなタブ・閉じたタブの記録）。開発時（StrictMode）は reducer が2回実行されるため、新しいタブの id のように実行のたびに変わる値は action に入れて渡し、reducer の中では作らない
   - `styles/` — すべてグローバルな CSS。`global.css`（リセット・スクロールバー、`tokens.css` の読み込み）、`tokens.css`（色の CSS 変数。色を足すときは値を直接書かずにここへ追加する）、`App.css`（`app/` の領域ごとの部分ファイルを読み込む。**読み込む順番がそのまま適用順**で、後のルールが同じ詳細度の前のルールを打ち消している箇所があるため、順番を変えない）
   - `components/` — 表示コンポーネント（`Sidebar`, `TabBar`, `TabContent`, `ThumbnailGrid`, `ImageViewer`, `ContextMenu` 等）
   - `types/` — レンダラーだけで使う型（`tab.ts`: タブの状態、`grid.ts`: サムネイル一覧の項目の種類・検索元）
