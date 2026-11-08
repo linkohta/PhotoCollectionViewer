@@ -54,6 +54,24 @@ function normalizeConfirmations(value: unknown): ConfirmationSettings {
   }
 }
 
+// Fills in what a parsed app-state.json, or an imported settings file, lacks.
+function normalizeAppState(data: Partial<AppState>): AppState {
+  return {
+    favorites: Array.isArray(data.favorites) ? data.favorites : [],
+    session: data.session ?? defaultAppState().session,
+    windowState: data.windowState ?? {},
+    confirmations: normalizeConfirmations(data.confirmations)
+  }
+}
+
+function normalizeSession(data: Partial<SessionData>): SessionData {
+  return {
+    tabs: Array.isArray(data.tabs) ? data.tabs : [],
+    activeTabIndex: typeof data.activeTabIndex === 'number' ? data.activeTabIndex : 0,
+    closedTabs: Array.isArray(data.closedTabs) ? data.closedTabs : []
+  }
+}
+
 function getStorePath(): string {
   return getAppRootFilePath('app-state.json')
 }
@@ -80,16 +98,7 @@ function loadAppState(): LoadedAppState {
   }
 
   try {
-    const data = JSON.parse(raw) as Partial<AppState>
-    return {
-      state: {
-        favorites: Array.isArray(data.favorites) ? data.favorites : [],
-        session: data.session ?? defaultAppState().session,
-        windowState: data.windowState ?? {},
-        confirmations: normalizeConfirmations(data.confirmations)
-      },
-      writable: true
-    }
+    return { state: normalizeAppState(JSON.parse(raw) as Partial<AppState>), writable: true }
   } catch {
     return { state: defaultAppState(), writable: moveCorruptStoreAside(storePath) }
   }
@@ -125,14 +134,7 @@ export function exportAppState(destPath: string): void {
 }
 
 export function importAppState(srcPath: string): AppState {
-  const raw = readFileSync(srcPath, 'utf-8')
-  const data = JSON.parse(raw) as Partial<AppState>
-  const state: AppState = {
-    favorites: Array.isArray(data.favorites) ? data.favorites : [],
-    session: data.session ?? defaultAppState().session,
-    windowState: data.windowState ?? {},
-    confirmations: normalizeConfirmations(data.confirmations)
-  }
+  const state = normalizeAppState(JSON.parse(readFileSync(srcPath, 'utf-8')) as Partial<AppState>)
   writeAppState(state)
   return state
 }
@@ -199,12 +201,7 @@ export function migrateLegacyStoreFiles(): void {
 
   const legacySession = readLegacyJson<Partial<SessionData>>(LEGACY_SESSION_FILE)
   if (legacySession) {
-    state.session = {
-      tabs: Array.isArray(legacySession.tabs) ? legacySession.tabs : [],
-      activeTabIndex:
-        typeof legacySession.activeTabIndex === 'number' ? legacySession.activeTabIndex : 0,
-      closedTabs: Array.isArray(legacySession.closedTabs) ? legacySession.closedTabs : []
-    }
+    state.session = normalizeSession(legacySession)
   }
 
   const legacyWindowState = readLegacyJson<Partial<WindowState>>(LEGACY_WINDOW_STATE_FILE)
