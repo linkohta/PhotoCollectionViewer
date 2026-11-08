@@ -1,6 +1,6 @@
 import type { BrowseOptions } from '../types/browse'
 import type { TabState } from '../types/tab'
-import { isSameOrChildPath } from '../utils/files'
+import { isSameOrChildPath } from '../utils/paths'
 
 export function findTab(tabs: TabState[], tabId: string): TabState | undefined {
   return tabs.find((tab) => tab.id === tabId)

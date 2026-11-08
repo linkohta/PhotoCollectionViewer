@@ -1,4 +1,5 @@
 import type { FolderCollection } from '../../../shared/types'
+import { isSameOrChildPath, pathBaseName } from './paths'
 
 const joinPath = (base: string, segment: string): string => {
   const sep = base.includes('\\') ? '\\' : '/'
@@ -12,22 +13,14 @@ export function buildBreadcrumb(
 ): { label: string; path: string }[] {
   if (!rootFolderPath) return [{ label: collection.name, path: collection.path }]
 
-  const rootNorm = rootFolderPath.replace(/\\/g, '/').toLowerCase()
-  const currentNorm = collection.path.replace(/\\/g, '/')
-  const relative = currentNorm.toLowerCase().startsWith(rootNorm)
-    ? currentNorm.slice(rootFolderPath.length).replace(/^[/\\]/, '')
-    : ''
-
   const crumbs: { label: string; path: string }[] = [
-    {
-      label: rootFolderPath.split(/[/\\]/).pop() ?? rootFolderPath,
-      path: rootFolderPath
-    }
+    { label: pathBaseName(rootFolderPath) || rootFolderPath, path: rootFolderPath }
   ]
+  if (!isSameOrChildPath(collection.path, rootFolderPath)) return crumbs
 
-  if (!relative) return crumbs
-
-  const parts = relative.split(/[/\\]/).filter(Boolean)
+  // The root's length without a trailing separator ("D:\" counts as "D:").
+  const rootLength = rootFolderPath.replace(/[/\\]+$/, '').length
+  const parts = collection.path.slice(rootLength).split(/[/\\]/).filter(Boolean)
   let accumulated = rootFolderPath
 
   for (const part of parts) {

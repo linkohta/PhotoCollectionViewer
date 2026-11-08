@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { isAnimatedImagePath } from '../../../shared/media'
 import type { ImageFile, WarmupImageDescriptor } from '../../../shared/types'
 import { preloadImage } from '../utils/imagePreload'
-import { toLocalFileUrl } from '../utils/files'
+import { toLocalFileUrl } from '../../../shared/localFileUrl'
 import { getCachedThumbnailPath, setCachedThumbnailPath } from '../utils/thumbnailPathCache'
 import type { Size } from '../utils/viewerGeometry'
 

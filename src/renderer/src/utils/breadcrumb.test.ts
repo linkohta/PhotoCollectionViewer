@@ -59,9 +59,30 @@ describe('buildBreadcrumb', () => {
     })
   })
 
-  // F10: the root crumb of a drive root is currently labelled ''.
-  it.fails('labels a drive root with its drive name', () => {
+  it('labels a drive root with its drive name', () => {
     expect(buildBreadcrumb(collectionAt('D:\\Photos', 'Photos'), 'D:\\')[0]?.label).toBe('D:')
+  })
+
+  it('labels a root given with a trailing separator by its folder name', () => {
+    expect(buildBreadcrumb(collectionAt('C:\\Photos\\2024', '2024'), 'C:\\Photos\\')).toEqual([
+      { label: 'Photos', path: 'C:\\Photos\\' },
+      { label: '2024', path: 'C:\\Photos\\2024' }
+    ])
+  })
+
+  it('shows only the root for a folder whose name merely starts with the root name', () => {
+    expect(buildBreadcrumb(collectionAt('C:\\Photos2\\x', 'x'), 'C:\\Photos')).toEqual([
+      { label: 'Photos', path: 'C:\\Photos' }
+    ])
+  })
+
+  it('lists the folders below the share of a network path', () => {
+    expect(
+      buildBreadcrumb(collectionAt('\\\\server\\share\\2024', '2024'), '\\\\server\\share')
+    ).toEqual([
+      { label: 'share', path: '\\\\server\\share' },
+      { label: '2024', path: '\\\\server\\share\\2024' }
+    ])
   })
 })
 

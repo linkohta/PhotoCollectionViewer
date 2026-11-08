@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FolderCollection, SubfolderSearchResult } from '../../../shared/types'
-import { isSameOrChildPath } from '../utils/files'
+import { isSameOrChildPath } from '../utils/paths'
 
 interface UseSubfolderSearchArgs {
   collection: FolderCollection
