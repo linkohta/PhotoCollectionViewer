@@ -7,13 +7,11 @@ import { moveToTrash } from './trash'
 export async function confirmAndDeleteFolder(folderPath: string): Promise<boolean> {
   const confirmed = await confirmUnlessDisabled('deleteFolder', {
     type: 'warning',
-    buttons: ['削除', 'キャンセル'],
-    defaultId: 1,
-    cancelId: 1,
-    noLink: true,
     title: 'フォルダの削除',
     message: `「${basename(folderPath)}」を削除しますか？`,
-    detail: `フォルダとその中身をすべてごみ箱へ移動します。\n${folderPath}`
+    detail: `フォルダとその中身をすべてごみ箱へ移動します。\n${folderPath}`,
+    confirmLabel: '削除',
+    defaultToCancel: true
   })
   if (!confirmed) return false
 

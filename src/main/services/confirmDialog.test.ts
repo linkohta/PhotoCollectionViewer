@@ -1,7 +1,7 @@
 import { dialog } from 'electron'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { isConfirmationEnabled, setConfirmationEnabled } from '../store/confirmations'
-import { confirmUnlessDisabled } from './confirmDialog'
+import { confirmUnlessDisabled, type ConfirmationPrompt } from './confirmDialog'
 import { confirmAndDeleteFolder } from './deleteFolder'
 import { importSettingsViaDialog } from './settingsDialogs'
 import { confirmExtractZip } from './zipDialogs'
@@ -33,10 +33,12 @@ afterEach(() => {
 })
 
 describe('confirmUnlessDisabled', () => {
-  const prompt: Parameters<typeof confirmUnlessDisabled>[1] = {
+  const prompt: ConfirmationPrompt = {
     type: 'question',
-    buttons: ['OK', 'キャンセル'],
-    message: 'm'
+    title: 'title',
+    message: 'message',
+    detail: 'detail',
+    confirmLabel: 'OK'
   }
 
   it('confirms without asking when the confirmation is turned off', async () => {

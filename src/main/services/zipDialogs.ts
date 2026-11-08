@@ -7,11 +7,8 @@ export async function confirmExtractZip(
 ): Promise<boolean> {
   return confirmUnlessDisabled('extractZip', {
     type: 'question',
-    buttons: isExtracted ? ['開く', 'キャンセル'] : ['解凍', 'キャンセル'],
-    defaultId: 0,
-    cancelId: 1,
-    noLink: true,
     title: 'ZIPファイル',
+    confirmLabel: isExtracted ? '開く' : '解凍',
     message: isExtracted ? `「${zipName}」は既に解凍済みです。` : `「${zipName}」を解凍しますか？`,
     detail: isExtracted
       ? `解凍先フォルダを開きます。\n${extractPath}`
