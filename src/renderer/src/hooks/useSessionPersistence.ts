@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { TabSnapshot } from '../../../shared/types'
-import { restoreTabFromSnapshot, tabToSnapshot, type TabState } from '../types/tab'
+import { tabToSnapshot, type TabState } from '../types/tab'
+import { restoreTabFromSnapshot } from '../utils/restoreTab'
 
 const SAVE_DEBOUNCE_MS = 400
 

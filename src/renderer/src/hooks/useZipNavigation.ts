@@ -1,11 +1,12 @@
 import { useCallback } from 'react'
 import type { ZipArchive } from '../../../shared/types'
-import type { TabState } from '../types/tab'
+import { findTab } from '../state/tabTransitions'
+import type { TabState, UpdateTab } from '../types/tab'
 import type { BrowseFolder } from './useBrowseFolder'
 
 interface UseZipNavigationArgs {
   tabs: TabState[]
-  updateTab: (tabId: string, updater: (tab: TabState) => TabState) => void
+  updateTab: UpdateTab
   addTab: (tab?: TabState) => TabState
   browseFolder: BrowseFolder
 }
@@ -38,7 +39,7 @@ export function useZipNavigation({ tabs, updateTab, addTab, browseFolder }: UseZ
 
   const handleSelectZip = useCallback(
     async (tabId: string, zipFile: ZipArchive) => {
-      const tab = tabs.find((item) => item.id === tabId)
+      const tab = findTab(tabs, tabId)
       if (!tab?.rootFolderPath) return
       if (!(await confirmOpenZip(zipFile))) return
       await openZipInTab(tabId, zipFile, tab.rootFolderPath)

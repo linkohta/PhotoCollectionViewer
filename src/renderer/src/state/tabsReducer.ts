@@ -1,6 +1,6 @@
 import { MAX_CLOSED_TABS } from '../../../shared/constants'
 import type { TabSnapshot } from '../../../shared/types'
-import { hasRestorableContent, tabToSnapshot, type TabState } from '../types/tab'
+import { hasRestorableContent, tabToSnapshot, type TabState, type TabUpdater } from '../types/tab'
 
 export interface TabsState {
   tabs: TabState[]
@@ -13,7 +13,7 @@ export interface TabsState {
 // (StrictMode) - so anything new, such as a tab with a fresh random id, comes
 // in with the action instead of being made here.
 export type TabsAction =
-  | { type: 'update'; tabId: string; updater: (tab: TabState) => TabState }
+  | { type: 'update'; tabId: string; updater: TabUpdater }
   | { type: 'add'; tab: TabState }
   | { type: 'select'; tabId: string }
   | { type: 'reorder'; sourceId: string; targetId: string; insertAfter: boolean }
