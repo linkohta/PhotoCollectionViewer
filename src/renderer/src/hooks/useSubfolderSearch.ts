@@ -51,9 +51,10 @@ export function useSubfolderSearch({
     }
 
     let cancelled = false
-    const timer = setTimeout(async () => {
-      const results = await window.photoCollection.searchSubfolders(collection.path, query)
-      if (!cancelled) setSearchResults(results)
+    const timer = setTimeout(() => {
+      void window.photoCollection.searchSubfolders(collection.path, query).then((results) => {
+        if (!cancelled) setSearchResults(results)
+      })
     }, 200)
 
     return () => {
