@@ -63,14 +63,6 @@
   justify-content: center;
 }
 
-.viewer-image.preview {
-  filter: none;
-}
-
-.viewer-image.loaded {
-  filter: none;
-}
-
 .viewer-canvas {
   flex: 1;
   display: flex;

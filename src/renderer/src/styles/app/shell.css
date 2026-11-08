@@ -1,4 +1,4 @@
-/* App shell: overall layout and tab panels, plus the tab bar's restore button (kept here so the rule order stays the same). */
+/* App shell: overall layout, plus the tab bar's restore button (kept here so the rule order stays the same). */
 .app {
   display: flex;
   height: 100%;
@@ -27,19 +27,8 @@
   overflow: hidden;
 }
 
-.tab-panel {
-  height: 100%;
-}
-
-.tab-panel[hidden] {
-  display: none;
-}
-
 .tab-restore {
-  padding: 0 12px;
   border-left: 1px solid #333;
-  border-radius: 0;
-  font-size: 16px;
   line-height: 1;
   flex-shrink: 0;
 }

@@ -116,10 +116,7 @@
 }
 
 .tab-new {
-  padding: 0 14px;
   border-left: 1px solid #333;
-  border-radius: 0;
-  font-size: 18px;
   line-height: 1;
   flex-shrink: 0;
 }
