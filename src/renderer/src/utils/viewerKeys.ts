@@ -43,3 +43,23 @@ export function mapViewerKey(key: string, isVideo: boolean): ViewerKeyBinding | 
   if (!binding || (binding.imageOnly && isVideo)) return null
   return binding
 }
+
+// How each command's key is written for people (the toolbar's tooltips and
+// the README): the key cap, so "R" is the R key and "Shift+R" is Shift with it.
+export const VIEWER_SHORTCUT_LABELS: Readonly<Record<ViewerCommand, string>> = {
+  close: 'Esc',
+  previous: '←',
+  next: '→',
+  zoomIn: '+',
+  zoomOut: '-',
+  resetView: '0',
+  fit: 'F',
+  actualSize: '1',
+  rotateClockwise: 'R',
+  rotateCounterClockwise: 'Shift+R',
+  moveToTrash: 'Delete'
+}
+
+// A toolbar button's tooltip: what it does, its key, then an optional note.
+export const viewerButtonTitle = (title: string, command: ViewerCommand, note?: string): string =>
+  `${title} (${VIEWER_SHORTCUT_LABELS[command]})${note ? ` ${note}` : ''}`
