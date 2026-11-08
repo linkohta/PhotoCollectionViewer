@@ -118,13 +118,10 @@ describe('reading and writing slices', () => {
     })
   })
 
-  // A session without a list of tabs (a hand-edited or imported file) is
-  // passed on as it is. The renderer then fails to restore it and never saves
-  // the session again, so the file stays that way.
-  it.fails('replaces a session without a list of tabs with an empty one', () => {
-    writeJson(storePath(), { session: { activeTabIndex: 0 } })
+  it('fills in what a saved session lacks', () => {
+    writeJson(storePath(), { session: { activeTabIndex: 2, closedTabs: 'none' } })
 
-    expect(readAppStateSlice('session')).toEqual(DEFAULT_SESSION)
+    expect(readAppStateSlice('session')).toEqual({ tabs: [], activeTabIndex: 2, closedTabs: [] })
   })
 
   it('reads a file that cannot be parsed as the defaults', () => {
