@@ -1,11 +1,10 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import type { ZipArchive } from '../../../shared/types'
-import { findTab } from '../state/tabTransitions'
 import type { TabState, UpdateTab } from '../types/tab'
 import type { BrowseFolder } from './useBrowseFolder'
 
 interface UseZipNavigationArgs {
-  tabs: TabState[]
+  getTab: (tabId: string) => TabState | undefined
   updateTab: UpdateTab
   addTab: (tab?: TabState) => TabState
   browseFolder: BrowseFolder
@@ -14,7 +13,12 @@ interface UseZipNavigationArgs {
 const confirmOpenZip = (zipFile: ZipArchive): Promise<boolean> =>
   window.photoCollection.confirmExtractZip(zipFile.name, zipFile.extractPath, zipFile.isExtracted)
 
-export function useZipNavigation({ tabs, updateTab, addTab, browseFolder }: UseZipNavigationArgs) {
+export function useZipNavigation({
+  getTab,
+  updateTab,
+  addTab,
+  browseFolder
+}: UseZipNavigationArgs) {
   const openZipInTab = useCallback(
     async (tabId: string, zipFile: ZipArchive, rootFolderPath: string) => {
       updateTab(tabId, (tab) => ({
@@ -39,12 +43,12 @@ export function useZipNavigation({ tabs, updateTab, addTab, browseFolder }: UseZ
 
   const handleSelectZip = useCallback(
     async (tabId: string, zipFile: ZipArchive) => {
-      const tab = findTab(tabs, tabId)
+      const tab = getTab(tabId)
       if (!tab?.rootFolderPath) return
       if (!(await confirmOpenZip(zipFile))) return
       await openZipInTab(tabId, zipFile, tab.rootFolderPath)
     },
-    [tabs, openZipInTab]
+    [getTab, openZipInTab]
   )
 
   const handleOpenZipInNewTab = useCallback(
@@ -59,5 +63,8 @@ export function useZipNavigation({ tabs, updateTab, addTab, browseFolder }: UseZ
     [addTab, openZipInTab]
   )
 
-  return { handleSelectZip, handleOpenZipInNewTab }
+  return useMemo(
+    () => ({ handleSelectZip, handleOpenZipInNewTab }),
+    [handleSelectZip, handleOpenZipInNewTab]
+  )
 }

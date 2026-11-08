@@ -1,11 +1,11 @@
 import { useCallback } from 'react'
-import { findTab } from '../state/tabTransitions'
 import { getTabTitle, type TabState, type UpdateTab } from '../types/tab'
 import { isSameOrChildPath, replacePathPrefix } from '../utils/files'
 import type { BrowseFolder } from './useBrowseFolder'
 
 interface UseRenamePropagationArgs {
-  tabs: TabState[]
+  getTabs: () => TabState[]
+  getTab: (tabId: string) => TabState | undefined
   updateTab: UpdateTab
   browseFolder: BrowseFolder
 }
@@ -47,13 +47,18 @@ const remapTabPathsAfterRename = (
 // rooted under), every such tab's rootFolderPath/collection needs to be
 // rewritten in place so the tab keeps pointing at the renamed location
 // instead of a now-stale path.
-export function useRenamePropagation({ tabs, updateTab, browseFolder }: UseRenamePropagationArgs) {
+export function useRenamePropagation({
+  getTabs,
+  getTab,
+  updateTab,
+  browseFolder
+}: UseRenamePropagationArgs) {
   const handleRenameItem = useCallback(
     async (tabId: string, oldPath: string, newName: string): Promise<string> => {
       const newPath = await window.photoCollection.renamePath(oldPath, newName)
       if (newPath === oldPath) return newPath
 
-      for (const tab of tabs) {
+      for (const tab of getTabs()) {
         const rootMatches = tab.rootFolderPath && isSameOrChildPath(tab.rootFolderPath, oldPath)
         const collectionMatches = tab.collection && isSameOrChildPath(tab.collection.path, oldPath)
         const historyMatches = tab.history.some(
@@ -79,7 +84,7 @@ export function useRenamePropagation({ tabs, updateTab, browseFolder }: UseRenam
         })
       }
 
-      const originTab = findTab(tabs, tabId)
+      const originTab = getTab(tabId)
       if (originTab?.collection && originTab.rootFolderPath) {
         const { rootFolderPath, collection } = remapTabPathsAfterRename(originTab, oldPath, newPath)
         if (collection && rootFolderPath) {
@@ -89,7 +94,7 @@ export function useRenamePropagation({ tabs, updateTab, browseFolder }: UseRenam
 
       return newPath
     },
-    [tabs, updateTab, browseFolder]
+    [getTabs, getTab, updateTab, browseFolder]
   )
 
   return { handleRenameItem }
