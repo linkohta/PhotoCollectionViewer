@@ -75,6 +75,30 @@ describe('respondWithLocalFile', () => {
     expect(await bodyOf(response)).toBe('2345')
   })
 
+  it('serves the end of the file for a suffix range', async () => {
+    const response = await requestFile(writeFile('clip.mp4'), { Range: 'bytes=-3' })
+
+    expect(response.status).toBe(206)
+    expect(response.headers.get('content-range')).toBe('bytes 7-9/10')
+    expect(response.headers.get('content-length')).toBe('3')
+    expect(await bodyOf(response)).toBe('789')
+  })
+
+  it('stops a range running past the end at the last byte', async () => {
+    const response = await requestFile(writeFile('clip.mp4'), { Range: 'bytes=8-100' })
+
+    expect(response.headers.get('content-range')).toBe('bytes 8-9/10')
+    expect(response.headers.get('content-length')).toBe('2')
+    expect(await bodyOf(response)).toBe('89')
+  })
+
+  it('answers 416 with the file size for a range past the end', async () => {
+    const response = await requestFile(writeFile('clip.mp4'), { Range: 'bytes=10-' })
+
+    expect(response.status).toBe(416)
+    expect(response.headers.get('content-range')).toBe('bytes */10')
+  })
+
   it('answers 404 for a missing file', async () => {
     const response = await requestFile(join(workDir, 'missing.png'))
 

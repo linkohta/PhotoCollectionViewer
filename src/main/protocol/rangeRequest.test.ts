@@ -15,20 +15,26 @@ describe('resolveByteRange', () => {
     expect(resolveByteRange(rangeHeader, FILE_SIZE)).toEqual(expected)
   })
 
-  // "bytes=-200" asks for the last 200 bytes, but is read as bytes 0-200.
-  it.fails('reads a suffix range as the end of the file', () => {
+  it('reads a suffix range as the end of the file', () => {
     expect(resolveByteRange('bytes=-200', FILE_SIZE)).toEqual({ start: 800, end: 999 })
   })
 
-  // A range running past the end of the file is passed through as it is, so
-  // Content-Range and Content-Length promise more bytes than the file has.
-  it.fails('stops a range at the end of the file', () => {
+  it('serves the whole file for a suffix longer than the file', () => {
+    expect(resolveByteRange('bytes=-5000', FILE_SIZE)).toEqual({ start: 0, end: 999 })
+  })
+
+  it('stops a range at the end of the file', () => {
     expect(resolveByteRange('bytes=900-5000', FILE_SIZE)).toEqual({ start: 900, end: 999 })
   })
 
-  // A range that starts at or past the end can't be served (416), but comes
-  // back as a range that ends before it starts.
-  it.fails('rejects a range that starts past the end of the file', () => {
-    expect(resolveByteRange(`bytes=${FILE_SIZE}-`, FILE_SIZE)).toBeNull()
+  it.each([
+    [`bytes=${FILE_SIZE}-`, FILE_SIZE],
+    ['bytes=5000-6000', FILE_SIZE],
+    ['bytes=-0', FILE_SIZE],
+    ['bytes=500-100', FILE_SIZE],
+    ['bytes=0-', 0],
+    ['bytes=-10', 0]
+  ])('rejects %s of a %i-byte file, as it holds none of those bytes', (rangeHeader, fileSize) => {
+    expect(resolveByteRange(rangeHeader, fileSize)).toBeNull()
   })
 })
