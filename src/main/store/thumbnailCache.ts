@@ -6,11 +6,6 @@ import { join } from 'path'
 import { app } from 'electron'
 import sharp from 'sharp'
 
-// libuv's threadpool (default size 4) caps how many sharp operations can run
-// at once; raise it so the concurrent thumbnail queue below can actually use
-// all its slots in parallel instead of queueing behind a small fixed pool.
-process.env.UV_THREADPOOL_SIZE = String(Math.max(4, cpus().length))
-
 const memoryCache = new Map<string, string>()
 const MAX_MEMORY_CACHE = 400
 
