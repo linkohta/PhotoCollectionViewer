@@ -7,7 +7,7 @@ interface ContextMenuProps {
   label: string
   onOpenInNewTab?: () => void
   onRename?: () => void
-  onMoveToUnnecessary?: () => void
+  onMoveToTrash?: () => void
   onDelete?: () => void
   onClose: () => void
 }
@@ -18,7 +18,7 @@ export function ContextMenu({
   label,
   onOpenInNewTab,
   onRename,
-  onMoveToUnnecessary,
+  onMoveToTrash,
   onDelete,
   onClose
 }: ContextMenuProps): JSX.Element {
@@ -77,12 +77,12 @@ export function ContextMenu({
           名前の変更
         </button>
       )}
-      {onMoveToUnnecessary && (
+      {onMoveToTrash && (
         <button
           type="button"
           className="context-menu-item"
           onClick={() => {
-            onMoveToUnnecessary()
+            onMoveToTrash()
             onClose()
           }}
         >

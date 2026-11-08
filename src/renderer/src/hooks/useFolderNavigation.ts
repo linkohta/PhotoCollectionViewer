@@ -41,3 +41,5 @@ export function useFolderNavigation({
     [browsing, zip, viewer, mutations]
   )
 }
+
+export type FolderNavigation = ReturnType<typeof useFolderNavigation>

@@ -18,7 +18,7 @@ export const IPC = {
   saveSession: 'session:save',
   renamePath: 'fs:rename',
   deleteFolder: 'fs:deleteFolder',
-  moveToUnnecessary: 'fs:moveToUnnecessary',
+  moveToTrash: 'fs:moveToTrash',
   // ipcRenderer.send / ipcMain.on, no reply.
   setWarmupContext: 'warmup:setContext',
   getConfirmations: 'settings:getConfirmations',

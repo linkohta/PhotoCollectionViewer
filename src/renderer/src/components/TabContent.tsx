@@ -1,29 +1,15 @@
 import { ThumbnailGrid } from './ThumbnailGrid'
 import { ImageViewer } from './ImageViewer'
-import type { FavoriteFolder, ZipArchive } from '../../../shared/types'
-import type { SearchOrigin } from '../types/grid'
+import type { FavoriteFolder } from '../../../shared/types'
 import type { TabState } from '../types/tab'
+import type { TabActions } from '../utils/tabActions'
 
 interface TabContentProps {
   tab: TabState
   favorites: FavoriteFolder[]
   onOpenDialog: () => void
   onOpenFolder: (path: string) => void
-  onSelectSubfolder: (path: string, searchOrigin?: SearchOrigin) => void
-  onConsumePendingSearchQuery: () => void
-  onOpenSubfolderInNewTab: (path: string) => void
-  onHighlightChange: (path: string) => void
-  onSelectZip: (zipFile: ZipArchive) => void
-  onOpenZipInNewTab: (zipFile: ZipArchive) => void
-  onGoUp: () => void
-  onGoBack: () => void
-  onRenameItem: (path: string, newName: string) => Promise<void>
-  onSelectImage: (index: number) => void
-  onCloseViewer: () => void
-  onNavigate: (direction: -1 | 1) => void
-  onMoveToUnnecessary: (path: string) => void
-  onDeleteSubfolder: (path: string) => Promise<boolean>
-  onRefreshFolder: () => void
+  actions: TabActions
 }
 
 export function TabContent({
@@ -31,21 +17,7 @@ export function TabContent({
   favorites,
   onOpenDialog,
   onOpenFolder,
-  onSelectSubfolder,
-  onConsumePendingSearchQuery,
-  onOpenSubfolderInNewTab,
-  onHighlightChange,
-  onSelectZip,
-  onOpenZipInNewTab,
-  onGoUp,
-  onGoBack,
-  onRenameItem,
-  onSelectImage,
-  onCloseViewer,
-  onNavigate,
-  onMoveToUnnecessary,
-  onDeleteSubfolder,
-  onRefreshFolder
+  actions
 }: TabContentProps): JSX.Element {
   const selectedImage =
     tab.collection && tab.selectedIndex !== null
@@ -98,20 +70,8 @@ export function TabContent({
           rootFolderPath={tab.rootFolderPath}
           highlightPath={tab.highlightPath}
           pendingSearchQuery={tab.pendingSearchQuery}
-          onConsumePendingSearchQuery={onConsumePendingSearchQuery}
-          onHighlightChange={onHighlightChange}
-          onSelect={onSelectImage}
-          onSelectSubfolder={onSelectSubfolder}
-          onOpenSubfolderInNewTab={onOpenSubfolderInNewTab}
-          onSelectZip={onSelectZip}
-          onOpenZipInNewTab={onOpenZipInNewTab}
-          onGoUp={onGoUp}
           canGoBack={tab.history.length > 0}
-          onGoBack={onGoBack}
-          onRenameItem={onRenameItem}
-          onMoveToUnnecessary={onMoveToUnnecessary}
-          onDeleteSubfolder={onDeleteSubfolder}
-          onRefreshFolder={onRefreshFolder}
+          actions={actions.grid}
         />
       )}
 
@@ -124,9 +84,9 @@ export function TabContent({
             allImages={tab.collection.images}
             index={tab.selectedIndex}
             total={tab.collection.images.length}
-            onClose={onCloseViewer}
-            onNavigate={onNavigate}
-            onMoveToUnnecessary={() => onMoveToUnnecessary(selectedImage.path)}
+            onClose={actions.viewer.close}
+            onNavigate={actions.viewer.navigate}
+            onMoveToTrash={() => actions.viewer.moveToTrash(selectedImage.path)}
           />
         )}
     </div>
