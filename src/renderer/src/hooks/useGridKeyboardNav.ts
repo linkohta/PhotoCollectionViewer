@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import type { FolderCollection, ZipArchive } from '../../../shared/types'
-import { isTypingTarget } from '../utils/imagePreload'
-import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
 import type { GridItemKind, SearchOrigin } from '../types/grid'
+import { mapGridKey } from '../utils/gridKeys'
+import { isTypingTarget } from '../utils/keyboard'
+import { useKeyboardHandler } from './useKeyboardHandler'
 import type { SearchableSubfolder } from './useSubfolderSearch'
 
 interface NavigableItem {
@@ -113,97 +114,47 @@ export function useGridKeyboardNav({
     [collection, filteredSubfolders]
   )
 
-  useEffect(() => {
-    return registerViewerKeyboardHandler((event) => {
-      if (blocksGridKeyNavigation(event.target)) return
+  const openItem = (item: NavigableItem): void => {
+    if (item.kind === 'subfolder') {
+      onSelectSubfolder(
+        item.path,
+        isSearching ? { originFolderPath: collection.path, query: subfolderQuery } : undefined
+      )
+    } else if (item.kind === 'zip' && item.zipFile) {
+      onSelectZip(item.zipFile)
+    } else if (item.kind === 'image' && item.imageIndex !== undefined) {
+      onSelect(item.imageIndex)
+    }
+  }
 
-      if (event.key === 'Backspace' || (event.altKey && event.key === 'ArrowLeft')) {
-        if (!canGoBack) return
-        event.preventDefault()
-        onGoBack()
-        return
-      }
+  useKeyboardHandler((event) => {
+    if (blocksGridKeyNavigation(event.target)) return
 
-      if (event.key === 'Escape') {
-        if (!collection.parentPath) return
-        event.preventDefault()
-        onGoUp()
-        return
-      }
-
-      if (navigableItems.length === 0) return
-
-      const currentIndex = highlightPath
+    const action = mapGridKey(event, {
+      canGoBack,
+      canGoUp: Boolean(collection.parentPath),
+      itemCount: navigableItems.length,
+      currentIndex: highlightPath
         ? navigableItems.findIndex((item) => item.path === highlightPath)
         : -1
-
-      switch (event.key) {
-        case 'ArrowRight': {
-          event.preventDefault()
-          const next = navigableItems[(currentIndex + 1) % navigableItems.length]
-          onHighlightChange(next.path)
-          break
-        }
-        case 'ArrowLeft': {
-          event.preventDefault()
-          const prevIndex = currentIndex <= 0 ? navigableItems.length - 1 : currentIndex - 1
-          onHighlightChange(navigableItems[prevIndex].path)
-          break
-        }
-        case 'ArrowDown': {
-          event.preventDefault()
-          if (currentIndex < 0) {
-            onHighlightChange(navigableItems[0].path)
-            break
-          }
-          const next = findRowNeighborPath(scrollRoot, highlightPath, 1)
-          if (next) onHighlightChange(next)
-          break
-        }
-        case 'ArrowUp': {
-          event.preventDefault()
-          if (currentIndex < 0) {
-            onHighlightChange(navigableItems[navigableItems.length - 1].path)
-            break
-          }
-          const prev = findRowNeighborPath(scrollRoot, highlightPath, -1)
-          if (prev) onHighlightChange(prev)
-          break
-        }
-        case 'Enter': {
-          if (currentIndex < 0) return
-          event.preventDefault()
-          const item = navigableItems[currentIndex]
-          if (item.kind === 'subfolder') {
-            onSelectSubfolder(
-              item.path,
-              isSearching ? { originFolderPath: collection.path, query: subfolderQuery } : undefined
-            )
-          } else if (item.kind === 'zip' && item.zipFile) {
-            onSelectZip(item.zipFile)
-          } else if (item.kind === 'image' && item.imageIndex !== undefined) {
-            onSelect(item.imageIndex)
-          }
-          break
-        }
-        default:
-          break
-      }
     })
-  }, [
-    navigableItems,
-    highlightPath,
-    scrollRoot,
-    onHighlightChange,
-    onSelectSubfolder,
-    onSelectZip,
-    onSelect,
-    onGoUp,
-    canGoBack,
-    onGoBack,
-    isSearching,
-    collection.path,
-    collection.parentPath,
-    subfolderQuery
-  ])
+    if (!action) return
+    event.preventDefault()
+
+    switch (action.type) {
+      case 'goBack':
+        return onGoBack()
+      case 'goUp':
+        return onGoUp()
+      case 'highlight':
+        return onHighlightChange(navigableItems[action.index]!.path)
+      case 'highlightRow': {
+        const neighbor = findRowNeighborPath(scrollRoot, highlightPath, action.direction)
+        if (neighbor) onHighlightChange(neighbor)
+        return
+      }
+      case 'open':
+        return openItem(navigableItems[action.index]!)
+    }
+  })
 }
