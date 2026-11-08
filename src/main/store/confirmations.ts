@@ -1,8 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { readAppStateSlice, writeAppStateSlice } from './appState'
-import type { ConfirmationKind, ConfirmationSettings } from '../../preload/types'
-
-export type { ConfirmationKind, ConfirmationSettings }
+import type { ConfirmationKind, ConfirmationSettings } from '../../shared/types'
 
 export function getConfirmations(): ConfirmationSettings {
   return readAppStateSlice('confirmations')

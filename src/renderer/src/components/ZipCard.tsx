@@ -1,4 +1,4 @@
-import type { ZipArchive } from '../../../preload/index'
+import type { ZipArchive } from '../../../shared/types'
 import { RenameInput } from './RenameInput'
 import { formatFileSize } from '../utils/files'
 

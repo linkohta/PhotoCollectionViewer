@@ -1,13 +1,13 @@
 import { useEffect, useMemo } from 'react'
-import type { FolderCollection, ZipArchive } from '../../../preload/index'
+import type { FolderCollection, ZipArchive } from '../../../shared/types'
 import { isTypingTarget } from '../utils/imagePreload'
 import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
-import type { SearchOrigin } from '../hooks/useFolderNavigation'
+import type { GridItemKind, SearchOrigin } from '../types/grid'
 import type { SearchableSubfolder } from './useSubfolderSearch'
 
 interface NavigableItem {
   path: string
-  kind: 'subfolder' | 'zip' | 'image'
+  kind: GridItemKind
   zipFile?: ZipArchive
   imageIndex?: number
 }

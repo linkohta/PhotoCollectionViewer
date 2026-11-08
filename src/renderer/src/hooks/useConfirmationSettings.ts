@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { ConfirmationKind, ConfirmationSettings } from '../../../preload/index'
+import type { ConfirmationKind, ConfirmationSettings } from '../../../shared/types'
 
 // Mirrors which confirmation dialogs are enabled. Stays in sync when a
 // dialog's "don't show again" checkbox turns one off in the main process.

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ImageFile } from '../../../preload/index'
+import type { ImageFile } from '../../../shared/types'
 import { isTypingTarget } from '../utils/imagePreload'
 import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
 import { toLocalFileUrl } from '../utils/files'

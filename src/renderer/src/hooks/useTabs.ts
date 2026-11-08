@@ -1,14 +1,13 @@
 import { useCallback, useMemo, useState } from 'react'
+import { MAX_CLOSED_TABS } from '../../../shared/constants'
+import type { TabSnapshot } from '../../../shared/types'
 import {
   createEmptyTab,
   hasRestorableContent,
   restoreTabFromSnapshot,
   tabToSnapshot,
-  type TabSnapshot,
   type TabState
 } from '../types/tab'
-
-const MAX_CLOSED_TABS = 25
 
 export function useTabs() {
   const initialTab = useMemo(() => createEmptyTab(), [])

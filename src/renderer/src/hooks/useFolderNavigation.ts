@@ -1,4 +1,5 @@
 import { useCallback } from 'react'
+import type { SearchOrigin } from '../types/grid'
 import type { TabState } from '../types/tab'
 import { isSameOrChildPath } from '../utils/files'
 import { useBrowseFolder } from './useBrowseFolder'
@@ -10,11 +11,6 @@ interface UseFolderNavigationArgs {
   activeTabId: string
   updateTab: (tabId: string, updater: (tab: TabState) => TabState) => void
   addTab: (tab?: TabState) => TabState
-}
-
-export interface SearchOrigin {
-  originFolderPath: string
-  query: string
 }
 
 export function useFolderNavigation({

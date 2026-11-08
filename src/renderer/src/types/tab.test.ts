@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FolderCollection, ImageFile } from '../../../preload/index'
+import type { FolderCollection, ImageFile, TabSnapshot } from '../../../shared/types'
 import {
   createEmptyTab,
   getTabTitle,
   hasRestorableContent,
   restoreTabFromSnapshot,
-  tabToSnapshot,
-  type TabSnapshot
+  tabToSnapshot
 } from './tab'
 
 const imagesNamed = (...names: string[]): ImageFile[] =>

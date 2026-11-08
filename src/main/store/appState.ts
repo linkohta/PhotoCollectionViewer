@@ -3,33 +3,11 @@ import { join } from 'path'
 import { app } from 'electron'
 import { writeFileAtomicSync } from '../utils/atomicWrite'
 import { getAppRootFilePath, getLegacyAppRootDir } from './appRoot'
-import type { ConfirmationSettings } from '../../preload/types'
+import type { ConfirmationSettings, FavoriteFolder, SessionData } from '../../shared/types'
 
 const LEGACY_FAVORITES_FILE = 'favorites.json'
 const LEGACY_SESSION_FILE = 'session.json'
 const LEGACY_WINDOW_STATE_FILE = 'window-state.json'
-
-export interface FavoriteFolder {
-  path: string
-  name: string
-  addedAt: number
-}
-
-export type ViewMode = 'grid' | 'viewer'
-
-export interface TabSnapshot {
-  title: string
-  rootFolderPath: string | null
-  currentFolderPath: string | null
-  selectedIndex: number | null
-  viewMode: ViewMode
-}
-
-export interface SessionData {
-  tabs: TabSnapshot[]
-  activeTabIndex: number
-  closedTabs: TabSnapshot[]
-}
 
 export interface WindowState {
   width: number

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ImageFile, WarmupImageDescriptor } from '../../../preload/index'
+import type { ImageFile, WarmupImageDescriptor } from '../../../shared/types'
 import { preloadImage } from '../utils/imagePreload'
 import { toLocalFileUrl } from '../utils/files'
 import { getCachedThumbnailPath, setCachedThumbnailPath } from '../utils/thumbnailPathCache'

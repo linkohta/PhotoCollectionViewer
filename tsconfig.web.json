@@ -1,5 +1,10 @@
 {
-  "include": ["src/renderer/src/**/*", "src/renderer/src/**/*.tsx", "src/preload/**/*"],
+  "include": [
+    "src/renderer/src/**/*",
+    "src/renderer/src/**/*.tsx",
+    "src/preload/**/*",
+    "src/shared/**/*"
+  ],
   "compilerOptions": {
     "composite": true,
     "jsx": "react-jsx",

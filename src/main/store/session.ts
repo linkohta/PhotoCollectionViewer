@@ -1,14 +1,6 @@
-import {
-  readAppStateSlice,
-  writeAppStateSlice,
-  type SessionData,
-  type TabSnapshot,
-  type ViewMode
-} from './appState'
-
-export type { SessionData, TabSnapshot, ViewMode }
-
-const MAX_CLOSED_TABS = 25
+import { MAX_CLOSED_TABS } from '../../shared/constants'
+import type { SessionData, TabSnapshot } from '../../shared/types'
+import { readAppStateSlice, writeAppStateSlice } from './appState'
 
 function readSession(): SessionData {
   const data = readAppStateSlice('session')

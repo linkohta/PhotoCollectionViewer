@@ -8,7 +8,7 @@ import type {
   Subfolder,
   SubfolderSearchResult,
   ZipArchive
-} from '../../preload/types'
+} from '../../shared/types'
 
 const IMAGE_EXTENSIONS = new Set([
   '.jpg',
