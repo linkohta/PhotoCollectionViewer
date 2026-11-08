@@ -15,6 +15,7 @@
     "moduleResolution": "bundler",
     "target": "ESNext",
     "strict": true,
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
     "esModuleInterop": true
   }
