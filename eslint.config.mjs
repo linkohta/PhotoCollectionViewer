@@ -78,13 +78,6 @@ export default tseslint.config(
     }
   },
   {
-    // Already over the limit. Remove an entry once that file has been split.
-    files: ['src/renderer/src/components/ThumbnailGrid.tsx'],
-    rules: {
-      'max-lines': 'off'
-    }
-  },
-  {
     // CLAUDE.md: components show things, hooks hold the logic - including
     // the calls to the main process.
     files: ['src/renderer/src/components/**/*.{ts,tsx}'],

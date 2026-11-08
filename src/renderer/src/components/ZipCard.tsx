@@ -1,4 +1,5 @@
 import type { ZipArchive } from '../../../shared/types'
+import { CardFrame } from './CardFrame'
 import { RenameInput } from './RenameInput'
 import { formatFileSize } from '../utils/files'
 
@@ -21,36 +22,29 @@ export function ZipCard({
   onRenameSubmit,
   onRenameCancel
 }: ZipCardProps): JSX.Element {
-  if (isRenaming) {
-    return (
-      <div className="subfolder-card zip-card renaming">
-        <span className="subfolder-icon">🗜</span>
-        <span className="zip-info">
+  return (
+    <CardFrame
+      className="subfolder-card zip-card"
+      path={zipFile.path}
+      title={`${zipFile.path}\n解凍先: ${zipFile.extractPath}`}
+      isHighlighted={isHighlighted}
+      isRenaming={isRenaming}
+      onSelect={onSelect}
+      onContextMenu={onContextMenu}
+    >
+      <span className="subfolder-icon">🗜</span>
+      <span className="zip-info">
+        {isRenaming ? (
           <RenameInput
             initialName={zipFile.name}
             onSubmit={onRenameSubmit}
             onCancel={onRenameCancel}
           />
-          <span className="zip-size">{formatFileSize(zipFile.size)}</span>
-        </span>
-      </div>
-    )
-  }
-
-  return (
-    <button
-      type="button"
-      className={`subfolder-card zip-card ${isHighlighted ? 'highlighted' : ''}`}
-      data-path={zipFile.path}
-      onClick={onSelect}
-      onContextMenu={onContextMenu}
-      title={`${zipFile.path}\n解凍先: ${zipFile.extractPath}`}
-    >
-      <span className="subfolder-icon">🗜</span>
-      <span className="zip-info">
-        <span className="subfolder-name">{zipFile.name}</span>
+        ) : (
+          <span className="subfolder-name">{zipFile.name}</span>
+        )}
         <span className="zip-size">{formatFileSize(zipFile.size)}</span>
       </span>
-    </button>
+    </CardFrame>
   )
 }

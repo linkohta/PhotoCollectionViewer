@@ -65,7 +65,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
   - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useViewerImageSource`, `useNeighborPreload` 等）。**コンポーネントは表示、hooksがロジック**という分担。`useFolderNavigation` はフォルダの閲覧（`useFolderBrowsing`）・ビューワー（`useViewerNavigation`）・ファイルの変更（`useCollectionMutations`）・ZIP（`useZipNavigation`）をまとめて1つのオブジェクトで返す。これらの関数はタブを `useLatestRef` 経由で実行時に読むので、タブが変わっても作り直されない（クロージャで `tabs` を参照すると、変更のたびに関数と、それを受け取るコンポーネントの処理が作り直される）。`useActiveTabActions` は、それらをアクティブなタブに束縛したグリッドとビューワーの操作（`utils/tabActions.ts` の `GridActions` / `ViewerActions`）を返す。`TabContent` から下のコンポーネントには、タブの id を渡さずにこのオブジェクトを渡す
   - `state/` — React に依存しない純粋な状態遷移。`tabsReducer.ts`（タブの一覧・アクティブなタブ・閉じたタブの記録の reducer）、`tabTransitions.ts`（1つのタブの状態遷移: 画像の選択・前後移動・削除、サブフォルダの削除、ビューワーを閉じたあとの移動先）。フックはこれらを呼ぶだけにする。開発時（StrictMode）は reducer が2回実行されるため、新しいタブの id のように実行のたびに変わる値は action に入れて渡し、reducer の中では作らない
   - `styles/` — すべてグローバルな CSS。`global.css`（リセット・スクロールバー、`tokens.css` の読み込み）、`tokens.css`（色の CSS 変数。色を足すときは値を直接書かずにここへ追加する）、`App.css`（`app/` の領域ごとの部分ファイルを読み込む。**読み込む順番がそのまま適用順**で、後のルールが同じ詳細度の前のルールを打ち消している箇所があるため、順番を変えない）
-  - `components/` — 表示コンポーネント（`Sidebar`, `TabBar`, `TabContent`, `ThumbnailGrid`, `ImageViewer`, `ContextMenu` 等）
+  - `components/` — 表示コンポーネント（`Sidebar`, `TabBar`, `TabContent`, `ThumbnailGrid`, `ImageViewer`, `ContextMenu` 等）。グリッドの3種類のカード（`SubfolderCard`・`ZipCard`・`ThumbnailCard`）は、`CardFrame` を共通の外枠にする（通常は `data-path` 付きの button、リネーム中は div）。カードの右クリックメニューとリネームの状態は `hooks/useGridItemMenu.ts`、種類ごとのメニューの項目は `utils/gridItemMenu.ts` にある
   - `types/` — レンダラーだけで使う型（`tab.ts`: タブの状態と `UpdateTab`、`grid.ts`: サムネイル一覧の項目の種類・検索元、`browse.ts`: フォルダの開き方）
 
 プロセス間のデータフローは常に「renderer → `window.photoCollection.xxx()`（preload） → `ipcMain.handle`（main） → `services/`・`store/`・`utils/`」の一方向。新しい機能を追加する際は、この3層（preload の API / IPCハンドラー / services・store・utils の本体）を揃えて実装し、やり取りする型は `src/shared/types.ts` に置くこと。チャネル名は文字列で書かず、`src/shared/ipcChannels.ts` の `IPC` に preload の API と同じ名前のキーで追加して、preload とハンドラーの両方でその定数を使う（`preload/index.test.ts` と `ipc/handlers.test.ts` が、API・チャネル・ハンドラーの一致を検査する）。
@@ -83,7 +83,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - 関数の書き方を統一する: **公開コンポーネント（`export function Foo() {}` の形で他ファイルから使われるReactコンポーネント）は `function` 宣言**、**イベントハンドラーや短いコールバック（`onClick={() => ...}` やコンポーネント内のローカルなヘルパー関数など）はアロー関数**で書く。
 - 次のルールは ESLint で検査している（違反すると `npm run lint` がエラーになる）。
   - React コンポーネントは、公開・非公開を問わず `function` 宣言にする（`react/function-component-definition`）。
-  - 1ファイル300行まで（`max-lines`）。既に超えているファイルは `eslint.config.mjs` の例外リストに載せてあり、分割したらリストから外す。
+  - 1ファイル300行まで（`max-lines`）。例外のファイルはないので、超えそうになったら分割する。
   - プロセスをまたぐ import の禁止（`no-restricted-imports`）: renderer から `electron`・main・preload（`env.d.ts` を除く）、main から renderer、preload から main・renderer、shared から `electron`・Node の標準モジュール・React・各プロセスのコード。
   - `components/` から `window.photoCollection` を直接呼ばない（`no-restricted-syntax`）。メインプロセスとのやり取りはフック（`hooks/`）に置き、取得の手順そのものは `utils/thumbnailSource.ts` のように API を引数で受け取る純粋な関数にしてテストする。
 - **ユーザーとの応対は必ず日本語で行うこと**。
