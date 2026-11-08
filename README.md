@@ -158,7 +158,8 @@ npm start
 | `src/main/store/favorites.ts` | お気に入り永続化 |
 | `src/main/store/appRoot.ts` | 設定ファイルの保存先（`userData`、開発時はプロジェクトルート） |
 | `src/main/store/appState.ts` | 設定の読み書き、レガシー移行、インポート／エクスポート |
-| `src/main/store/thumbnailCache.ts` | サムネイルディスクキャッシュ |
+| `src/main/services/thumbnails.ts` | サムネイルの生成とメモリ上のキャッシュ |
+| `src/main/store/thumbnailDiskCache.ts` | サムネイルの保存先とファイル名 |
 | `src/renderer/src/App.tsx` | タブ状態管理 |
 | `src/renderer/src/components/TabBar.tsx` | タブバー UI（ドラッグ&ドロップ並び替え） |
 | `src/renderer/src/components/Sidebar.tsx` | サイドバー（お気に入り、右クリックメニュー） |

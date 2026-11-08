@@ -1,11 +1,8 @@
+import { createReadStream } from 'fs'
 import { BrowserWindow } from 'electron'
 import type { WarmupImageDescriptor } from '../../shared/types'
-import {
-  getOrCreateThumbnailPath,
-  getThumbnailDataUrl,
-  warmSourceFile,
-  ThumbnailQueue
-} from './thumbnailCache'
+import { ConcurrencyLimiter } from '../utils/concurrencyLimiter'
+import { getOrCreateThumbnailPath, getThumbnailDataUrl } from './thumbnails'
 
 interface WarmupContext {
   images: WarmupImageDescriptor[]
@@ -18,14 +15,31 @@ const contexts = new Map<number, WarmupContext>()
 
 // Re-reading full source files is the expensive part of warmup (thumbnail
 // lookups short-circuit instantly on a cache hit, which is the common case).
-// Running those re-reads through the same queue used for interactive
+// Running those re-reads through the same limiter used for interactive
 // thumbnail generation would let a burst of ~40 background reads queue
 // ahead of - and stall - the thumbnail the renderer needs right now for
 // whichever image the user navigates to immediately after regaining focus.
-// A separate, low-concurrency queue keeps warmup from starving interactive
+// A separate, low-concurrency limiter keeps warmup from starving interactive
 // requests and from hammering the disk (especially on slow/network drives)
 // hard enough to slow down the very navigation it's meant to speed up.
-const warmupQueue = new ThumbnailQueue(2)
+const warmupLimiter = new ConcurrencyLimiter(2)
+
+// Reads the original file's bytes so the OS file cache holds it, independent
+// of whether a thumbnail for it already exists. getOrCreateThumbnailPath
+// short-circuits on a thumbnail cache hit without touching the source file
+// at all, so it alone can't re-warm the OS cache for the full-size photo.
+async function readFileForCacheWarmup(filePath: string): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const stream = createReadStream(filePath)
+    stream.on('data', () => {})
+    stream.on('error', () => resolve())
+    stream.on('close', () => resolve())
+  })
+}
+
+function warmSourceFile(filePath: string): Promise<void> {
+  return warmupLimiter.run(() => readFileForCacheWarmup(filePath))
+}
 
 // Re-reading the full source file is only worth doing for the images the
 // user is actually likely to jump to right after regaining focus; warming
@@ -66,9 +80,9 @@ export function warmupWindow(windowId: number): void {
 
   context.images.forEach((image, position) => {
     if (position < sourceWarmupCount) {
-      void warmSourceFile(image.path, warmupQueue)
+      void warmSourceFile(image.path)
       // Also keeps the in-memory preview-bytes cache (bufferCache in
-      // thumbnailCache.ts) warm for this same hot window, so redisplaying
+      // thumbnails.ts) warm for this same hot window, so redisplaying
       // one of these needs no disk access at all, not just a cheap one.
       void getThumbnailDataUrl(image.path, context.maxSize, image.modified, image.size)
       return

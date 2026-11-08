@@ -2,7 +2,7 @@ import { extname } from 'path'
 import { nativeImage } from 'electron'
 import sharp from 'sharp'
 import { MEDIA_FORMATS } from '../../shared/media'
-import { ThumbnailQueue } from '../store/thumbnailCache'
+import { ConcurrencyLimiter } from '../utils/concurrencyLimiter'
 
 // sharp cannot decode some formats (decodedByNativeImage in MEDIA_FORMATS); only
 // those fall back to Electron's synchronous nativeImage decoder, so the common
@@ -35,13 +35,13 @@ function createImageDataUrlSync(filePath: string, maxSize: number): string | nul
 // nativeImage has no async decode/resize API, so this always runs on the main
 // process's JS thread and blocks it for the duration of the call. There's no
 // way to make the call itself non-blocking, but serializing calls through a
-// single-slot queue (with a setImmediate yield beforehand) prevents several
+// single-slot limiter (with a setImmediate yield beforehand) prevents several
 // of them from piling up back-to-back and keeps other pending IPC replies
 // from being starved behind a burst of these.
-const syncFallbackQueue = new ThumbnailQueue(1)
+const syncFallbackLimiter = new ConcurrencyLimiter(1)
 
 function runImageDataUrlSync(filePath: string, maxSize: number): Promise<string | null> {
-  return syncFallbackQueue.run(
+  return syncFallbackLimiter.run(
     () =>
       new Promise((resolve) => {
         setImmediate(() => resolve(createImageDataUrlSync(filePath, maxSize)))

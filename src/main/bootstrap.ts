@@ -30,10 +30,9 @@ if (e2eUserDataDir && !app.isPackaged) {
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
 
 // libuv's threadpool (default size 4) caps how many sharp operations can run
-// at once; raise it so the concurrent thumbnail queue (ThumbnailQueue in
-// store/thumbnailCache.ts) can actually use all its slots in parallel instead
-// of queueing behind a small fixed pool. libuv reads the size when the pool
-// first starts.
+// at once; raise it so thumbnail generation (services/thumbnails.ts) can
+// actually run as many at once as its limiter allows instead of queueing
+// behind a small fixed pool. libuv reads the size when the pool first starts.
 process.env.UV_THREADPOOL_SIZE = String(Math.max(4, cpus().length))
 
 registerLocalFileScheme()
