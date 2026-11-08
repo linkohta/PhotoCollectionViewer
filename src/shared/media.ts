@@ -25,6 +25,10 @@ export const MEDIA_FORMATS: ReadonlyMap<string, MediaFormat> = new Map([
   ['.ico', { kind: 'image', decodedByNativeImage: true }],
   ['.avif', { kind: 'image', mimeType: 'image/avif' }],
   ['.mp4', { kind: 'video', mimeType: 'video/mp4' }],
+  // .flv is listed so it shows up alongside videos in the grid, but Chromium
+  // has no built-in FLV demuxer - playback in the viewer's <video> element
+  // will fail on most FLV files, which the renderer surfaces as an error
+  // instead of silently omitting the file from the list.
   ['.flv', { kind: 'video', mimeType: 'video/x-flv' }]
 ] satisfies [string, MediaFormat][])
 
