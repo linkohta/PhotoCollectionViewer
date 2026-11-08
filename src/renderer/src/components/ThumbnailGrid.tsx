@@ -1,11 +1,10 @@
-import { useState } from 'react'
-import type { FolderCollection, ImageFile, ZipArchive } from '../../../shared/types'
-import type { GridItemKind } from '../types/grid'
+import type { FolderCollection, ImageFile } from '../../../shared/types'
 import type { GridActions } from '../utils/tabActions'
 import { buildBreadcrumb, buildCountLabel } from '../utils/breadcrumb'
 import { useGridScrollRestore } from '../hooks/useGridScrollRestore'
 import { useSubfolderSearch } from '../hooks/useSubfolderSearch'
 import { useGridKeyboardNav } from '../hooks/useGridKeyboardNav'
+import { useGridItemMenu } from '../hooks/useGridItemMenu'
 import { ContextMenu } from './ContextMenu'
 import { SubfolderCard } from './SubfolderCard'
 import { ThumbnailCard } from './ThumbnailCard'
@@ -20,20 +19,6 @@ interface ThumbnailGridProps {
   actions: GridActions
 }
 
-interface ItemMenuState {
-  x: number
-  y: number
-  path: string
-  name: string
-  kind: GridItemKind
-  zipFile?: ZipArchive
-}
-
-interface RenamingState {
-  kind: GridItemKind
-  path: string
-}
-
 export function ThumbnailGrid({
   collection,
   rootFolderPath,
@@ -42,9 +27,6 @@ export function ThumbnailGrid({
   canGoBack,
   actions
 }: ThumbnailGridProps): JSX.Element {
-  const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
-  const [renaming, setRenaming] = useState<RenamingState | null>(null)
-
   const { scrollRoot, setScrollRoot, handleGridScroll } = useGridScrollRestore(
     collection.path,
     highlightPath
@@ -79,26 +61,7 @@ export function ThumbnailGrid({
     onGoBack: actions.goBack
   })
 
-  const handleRenameSubmit = async (newName: string): Promise<void> => {
-    if (!renaming) return
-    await actions.renameItem(renaming.path, newName)
-    setRenaming(null)
-  }
-
-  const handleDeleteSubfolder = async (path: string): Promise<void> => {
-    if (await actions.deleteSubfolder(path)) removeSearchResult(path)
-  }
-
-  const openItemMenu = (
-    event: { clientX: number; clientY: number; preventDefault: () => void },
-    path: string,
-    name: string,
-    kind: ItemMenuState['kind'],
-    zipFile?: ZipArchive
-  ): void => {
-    event.preventDefault()
-    setItemMenu({ x: event.clientX, y: event.clientY, path, name, kind, zipFile })
-  }
+  const itemMenu = useGridItemMenu({ actions, removeSearchResult })
 
   const breadcrumbs = buildBreadcrumb(collection, rootFolderPath)
   const isEmpty =
@@ -191,7 +154,7 @@ export function ThumbnailGrid({
                     subtitle={subfolder.subtitle}
                     scrollRoot={scrollRoot}
                     isHighlighted={subfolder.path === highlightPath}
-                    isRenaming={renaming?.kind === 'subfolder' && renaming.path === subfolder.path}
+                    isRenaming={itemMenu.isRenaming('subfolder', subfolder.path)}
                     onSelect={() =>
                       actions.selectSubfolder(
                         subfolder.path,
@@ -201,10 +164,14 @@ export function ThumbnailGrid({
                       )
                     }
                     onContextMenu={(event) =>
-                      openItemMenu(event, subfolder.path, subfolder.name, 'subfolder')
+                      itemMenu.openMenu(event, {
+                        kind: 'subfolder',
+                        path: subfolder.path,
+                        name: subfolder.name
+                      })
                     }
-                    onRenameSubmit={handleRenameSubmit}
-                    onRenameCancel={() => setRenaming(null)}
+                    onRenameSubmit={itemMenu.submitRename}
+                    onRenameCancel={itemMenu.cancelRename}
                   />
                 ))}
               </div>
@@ -227,13 +194,18 @@ export function ThumbnailGrid({
                   key={zipFile.path}
                   zipFile={zipFile}
                   isHighlighted={zipFile.path === highlightPath}
-                  isRenaming={renaming?.kind === 'zip' && renaming.path === zipFile.path}
+                  isRenaming={itemMenu.isRenaming('zip', zipFile.path)}
                   onSelect={() => actions.selectZip(zipFile)}
                   onContextMenu={(event) =>
-                    openItemMenu(event, zipFile.path, zipFile.name, 'zip', zipFile)
+                    itemMenu.openMenu(event, {
+                      kind: 'zip',
+                      path: zipFile.path,
+                      name: zipFile.name,
+                      zipFile
+                    })
                   }
-                  onRenameSubmit={handleRenameSubmit}
-                  onRenameCancel={() => setRenaming(null)}
+                  onRenameSubmit={itemMenu.submitRename}
+                  onRenameCancel={itemMenu.cancelRename}
                 />
               ))}
             </div>
@@ -253,11 +225,15 @@ export function ThumbnailGrid({
                   isHighlighted={image.path === highlightPath}
                   onSelect={actions.selectImage}
                   onContextMenu={(event, targetImage) =>
-                    openItemMenu(event, targetImage.path, targetImage.name, 'image')
+                    itemMenu.openMenu(event, {
+                      kind: 'image',
+                      path: targetImage.path,
+                      name: targetImage.name
+                    })
                   }
-                  isRenaming={renaming?.kind === 'image' && renaming.path === image.path}
-                  onRenameSubmit={handleRenameSubmit}
-                  onRenameCancel={() => setRenaming(null)}
+                  isRenaming={itemMenu.isRenaming('image', image.path)}
+                  onRenameSubmit={itemMenu.submitRename}
+                  onRenameCancel={itemMenu.cancelRename}
                 />
               ))}
             </div>
@@ -271,31 +247,7 @@ export function ThumbnailGrid({
         )}
       </div>
 
-      {itemMenu && (
-        <ContextMenu
-          x={itemMenu.x}
-          y={itemMenu.y}
-          label={itemMenu.name}
-          onOpenInNewTab={
-            itemMenu.kind === 'image'
-              ? undefined
-              : () =>
-                  itemMenu.kind === 'zip' && itemMenu.zipFile
-                    ? actions.openZipInNewTab(itemMenu.zipFile)
-                    : actions.openSubfolderInNewTab(itemMenu.path)
-          }
-          onRename={() => setRenaming({ kind: itemMenu.kind, path: itemMenu.path })}
-          onMoveToTrash={
-            itemMenu.kind === 'image' ? () => actions.moveToTrash(itemMenu.path) : undefined
-          }
-          onDelete={
-            itemMenu.kind === 'subfolder'
-              ? () => void handleDeleteSubfolder(itemMenu.path)
-              : undefined
-          }
-          onClose={() => setItemMenu(null)}
-        />
-      )}
+      {itemMenu.menu && <ContextMenu {...itemMenu.menu} onClose={itemMenu.closeMenu} />}
     </div>
   )
 }
