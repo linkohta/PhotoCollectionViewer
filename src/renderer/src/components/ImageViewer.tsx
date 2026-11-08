@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ImageFile } from '../../../shared/types'
-import { isTypingTarget } from '../utils/imagePreload'
-import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
+import { isTypingTarget } from '../utils/keyboard'
+import { mapViewerKey, type ViewerCommand } from '../utils/viewerKeys'
+import { useKeyboardHandler } from '../hooks/useKeyboardHandler'
 import { toLocalFileUrl } from '../../../shared/localFileUrl'
 import { useImageTransform } from '../hooks/useImageTransform'
 import { useNeighborPreload } from '../hooks/useNeighborPreload'
@@ -29,12 +30,6 @@ export function ImageViewer({
 }: ImageViewerProps): JSX.Element {
   const isVideo = image.mediaType === 'video'
   const viewerRef = useRef<HTMLDivElement>(null)
-  const onCloseRef = useRef(onClose)
-  const onNavigateRef = useRef(onNavigate)
-  const onMoveToUnnecessaryRef = useRef(onMoveToUnnecessary)
-  onCloseRef.current = onClose
-  onNavigateRef.current = onNavigate
-  onMoveToUnnecessaryRef.current = onMoveToUnnecessary
 
   const fullUrl = useMemo(() => toLocalFileUrl(image.path), [image.path])
   const [videoError, setVideoError] = useState(false)
@@ -55,62 +50,42 @@ export function ImageViewer({
     viewerRef.current?.focus({ preventScroll: true })
   }, [image.path])
 
-  useEffect(() => {
-    return registerViewerKeyboardHandler((event: KeyboardEvent) => {
-      if (isTypingTarget(event.target)) return
+  const runCommand = (command: ViewerCommand): void => {
+    switch (command) {
+      case 'close':
+        return onClose()
+      case 'previous':
+        return onNavigate(-1)
+      case 'next':
+        return onNavigate(1)
+      case 'zoomIn':
+        return transform.zoom(0.2)
+      case 'zoomOut':
+        return transform.zoom(-0.2)
+      case 'resetView':
+        return transform.resetView()
+      case 'fit':
+        return transform.fitToScreen()
+      case 'actualSize':
+        return transform.showActualSize()
+      case 'rotateClockwise':
+        return transform.rotateClockwise()
+      case 'rotateCounterClockwise':
+        return transform.rotateCounterClockwise()
+      case 'moveToTrash':
+        return onMoveToUnnecessary()
+    }
+  }
 
-      switch (event.key) {
-        case 'Escape':
-          event.preventDefault()
-          event.stopImmediatePropagation()
-          onCloseRef.current()
-          break
-        case 'ArrowLeft':
-          event.preventDefault()
-          event.stopImmediatePropagation()
-          onNavigateRef.current(-1)
-          break
-        case 'ArrowRight':
-          event.preventDefault()
-          event.stopImmediatePropagation()
-          onNavigateRef.current(1)
-          break
-        case '+':
-        case '=':
-          if (isVideo) break
-          event.preventDefault()
-          transform.zoom(0.2)
-          break
-        case '-':
-          if (isVideo) break
-          event.preventDefault()
-          transform.zoom(-0.2)
-          break
-        case '0':
-          if (!isVideo) transform.resetView()
-          break
-        case 'f':
-        case 'F':
-          if (!isVideo) transform.fitToScreen()
-          break
-        case '1':
-          if (!isVideo) transform.showActualSize()
-          break
-        case 'r':
-          if (!isVideo) transform.rotateClockwise()
-          break
-        case 'R':
-          if (!isVideo) transform.rotateCounterClockwise()
-          break
-        case 'Delete':
-          event.preventDefault()
-          onMoveToUnnecessaryRef.current()
-          break
-        default:
-          break
-      }
-    })
-  }, [transform, isVideo])
+  useKeyboardHandler((event) => {
+    if (isTypingTarget(event.target)) return
+
+    const binding = mapViewerKey(event.key, isVideo)
+    if (!binding) return
+    if (binding.preventDefault) event.preventDefault()
+    if (binding.stopPropagation) event.stopImmediatePropagation()
+    runCommand(binding.command)
+  })
 
   return (
     <div
