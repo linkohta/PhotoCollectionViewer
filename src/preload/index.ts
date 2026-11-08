@@ -56,8 +56,8 @@ const api = {
   deleteFolder: (folderPath: string): Promise<boolean> =>
     ipcRenderer.invoke(IPC.deleteFolder, folderPath),
   // Moves the file to the Recycle Bin.
-  moveToUnnecessary: (targetPath: string): Promise<void> =>
-    ipcRenderer.invoke(IPC.moveToUnnecessary, targetPath),
+  moveToTrash: (targetPath: string): Promise<void> =>
+    ipcRenderer.invoke(IPC.moveToTrash, targetPath),
   setWarmupContext: (images: WarmupImageDescriptor[], maxSize: number): void =>
     ipcRenderer.send(IPC.setWarmupContext, images, maxSize),
   getConfirmations: (): Promise<ConfirmationSettings> => ipcRenderer.invoke(IPC.getConfirmations),

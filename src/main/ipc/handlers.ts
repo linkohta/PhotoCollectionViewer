@@ -11,7 +11,7 @@ import { scanFolder, searchSubfolders, findFolderPreviewImage } from '../service
 import { createImageDataUrl } from '../services/imageDataUrl'
 import { renamePath } from '../services/renamePath'
 import { confirmAndDeleteFolder } from '../services/deleteFolder'
-import { moveToUnnecessary } from '../services/moveToUnnecessary'
+import { moveImageToTrash } from '../services/moveImageToTrash'
 import { confirmExtractZip } from '../services/zipDialogs'
 import { exportSettingsViaDialog, importSettingsViaDialog } from '../services/settingsDialogs'
 import { chooseFolderViaDialog } from '../services/folderDialogs'
@@ -96,8 +96,8 @@ export function registerIpcHandlers(): void {
     return confirmAndDeleteFolder(folderPath)
   })
 
-  ipcMain.handle(IPC.moveToUnnecessary, async (_event, targetPath: string) => {
-    return moveToUnnecessary(targetPath)
+  ipcMain.handle(IPC.moveToTrash, async (_event, targetPath: string) => {
+    return moveImageToTrash(targetPath)
   })
 
   ipcMain.handle(IPC.getConfirmations, async () => {

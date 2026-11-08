@@ -121,10 +121,10 @@ export default function App(): JSX.Element {
     }
   }, [])
 
-  const handleMoveToUnnecessary = useCallback(
+  const handleMoveToTrash = useCallback(
     async (path: string) => {
       try {
-        await navigation.handleMoveToUnnecessary(activeTab.id, path)
+        await navigation.handleMoveToTrash(activeTab.id, path)
       } catch (error) {
         window.alert(toUserMessage(error, '画像をごみ箱へ移動できませんでした'))
       }
@@ -201,7 +201,7 @@ export default function App(): JSX.Element {
             onSelectImage={handleSelectImage}
             onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}
             onNavigate={(direction) => navigation.handleNavigate(activeTab.id, direction)}
-            onMoveToUnnecessary={(path) => void handleMoveToUnnecessary(path)}
+            onMoveToTrash={(path) => void handleMoveToTrash(path)}
             onDeleteSubfolder={handleDeleteSubfolder}
             onRefreshFolder={() => void navigation.handleRefreshFolder(activeTab.id)}
           />

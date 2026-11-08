@@ -16,7 +16,7 @@ interface ImageViewerProps {
   total: number
   onClose: () => void
   onNavigate: (direction: -1 | 1) => void
-  onMoveToUnnecessary: () => void
+  onMoveToTrash: () => void
 }
 
 export function ImageViewer({
@@ -26,7 +26,7 @@ export function ImageViewer({
   total,
   onClose,
   onNavigate,
-  onMoveToUnnecessary
+  onMoveToTrash
 }: ImageViewerProps): JSX.Element {
   const isVideo = image.mediaType === 'video'
   const viewerRef = useRef<HTMLDivElement>(null)
@@ -73,7 +73,7 @@ export function ImageViewer({
       case 'rotateCounterClockwise':
         return transform.rotateCounterClockwise()
       case 'moveToTrash':
-        return onMoveToUnnecessary()
+        return onMoveToTrash()
     }
   }
 
@@ -110,7 +110,7 @@ export function ImageViewer({
         onZoomOut={() => transform.zoom(-0.2)}
         onRotate={transform.rotateClockwise}
         onReset={transform.resetView}
-        onMoveToUnnecessary={onMoveToUnnecessary}
+        onMoveToTrash={onMoveToTrash}
       />
 
       {isVideo ? (

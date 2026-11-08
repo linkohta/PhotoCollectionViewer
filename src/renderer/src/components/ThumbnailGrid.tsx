@@ -26,7 +26,7 @@ interface ThumbnailGridProps {
   canGoBack: boolean
   onGoBack: () => void
   onRenameItem: (path: string, newName: string) => Promise<void>
-  onMoveToUnnecessary: (path: string) => void
+  onMoveToTrash: (path: string) => void
   onDeleteSubfolder: (path: string) => Promise<boolean>
   onRefreshFolder: () => void
 }
@@ -61,7 +61,7 @@ export function ThumbnailGrid({
   canGoBack,
   onGoBack,
   onRenameItem,
-  onMoveToUnnecessary,
+  onMoveToTrash,
   onDeleteSubfolder,
   onRefreshFolder
 }: ThumbnailGridProps): JSX.Element {
@@ -304,8 +304,8 @@ export function ThumbnailGrid({
                     : onOpenSubfolderInNewTab(itemMenu.path)
           }
           onRename={() => setRenaming({ kind: itemMenu.kind, path: itemMenu.path })}
-          onMoveToUnnecessary={
-            itemMenu.kind === 'image' ? () => onMoveToUnnecessary(itemMenu.path) : undefined
+          onMoveToTrash={
+            itemMenu.kind === 'image' ? () => onMoveToTrash(itemMenu.path) : undefined
           }
           onDelete={
             itemMenu.kind === 'subfolder'

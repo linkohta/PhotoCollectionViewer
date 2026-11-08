@@ -21,7 +21,7 @@ interface TabContentProps {
   onSelectImage: (index: number) => void
   onCloseViewer: () => void
   onNavigate: (direction: -1 | 1) => void
-  onMoveToUnnecessary: (path: string) => void
+  onMoveToTrash: (path: string) => void
   onDeleteSubfolder: (path: string) => Promise<boolean>
   onRefreshFolder: () => void
 }
@@ -43,7 +43,7 @@ export function TabContent({
   onSelectImage,
   onCloseViewer,
   onNavigate,
-  onMoveToUnnecessary,
+  onMoveToTrash,
   onDeleteSubfolder,
   onRefreshFolder
 }: TabContentProps): JSX.Element {
@@ -109,7 +109,7 @@ export function TabContent({
           canGoBack={tab.history.length > 0}
           onGoBack={onGoBack}
           onRenameItem={onRenameItem}
-          onMoveToUnnecessary={onMoveToUnnecessary}
+          onMoveToTrash={onMoveToTrash}
           onDeleteSubfolder={onDeleteSubfolder}
           onRefreshFolder={onRefreshFolder}
         />
@@ -126,7 +126,7 @@ export function TabContent({
             total={tab.collection.images.length}
             onClose={onCloseViewer}
             onNavigate={onNavigate}
-            onMoveToUnnecessary={() => onMoveToUnnecessary(selectedImage.path)}
+            onMoveToTrash={() => onMoveToTrash(selectedImage.path)}
           />
         )}
     </div>

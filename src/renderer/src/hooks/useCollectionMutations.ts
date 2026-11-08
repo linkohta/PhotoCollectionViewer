@@ -21,9 +21,9 @@ export function useCollectionMutations({
 }: UseCollectionMutationsArgs) {
   const { handleRenameItem } = useRenamePropagation({ getTabs, getTab, updateTab, browseFolder })
 
-  const handleMoveToUnnecessary = useCallback(
+  const handleMoveToTrash = useCallback(
     async (tabId: string, path: string) => {
-      await window.photoCollection.moveToUnnecessary(path)
+      await window.photoCollection.moveToTrash(path)
 
       updateTab(tabId, (tab) => removeImage(tab, path))
     },
@@ -43,7 +43,7 @@ export function useCollectionMutations({
   )
 
   return useMemo(
-    () => ({ handleRenameItem, handleMoveToUnnecessary, handleDeleteSubfolder }),
-    [handleRenameItem, handleMoveToUnnecessary, handleDeleteSubfolder]
+    () => ({ handleRenameItem, handleMoveToTrash, handleDeleteSubfolder }),
+    [handleRenameItem, handleMoveToTrash, handleDeleteSubfolder]
   )
 }
