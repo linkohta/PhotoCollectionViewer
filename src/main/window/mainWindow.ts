@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import { clearWarmupContext } from '../services/warmup'
 import { getWindowState, trackWindowState } from '../store/windowState'
+import { isExternalWebUrl, isNavigationAllowed } from './navigation'
 
 // The paths below are relative to out/main: the whole main process is bundled
 // into out/main/index.js, so __dirname doesn't depend on where this file is.
@@ -21,7 +22,9 @@ export function createMainWindow(): void {
     icon: join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      // The preload script only uses contextBridge and ipcRenderer, which work
+      // in a sandboxed renderer.
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -41,9 +44,15 @@ export function createMainWindow(): void {
     clearWarmupContext(mainWindow.id)
   })
 
+  // No other windows are opened: web links go to the default browser and
+  // anything else is ignored.
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    if (isExternalWebUrl(details.url)) void shell.openExternal(details.url)
     return { action: 'deny' }
+  })
+
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (!isNavigationAllowed(mainWindow.webContents.getURL(), url)) event.preventDefault()
   })
 
   if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
