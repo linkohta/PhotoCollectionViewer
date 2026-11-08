@@ -3,6 +3,7 @@ import { join, extname } from 'path'
 import { createReadStream } from 'fs'
 import { readFile, stat } from 'fs/promises'
 import { Readable } from 'stream'
+import { MEDIA_FORMATS } from '../shared/media'
 import { registerIpcHandlers } from './ipc/handlers'
 import { getWindowState, trackWindowState } from './store/windowState'
 import { migrateLegacyStoreFiles } from './store/appState'
@@ -92,19 +93,6 @@ function createWindow(): void {
   }
 }
 
-const MIME_TYPES: Record<string, string> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.bmp': 'image/bmp',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-  '.mp4': 'video/mp4',
-  '.flv': 'video/x-flv'
-}
-
 // `toLocalFileUrl` (utils/files.ts, renderer side) emits Windows paths as
 // `local-file:///C:/foo/bar` (drive letter immediately after the triple
 // slash). Chromium's URL canonicalizer for custom "standard" privileged
@@ -131,7 +119,8 @@ app.whenReady().then(() => {
   protocol.handle('local-file', async (request) => {
     try {
       const filePath = localFileUrlToPath(request.url)
-      const mime = MIME_TYPES[extname(filePath).toLowerCase()] ?? 'application/octet-stream'
+      const mime =
+        MEDIA_FORMATS.get(extname(filePath).toLowerCase())?.mimeType ?? 'application/octet-stream'
 
       // <video> needs Range support to seek without re-downloading the whole
       // file - Chromium requests a byte range once the user drags the

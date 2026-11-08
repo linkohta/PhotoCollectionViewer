@@ -1,6 +1,7 @@
 import { readdir, stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join, extname, basename, dirname } from 'path'
+import { MEDIA_FORMATS, type MediaFormat } from '../../shared/media'
 import { getZipExtractPath } from '../utils/zipArchive'
 import type {
   FolderCollection,
@@ -10,32 +11,19 @@ import type {
   ZipArchive
 } from '../../shared/types'
 
-const IMAGE_EXTENSIONS = new Set([
-  '.jpg',
-  '.jpeg',
-  '.png',
-  '.gif',
-  '.webp',
-  '.bmp',
-  '.tif',
-  '.tiff',
-  '.svg',
-  '.ico',
-  '.avif'
-])
-
-// .flv is included so it shows up alongside videos in the grid, but Chromium
+// .flv is listed so it shows up alongside videos in the grid, but Chromium
 // has no built-in FLV demuxer - playback in the viewer's <video> element will
 // fail on most FLV files, which the renderer surfaces as an error instead of
 // silently omitting the file from the list.
-const VIDEO_EXTENSIONS = new Set(['.mp4', '.flv'])
+const mediaKindOf = (filename: string): MediaFormat['kind'] | undefined =>
+  MEDIA_FORMATS.get(extname(filename).toLowerCase())?.kind
 
 function isImageFile(filename: string): boolean {
-  return IMAGE_EXTENSIONS.has(extname(filename).toLowerCase())
+  return mediaKindOf(filename) === 'image'
 }
 
 function isVideoFile(filename: string): boolean {
-  return VIDEO_EXTENSIONS.has(extname(filename).toLowerCase())
+  return mediaKindOf(filename) === 'video'
 }
 
 function isZipFile(filename: string): boolean {

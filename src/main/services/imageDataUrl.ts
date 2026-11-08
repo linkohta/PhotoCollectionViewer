@@ -1,11 +1,14 @@
 import { extname } from 'path'
 import { nativeImage } from 'electron'
 import sharp from 'sharp'
+import { MEDIA_FORMATS } from '../../shared/media'
 import { ThumbnailQueue } from '../store/thumbnailCache'
 
-// sharp is unsupported for these formats; fall back to Electron's (synchronous)
-// nativeImage decoder only for them so the common case never blocks the main process.
-const SHARP_UNSUPPORTED_EXTENSIONS = new Set(['.bmp', '.ico'])
+// sharp cannot decode some formats (decodedByNativeImage in MEDIA_FORMATS); only
+// those fall back to Electron's synchronous nativeImage decoder, so the common
+// case never blocks the main process.
+const isDecodedByNativeImage = (filePath: string): boolean =>
+  MEDIA_FORMATS.get(extname(filePath).toLowerCase())?.decodedByNativeImage === true
 
 function createImageDataUrlSync(filePath: string, maxSize: number): string | null {
   try {
@@ -47,7 +50,7 @@ function runImageDataUrlSync(filePath: string, maxSize: number): Promise<string 
 }
 
 export async function createImageDataUrl(filePath: string, maxSize = 4096): Promise<string | null> {
-  if (SHARP_UNSUPPORTED_EXTENSIONS.has(extname(filePath).toLowerCase())) {
+  if (isDecodedByNativeImage(filePath)) {
     return runImageDataUrlSync(filePath, maxSize)
   }
 
