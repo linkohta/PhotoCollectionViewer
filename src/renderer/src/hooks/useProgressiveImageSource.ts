@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { isAnimatedImagePath } from '../../../shared/media'
 import type { ImageFile, WarmupImageDescriptor } from '../../../shared/types'
 import { preloadImage } from '../utils/imagePreload'
 import { toLocalFileUrl } from '../utils/files'
@@ -54,7 +55,7 @@ export function useProgressiveImageSource({
       loaderRef.current = null
     }
 
-    const isAnimatedGif = image.path.toLowerCase().endsWith('.gif')
+    const isAnimatedGif = isAnimatedImagePath(image.path)
 
     const loadPreviewThenFull = async (): Promise<void> => {
       // Videos aren't handled by the sharp-based thumbnail/preview pipeline
