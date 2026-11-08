@@ -17,14 +17,13 @@ describe('localFileUrlToPath', () => {
     ['local-file://c/Photos/a%2Bb%3Dc%26d%3Be%2Cf%40g%24h.jpg', 'c:/Photos/a+b=c&d;e,f@g$h.jpg'],
     ['local-file://c/Photos/a%5Eb%60c.jpg', 'c:/Photos/a^b`c.jpg'],
     ['local-file://d/x.jpg', 'd:/x.jpg'],
-    ['local-file://d/', 'd:/']
+    ['local-file://d/', 'd:/'],
+    // A network share (\\server\share\...): the server name is the host,
+    // lowercased like any host.
+    ['local-file://server/share/a.jpg', '//server/share/a.jpg'],
+    ['local-file://server.local/Share/%E5%86%99%E7%9C%9F.jpg', '//server.local/Share/写真.jpg'],
+    ['local-file://localhost/D%24/Photos/a%20b.jpg', '//localhost/D$/Photos/a b.jpg']
   ])('turns %s into %s', (requestUrl, expected) => {
     expect(localFileUrlToPath(requestUrl)).toBe(expected)
-  })
-
-  // \\server\share\a.jpg arrives with the server name as the host, which is
-  // dropped, so files on a network share can't be loaded this way.
-  it.fails('keeps the server of a UNC path', () => {
-    expect(localFileUrlToPath('local-file://server/share/a.jpg')).toBe('//server/share/a.jpg')
   })
 })
