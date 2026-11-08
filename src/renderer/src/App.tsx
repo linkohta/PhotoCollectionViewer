@@ -15,28 +15,19 @@ import './styles/App.css'
 export default function App(): JSX.Element {
   const {
     tabs,
-    setTabs,
     activeTabId,
-    setActiveTabId,
     activeTab,
     closedTabs,
-    setClosedTabs,
     updateTab,
     addTab,
     selectTab,
     reorderTabs,
     closeTab,
-    restoreClosedTab
+    restoreClosedTab,
+    restoreSession
   } = useTabs()
 
-  useSessionPersistence({
-    tabs,
-    activeTabId,
-    closedTabs,
-    setTabs,
-    setActiveTabId,
-    setClosedTabs
-  })
+  useSessionPersistence({ tabs, activeTabId, closedTabs, restoreSession })
 
   const { favorites, toggleFavorite, refreshFavorites } = useFavorites()
   const navigation = useFolderNavigation({ tabs, activeTabId, updateTab, addTab })

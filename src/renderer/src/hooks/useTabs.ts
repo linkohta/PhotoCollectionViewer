@@ -1,19 +1,12 @@
-import { useCallback, useMemo, useState } from 'react'
-import { MAX_CLOSED_TABS } from '../../../shared/constants'
+import { useCallback, useMemo, useReducer } from 'react'
 import type { TabSnapshot } from '../../../shared/types'
-import {
-  createEmptyTab,
-  hasRestorableContent,
-  restoreTabFromSnapshot,
-  tabToSnapshot,
-  type TabState
-} from '../types/tab'
+import { initialTabsState, tabsReducer } from '../state/tabsReducer'
+import { createEmptyTab, restoreTabFromSnapshot, type TabState } from '../types/tab'
 
 export function useTabs() {
-  const initialTab = useMemo(() => createEmptyTab(), [])
-  const [tabs, setTabs] = useState<TabState[]>([initialTab])
-  const [activeTabId, setActiveTabId] = useState<string>(initialTab.id)
-  const [closedTabs, setClosedTabs] = useState<TabSnapshot[]>([])
+  const [{ tabs, activeTabId, closedTabs }, dispatch] = useReducer(tabsReducer, undefined, () =>
+    initialTabsState(createEmptyTab())
+  )
 
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0]!,
@@ -21,91 +14,58 @@ export function useTabs() {
   )
 
   const updateTab = useCallback((tabId: string, updater: (tab: TabState) => TabState) => {
-    setTabs((current) => current.map((tab) => (tab.id === tabId ? updater(tab) : tab)))
+    dispatch({ type: 'update', tabId, updater })
   }, [])
 
   const addTab = useCallback((tab: TabState = createEmptyTab()) => {
-    setTabs((current) => [...current, tab])
-    setActiveTabId(tab.id)
+    dispatch({ type: 'add', tab })
     return tab
   }, [])
 
   const selectTab = useCallback((tabId: string) => {
-    setActiveTabId(tabId)
+    dispatch({ type: 'select', tabId })
   }, [])
 
   const reorderTabs = useCallback((sourceId: string, targetId: string, insertAfter: boolean) => {
-    setTabs((current) => {
-      const fromIndex = current.findIndex((tab) => tab.id === sourceId)
-      const toIndex = current.findIndex((tab) => tab.id === targetId)
-      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-        return current
-      }
-
-      const next = [...current]
-      const [moved] = next.splice(fromIndex, 1)
-      const adjustedToIndex = next.findIndex((tab) => tab.id === targetId)
-      const insertAt = insertAfter ? adjustedToIndex + 1 : adjustedToIndex
-      next.splice(insertAt, 0, moved!)
-      return next
-    })
+    dispatch({ type: 'reorder', sourceId, targetId, insertAfter })
   }, [])
 
-  const closeTab = useCallback(
-    (tabId: string) => {
-      setTabs((current) => {
-        const closingTab = current.find((tab) => tab.id === tabId)
-        if (closingTab && hasRestorableContent(closingTab)) {
-          setClosedTabs((closed) =>
-            [tabToSnapshot(closingTab), ...closed].slice(0, MAX_CLOSED_TABS)
-          )
-        }
-
-        if (current.length === 1) {
-          const replacement = createEmptyTab()
-          setActiveTabId(replacement.id)
-          return [replacement]
-        }
-
-        const index = current.findIndex((tab) => tab.id === tabId)
-        const next = current.filter((tab) => tab.id !== tabId)
-
-        if (tabId === activeTabId) {
-          const nextIndex = Math.min(index, next.length - 1)
-          setActiveTabId(next[nextIndex]!.id)
-        }
-
-        return next
-      })
-    },
-    [activeTabId]
-  )
+  const closeTab = useCallback((tabId: string) => {
+    dispatch({ type: 'close', tabId, replacement: createEmptyTab() })
+  }, [])
 
   const restoreClosedTab = useCallback(async () => {
-    if (closedTabs.length === 0) return
-
-    const [snapshot, ...rest] = closedTabs
+    const snapshot = closedTabs[0]
     if (!snapshot) return
 
-    setClosedTabs(rest)
+    dispatch({ type: 'forgetClosedTab', snapshot })
     const tab = await restoreTabFromSnapshot(snapshot)
-    setTabs((current) => [...current, tab])
-    setActiveTabId(tab.id)
+    dispatch({ type: 'add', tab })
   }, [closedTabs])
+
+  const restoreSession = useCallback(
+    (restoredTabs: TabState[], activeTabIndex: number, restoredClosedTabs: TabSnapshot[]) => {
+      dispatch({
+        type: 'restoreSession',
+        tabs: restoredTabs,
+        activeTabIndex,
+        closedTabs: restoredClosedTabs
+      })
+    },
+    []
+  )
 
   return {
     tabs,
-    setTabs,
     activeTabId,
-    setActiveTabId,
     activeTab,
     closedTabs,
-    setClosedTabs,
     updateTab,
     addTab,
     selectTab,
     reorderTabs,
     closeTab,
-    restoreClosedTab
+    restoreClosedTab,
+    restoreSession
   }
 }
