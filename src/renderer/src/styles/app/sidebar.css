@@ -15,15 +15,15 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #bbb;
+  color: var(--color-text-label);
   cursor: pointer;
 }
 
 .sidebar {
   width: 260px;
   min-width: 260px;
-  background: #222;
-  border-right: 1px solid #333;
+  background: var(--color-surface-panel);
+  border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -31,19 +31,19 @@
 
 .sidebar-header {
   padding: 16px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .app-title {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 12px;
-  color: #fff;
+  color: var(--color-text-strong);
 }
 
 .sidebar-section {
   padding: 12px 16px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .section-title {
@@ -51,13 +51,13 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #888;
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
 .empty-text {
   font-size: 12px;
-  color: #666;
+  color: var(--color-text-faint);
 }
 
 .folder-list {
@@ -78,11 +78,11 @@
 }
 
 .folder-item:hover {
-  background: #2e2e2e;
+  background: var(--color-sidebar-item-hover);
 }
 
 .folder-item.active {
-  background: #3a3a5c;
+  background: var(--color-sidebar-item-active);
 }
 
 .folder-icon {
@@ -98,7 +98,7 @@
 
 .current-path .path-text {
   font-size: 11px;
-  color: #888;
+  color: var(--color-text-muted);
   word-break: break-all;
   line-height: 1.4;
 }

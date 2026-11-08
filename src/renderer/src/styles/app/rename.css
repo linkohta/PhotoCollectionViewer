@@ -10,15 +10,15 @@
   width: 100%;
   padding: 2px 4px;
   font-size: 12px;
-  background: #111;
-  color: #fff;
-  border: 1px solid #5a8cff;
+  background: var(--color-surface-inset);
+  color: var(--color-text-strong);
+  border: 1px solid var(--color-accent-focus);
   border-radius: 4px;
 }
 
 .rename-input-error {
   font-size: 11px;
-  color: #ff6b6b;
+  color: var(--color-error-text);
   white-space: normal;
   word-break: break-all;
 }

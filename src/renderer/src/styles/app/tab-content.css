@@ -18,7 +18,7 @@
 }
 
 .welcome-card p {
-  color: #888;
+  color: var(--color-text-muted);
   margin-bottom: 24px;
   line-height: 1.6;
 }
@@ -30,7 +30,7 @@
 
 .welcome-favorites h2 {
   font-size: 13px;
-  color: #888;
+  color: var(--color-text-muted);
   margin-bottom: 8px;
 }
 
@@ -45,12 +45,12 @@
   padding: 8px 12px;
   border-radius: 6px;
   text-align: left;
-  background: #222;
+  background: var(--color-surface-panel);
   transition: background 0.15s;
 }
 
 .welcome-favorites button:hover {
-  background: #333;
+  background: var(--color-control);
 }
 
 /* Status */
@@ -60,10 +60,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--color-overlay);
   z-index: 10;
 }
 
 .status-overlay.error {
-  color: #ff6b6b;
+  color: var(--color-error-text);
 }

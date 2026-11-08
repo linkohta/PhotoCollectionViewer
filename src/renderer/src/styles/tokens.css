@@ -1,0 +1,61 @@
+/*
+ * The app's colours. Use these instead of literal values, so a colour is
+ * defined once and keeps the same role everywhere. One-off drawing colours
+ * (the folder icon) and shadows stay where they are used.
+ */
+:root {
+  /* Backgrounds, roughly darkest first */
+  --color-surface-viewer: #0a0a0a;
+  --color-surface-inset: #111;
+  --color-surface-content: #121212;
+  --color-bg: #1a1a1a;
+  --color-surface-card: #1e1e1e;
+  --color-surface-panel: #222;
+  --color-placeholder-shine: #252525;
+  --color-surface-raised: #2a2a2a;
+  --color-surface-hover: #3a3a3a;
+  --color-sidebar-item-hover: #2e2e2e;
+  --color-sidebar-item-active: #3a3a5c;
+  --color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Buttons */
+  --color-control: #333;
+  --color-control-hover: #444;
+
+  /* Borders */
+  --color-border-subtle: #2a2a2a;
+  --color-border: #333;
+  --color-border-menu: #3a3a3a;
+  --color-border-strong: #444;
+
+  /* Text, strongest first */
+  --color-text-strong: #fff;
+  --color-text: #e8e8e8;
+  --color-text-label: #bbb;
+  --color-text-secondary: #aaa;
+  --color-text-muted: #888;
+  --color-text-faint: #666;
+  --color-text-separator: #555;
+
+  /* Accent (selection, primary actions) */
+  --color-accent: #4a6cf7;
+  --color-accent-hover: #5a7cff;
+  --color-accent-focus: #5a8cff;
+  --color-accent-subtle: #24304f;
+
+  /* Destructive actions and errors */
+  --color-danger: #7a2b2b;
+  --color-danger-hover: #9c3838;
+  --color-danger-text: #ff7b7b;
+  --color-danger-subtle: #4a2626;
+  --color-error-text: #ff6b6b;
+
+  /* Favorites */
+  --color-favorite: #ffd700;
+  --color-favorite-bg: #3d3520;
+
+  /* Loading spinner and scrollbars */
+  --color-spinner-track: #555;
+  --color-scrollbar-thumb: #444;
+  --color-scrollbar-thumb-hover: #555;
+}
