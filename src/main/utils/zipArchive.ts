@@ -28,10 +28,9 @@ function detectMatchingRootPrefix(entries: AdmZip.IZipEntry[], zipBaseName: stri
 
   for (const entry of fileEntries) {
     const normalized = normalizeEntryPath(entry.entryName)
-    const parts = normalized.split('/').filter(Boolean)
-    if (parts.length === 0) return null
+    const [root] = normalized.split('/').filter(Boolean)
+    if (root === undefined) return null
 
-    const root = parts[0]
     if (root.toLowerCase() !== zipBaseName.toLowerCase()) {
       return null
     }

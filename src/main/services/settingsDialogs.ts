@@ -24,7 +24,8 @@ export async function importSettingsViaDialog(): Promise<boolean> {
     properties: ['openFile'],
     filters: [{ name: 'JSON', extensions: ['json'] }]
   })
-  if (result.canceled || result.filePaths.length === 0) return false
+  const [filePath] = result.filePaths
+  if (result.canceled || filePath === undefined) return false
 
   const confirmed = await confirmUnlessDisabled('importSettings', {
     type: 'question',
@@ -36,7 +37,7 @@ export async function importSettingsViaDialog(): Promise<boolean> {
   if (!confirmed) return false
 
   try {
-    importAppState(result.filePaths[0])
+    importAppState(filePath)
   } catch {
     throw new Error('設定ファイルの読み込みに失敗しました。ファイルの内容を確認してください。')
   }
