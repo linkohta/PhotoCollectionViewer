@@ -1,157 +1,14 @@
-import { app, BrowserWindow, shell, protocol } from 'electron'
-import { join, extname } from 'path'
-import { createReadStream } from 'fs'
-import { readFile, stat } from 'fs/promises'
-import { Readable } from 'stream'
-import { MEDIA_FORMATS } from '../shared/media'
+// Has to stay the first import - see bootstrap.ts.
+import './bootstrap'
+import { app, BrowserWindow } from 'electron'
 import { registerIpcHandlers } from './ipc/handlers'
-import { getWindowState, trackWindowState } from './store/windowState'
+import { serveLocalFiles } from './protocol/localFileProtocol'
 import { migrateLegacyStoreFiles } from './store/appState'
-import { clearWarmupContext, startPeriodicWarmup, warmupWindow } from './store/warmup'
-
-// Must run before app.whenReady() - Chromium resolves the userData path (and
-// with it, where the GPU shader disk cache lives) from the app name during
-// early startup, before any of the ready-time code below runs. Setting the
-// name late doesn't retroactively fix a cache path Chromium already picked.
-app.setName('PhotoCollectionViewer')
-
-// The E2E tests (e2e/) run the built app against a throwaway profile, so they
-// never touch the developer's settings or thumbnail cache. Like setName this
-// has to happen before Chromium picks the userData path. Packaged builds
-// ignore it.
-const e2eUserDataDir = process.env['PCV_USER_DATA_DIR']
-if (e2eUserDataDir && !app.isPackaged) {
-  app.setPath('userData', e2eUserDataDir)
-}
-
-// Silences a benign but noisy Windows warning ("Unable to create cache" /
-// "Gpu Cache Creation failed: -2") that shows up when electron-vite's dev
-// hot-reload restarts the main process while a previous instance still holds
-// the GPU shader cache directory open. The shader cache is a pure
-// performance optimization (avoids recompiling shaders across launches); the
-// app has no shader-heavy rendering, so disabling it has no visible effect.
-app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
-
-protocol.registerSchemesAsPrivileged([
-  {
-    scheme: 'local-file',
-    privileges: {
-      standard: true,
-      secure: true,
-      supportFetchAPI: true,
-      bypassCSP: true,
-      stream: true
-    }
-  }
-])
-
-function createWindow(): void {
-  const savedState = getWindowState()
-
-  const mainWindow = new BrowserWindow({
-    width: savedState.width,
-    height: savedState.height,
-    x: savedState.x,
-    y: savedState.y,
-    minWidth: 900,
-    minHeight: 600,
-    show: false,
-    autoHideMenuBar: true,
-    title: 'PhotoCollectionViewer',
-    icon: join(__dirname, '../../resources/icon.png'),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
-      contextIsolation: true,
-      nodeIntegration: false
-    }
-  })
-
-  if (savedState.isMaximized) {
-    mainWindow.maximize()
-  }
-
-  trackWindowState(mainWindow)
-
-  mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
-  })
-
-  mainWindow.on('closed', () => {
-    clearWarmupContext(mainWindow.id)
-  })
-
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
-
-  if (!app.isPackaged && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
-}
-
-// `toLocalFileUrl` (utils/files.ts, renderer side) emits Windows paths as
-// `local-file:///C:/foo/bar` (drive letter immediately after the triple
-// slash). Chromium's URL canonicalizer for custom "standard" privileged
-// schemes parses "C:" right after "//" as authority "host:port" syntax,
-// silently drops the invalid/empty port along with the colon, and folds the
-// bare drive letter into `request.url`'s hostname - e.g. the above becomes
-// `local-file://c/foo/bar` (hostname "c", pathname "/foo/bar") by the time
-// it reaches this handler. Reattach the colon to the hostname to recover a
-// valid path; Windows drive letters are case-insensitive so the lowercased
-// hostname works as-is.
-function localFileUrlToPath(requestUrl: string): string {
-  const url = new URL(requestUrl)
-  const decodedPath = decodeURIComponent(url.pathname)
-  if (/^[a-zA-Z]$/.test(url.hostname)) {
-    return `${url.hostname}:${decodedPath}`
-  }
-  return decodedPath
-}
+import { startPeriodicWarmup, warmupWindow } from './store/warmup'
+import { createMainWindow } from './window/mainWindow'
 
 app.whenReady().then(() => {
-  // Reads the file directly with Node's fs rather than delegating to
-  // net.fetch('file://...'), which intermittently fails with
-  // net::ERR_UNEXPECTED for larger files (observed with animated GIFs).
-  protocol.handle('local-file', async (request) => {
-    try {
-      const filePath = localFileUrlToPath(request.url)
-      const mime =
-        MEDIA_FORMATS.get(extname(filePath).toLowerCase())?.mimeType ?? 'application/octet-stream'
-
-      // <video> needs Range support to seek without re-downloading the whole
-      // file - Chromium requests a byte range once the user drags the
-      // scrubber, and won't seek at all if the response doesn't honor it.
-      const rangeHeader = request.headers.get('range')
-      if (rangeHeader) {
-        const fileStat = await stat(filePath)
-        const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader)
-        const start = match?.[1] ? Number(match[1]) : 0
-        const end = match?.[2] ? Number(match[2]) : fileStat.size - 1
-
-        return new Response(
-          Readable.toWeb(createReadStream(filePath, { start, end })) as ReadableStream,
-          {
-            status: 206,
-            headers: {
-              'Content-Type': mime,
-              'Content-Range': `bytes ${start}-${end}/${fileStat.size}`,
-              'Content-Length': String(end - start + 1),
-              'Accept-Ranges': 'bytes'
-            }
-          }
-        )
-      }
-
-      const data = await readFile(filePath)
-      return new Response(data, { headers: { 'Content-Type': mime, 'Accept-Ranges': 'bytes' } })
-    } catch {
-      return new Response(null, { status: 404 })
-    }
-  })
+  serveLocalFiles()
 
   // A failed migration must not keep the app from starting - an exception
   // here would skip the IPC handlers and the window below.
@@ -161,10 +18,10 @@ app.whenReady().then(() => {
     console.error('Failed to migrate settings from an older version', error)
   }
   registerIpcHandlers()
-  createWindow()
+  createMainWindow()
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
   })
 
   // Re-warm the thumbnail cache for whatever the renderer last reported as
