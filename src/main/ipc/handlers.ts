@@ -1,6 +1,7 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron'
-import { getFavorites, addFavorite, removeFavorite } from '../store/favorites'
+import { ipcMain, BrowserWindow } from 'electron'
+import { IPC } from '../../shared/ipcChannels'
 import type { ConfirmationKind, SessionData, WarmupImageDescriptor } from '../../shared/types'
+import { getFavorites, addFavorite, removeFavorite } from '../store/favorites'
 import { getSession, saveSession } from '../store/session'
 import { getConfirmations, setConfirmationEnabled } from '../store/confirmations'
 import { getOrCreateThumbnailPath, getThumbnailDataUrl } from '../store/thumbnailCache'
@@ -13,111 +14,105 @@ import { confirmAndDeleteFolder } from '../services/deleteFolder'
 import { moveToUnnecessary } from '../services/moveToUnnecessary'
 import { confirmExtractZip } from '../services/zipDialogs'
 import { exportSettingsViaDialog, importSettingsViaDialog } from '../services/settingsDialogs'
+import { chooseFolderViaDialog } from '../services/folderDialogs'
 
 export function registerIpcHandlers(): void {
-  ipcMain.handle('dialog:openFolder', async () => {
-    const result = await dialog.showOpenDialog({
-      properties: ['openDirectory']
-    })
-    if (result.canceled || result.filePaths.length === 0) return null
-    return result.filePaths[0]
+  ipcMain.handle(IPC.openFolderDialog, async () => {
+    return chooseFolderViaDialog()
   })
 
-  ipcMain.handle('folder:scan', async (_event, folderPath: string, rootPath?: string) => {
+  ipcMain.handle(IPC.scanFolder, async (_event, folderPath: string, rootPath?: string) => {
     return scanFolder(folderPath, rootPath)
   })
 
-  ipcMain.handle('folder:searchSubfolders', async (_event, folderPath: string, query: string) => {
+  ipcMain.handle(IPC.searchSubfolders, async (_event, folderPath: string, query: string) => {
     return searchSubfolders(folderPath, query)
   })
 
-  ipcMain.handle('folder:previewImage', async (_event, folderPath: string) => {
+  ipcMain.handle(IPC.getFolderPreviewImage, async (_event, folderPath: string) => {
     return findFolderPreviewImage(folderPath)
   })
 
-  ipcMain.handle('zip:extract', async (_event, zipPath: string) => {
+  ipcMain.handle(IPC.extractZip, async (_event, zipPath: string) => {
     return extractZipArchive(zipPath)
   })
 
   ipcMain.handle(
-    'zip:confirmExtract',
+    IPC.confirmExtractZip,
     async (_event, zipName: string, extractPath: string, isExtracted: boolean) => {
       return confirmExtractZip(zipName, extractPath, isExtracted)
     }
   )
 
   ipcMain.handle(
-    'image:thumbnailPath',
+    IPC.getThumbnailPath,
     async (_event, filePath: string, maxSize: number, modified: number, fileSize: number) => {
       return getOrCreateThumbnailPath(filePath, maxSize, modified, fileSize)
     }
   )
 
-  ipcMain.handle('image:dataUrl', async (_event, filePath: string) => {
+  ipcMain.handle(IPC.getImageDataUrl, async (_event, filePath: string) => {
     return createImageDataUrl(filePath)
   })
 
   ipcMain.handle(
-    'image:thumbnailDataUrl',
+    IPC.getThumbnailDataUrl,
     async (_event, filePath: string, maxSize: number, modified: number, fileSize: number) => {
       return getThumbnailDataUrl(filePath, maxSize, modified, fileSize)
     }
   )
 
-  ipcMain.on('warmup:setContext', (event, images: WarmupImageDescriptor[], maxSize: number) => {
+  ipcMain.on(IPC.setWarmupContext, (event, images: WarmupImageDescriptor[], maxSize: number) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     if (!win) return
     setWarmupContext(win.id, images, maxSize)
   })
 
-  ipcMain.handle('favorites:get', async () => {
+  ipcMain.handle(IPC.getFavorites, async () => {
     return getFavorites()
   })
 
-  ipcMain.handle('favorites:add', async (_event, folderPath: string) => {
+  ipcMain.handle(IPC.addFavorite, async (_event, folderPath: string) => {
     return addFavorite(folderPath)
   })
 
-  ipcMain.handle('favorites:remove', async (_event, folderPath: string) => {
+  ipcMain.handle(IPC.removeFavorite, async (_event, folderPath: string) => {
     return removeFavorite(folderPath)
   })
 
-  ipcMain.handle('session:get', async () => {
+  ipcMain.handle(IPC.getSession, async () => {
     return getSession()
   })
 
-  ipcMain.handle('session:save', async (_event, session: SessionData) => {
+  ipcMain.handle(IPC.saveSession, async (_event, session: SessionData) => {
     return saveSession(session)
   })
 
-  ipcMain.handle('fs:rename', async (_event, targetPath: string, newName: string) => {
+  ipcMain.handle(IPC.renamePath, async (_event, targetPath: string, newName: string) => {
     return renamePath(targetPath, newName)
   })
 
-  ipcMain.handle('fs:deleteFolder', async (_event, folderPath: string) => {
+  ipcMain.handle(IPC.deleteFolder, async (_event, folderPath: string) => {
     return confirmAndDeleteFolder(folderPath)
   })
 
-  ipcMain.handle('fs:moveToUnnecessary', async (_event, targetPath: string) => {
+  ipcMain.handle(IPC.moveToUnnecessary, async (_event, targetPath: string) => {
     return moveToUnnecessary(targetPath)
   })
 
-  ipcMain.handle('settings:getConfirmations', async () => {
+  ipcMain.handle(IPC.getConfirmations, async () => {
     return getConfirmations()
   })
 
-  ipcMain.handle(
-    'settings:setConfirmation',
-    async (_event, kind: ConfirmationKind, enabled: boolean) => {
-      return setConfirmationEnabled(kind, enabled)
-    }
-  )
+  ipcMain.handle(IPC.setConfirmation, async (_event, kind: ConfirmationKind, enabled: boolean) => {
+    return setConfirmationEnabled(kind, enabled)
+  })
 
-  ipcMain.handle('settings:export', async () => {
+  ipcMain.handle(IPC.exportSettings, async () => {
     return exportSettingsViaDialog()
   })
 
-  ipcMain.handle('settings:import', async () => {
+  ipcMain.handle(IPC.importSettings, async () => {
     return importSettingsViaDialog()
   })
 }

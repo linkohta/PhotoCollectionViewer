@@ -1,5 +1,5 @@
 import { MAX_CLOSED_TABS } from '../../shared/constants'
-import type { SessionData, TabSnapshot } from '../../shared/types'
+import type { SessionData } from '../../shared/types'
 import { readAppStateSlice, writeAppStateSlice } from './appState'
 
 function readSession(): SessionData {
@@ -23,12 +23,5 @@ export function saveSession(session: SessionData): SessionData {
   }
 
   writeAppStateSlice('session', normalized)
-  return normalized
-}
-
-export function updateClosedTabs(closedTabs: TabSnapshot[]): TabSnapshot[] {
-  const session = readSession()
-  const normalized = closedTabs.slice(0, MAX_CLOSED_TABS)
-  saveSession({ ...session, closedTabs: normalized })
   return normalized
 }

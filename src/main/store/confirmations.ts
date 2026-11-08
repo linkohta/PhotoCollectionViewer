@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron'
-import { readAppStateSlice, writeAppStateSlice } from './appState'
+import { IPC } from '../../shared/ipcChannels'
 import type { ConfirmationKind, ConfirmationSettings } from '../../shared/types'
+import { readAppStateSlice, writeAppStateSlice } from './appState'
 
 export function getConfirmations(): ConfirmationSettings {
   return readAppStateSlice('confirmations')
@@ -19,7 +20,7 @@ export function setConfirmationEnabled(
   const updated = { ...getConfirmations(), [kind]: enabled }
   writeAppStateSlice('confirmations', updated)
   for (const win of BrowserWindow.getAllWindows()) {
-    win.webContents.send('settings:confirmationsChanged', updated)
+    win.webContents.send(IPC.onConfirmationsChanged, updated)
   }
   return updated
 }

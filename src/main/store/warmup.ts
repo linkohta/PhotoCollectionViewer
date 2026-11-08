@@ -102,10 +102,3 @@ export function startPeriodicWarmup(): void {
     }
   }, PERIODIC_WARMUP_INTERVAL_MS)
 }
-
-export function stopPeriodicWarmup(): void {
-  if (periodicTimer) {
-    clearInterval(periodicTimer)
-    periodicTimer = null
-  }
-}

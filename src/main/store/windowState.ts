@@ -1,8 +1,6 @@
 import { screen, type BrowserWindow } from 'electron'
 import { readAppStateSlice, writeAppStateSlice, type WindowState } from './appState'
 
-export type { WindowState }
-
 const DEFAULT_STATE: WindowState = {
   width: 1280,
   height: 800
