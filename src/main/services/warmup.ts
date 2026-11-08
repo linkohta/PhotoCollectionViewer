@@ -44,7 +44,7 @@ function warmSourceFile(filePath: string): Promise<void> {
 // Re-reading the full source file is only worth doing for the images the
 // user is actually likely to jump to right after regaining focus; warming
 // the whole wide preview-thumbnail window (see THUMBNAIL_PRELOAD_RANGE in
-// useProgressiveImageSource.ts) would mean dozens of large re-reads for
+// renderer/src/utils/neighborWindow.ts) would mean dozens of large re-reads for
 // images several clicks away.
 const SOURCE_WARMUP_RANGE = 5
 
