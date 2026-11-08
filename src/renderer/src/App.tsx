@@ -113,9 +113,9 @@ export default function App(): JSX.Element {
       <Sidebar
         favorites={favorites}
         currentFolder={activeTab.collection?.path ?? null}
-        onOpenDialog={navigation.handleOpenDialog}
-        onOpenDialogNewTab={navigation.handleOpenDialogNewTab}
-        onSelectFolder={navigation.openFolderInActiveTab}
+        onOpenDialog={() => void navigation.handleOpenDialog()}
+        onOpenDialogNewTab={() => void navigation.handleOpenDialogNewTab()}
+        onSelectFolder={(path) => void navigation.openFolderInActiveTab(path)}
         onOpenFolderInNewTab={(path) => void navigation.handleOpenFolderInNewTab(path)}
         onToggleFavorite={handleToggleFavorite}
         isFavorite={isFavorite}
@@ -143,8 +143,8 @@ export default function App(): JSX.Element {
             key={activeTab.id}
             tab={activeTab}
             favorites={favorites}
-            onOpenDialog={navigation.handleOpenDialog}
-            onOpenFolder={navigation.openFolderInActiveTab}
+            onOpenDialog={() => void navigation.handleOpenDialog()}
+            onOpenFolder={(path) => void navigation.openFolderInActiveTab(path)}
             actions={tabActions}
           />
         </main>

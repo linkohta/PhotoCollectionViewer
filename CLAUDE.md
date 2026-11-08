@@ -85,6 +85,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
   - React コンポーネントは、公開・非公開を問わず `function` 宣言にする（`react/function-component-definition`）。
   - 1ファイル300行まで（`max-lines`）。例外のファイルはないので、超えそうになったら分割する。
   - プロセスをまたぐ import の禁止（`no-restricted-imports`）: renderer から `electron`・main・preload（`env.d.ts` を除く）、main から renderer、preload から main・renderer、shared から `electron`・Node の標準モジュール・React・各プロセスのコード。
+  - Promise を待たずに捨てるときは `void` を付ける（`@typescript-eslint/no-floating-promises`・`no-misused-promises`）。async 関数を、戻り値を使わない props（`onClick` など）や `setTimeout` にそのまま渡さず、`() => void f()` で包む。どちらも型情報を使うルールなので、lint には数秒余分にかかる。
   - `components/` から `window.photoCollection` を直接呼ばない（`no-restricted-syntax`）。メインプロセスとのやり取りはフック（`hooks/`）に置き、取得の手順そのものは `utils/thumbnailSource.ts` のように API を引数で受け取る純粋な関数にしてテストする。
 - 型チェックは `strict` に加えて `noUncheckedIndexedAccess` を有効にしている（`tsconfig.node.json`・`tsconfig.web.json`）。配列や Record の要素は無い場合（`undefined`）がある型になるので、分割代入して `undefined` を確かめるか `?? 既定値` で扱う。範囲を確かめたあとで `!` を使うときは、なぜ必ずあるのかが分かるように書く。
 - **ユーザーとの応対は必ず日本語で行うこと**。

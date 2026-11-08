@@ -7,7 +7,7 @@ import { migrateLegacyStoreFiles } from './store/appState'
 import { startPeriodicWarmup, warmupWindow } from './services/warmup'
 import { createMainWindow } from './window/mainWindow'
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   serveLocalFiles()
 
   // A failed migration must not keep the app from starting - an exception
