@@ -42,12 +42,9 @@ export function TabBar({
     )
   }, [])
 
+  // The close button isn't draggable itself, so a drag that starts on it
+  // belongs to the tab and moves it like any other.
   const handleDragStart = useCallback((event: React.DragEvent<HTMLDivElement>, tabId: string) => {
-    if ((event.target as HTMLElement).closest('.tab-close')) {
-      event.preventDefault()
-      return
-    }
-
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', tabId)
     setDraggingId(tabId)

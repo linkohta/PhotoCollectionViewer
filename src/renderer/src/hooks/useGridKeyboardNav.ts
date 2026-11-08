@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { FolderCollection, ZipArchive } from '../../../shared/types'
 import type { GridItemKind, SearchOrigin } from '../types/grid'
+import { findGridItem, findGridItems, gridItemPath, isGridItem } from '../utils/gridItemElements'
 import { mapGridKey } from '../utils/gridKeys'
 import { isTypingTarget } from '../utils/keyboard'
 import { useKeyboardHandler } from './useKeyboardHandler'
@@ -20,7 +21,7 @@ interface NavigableItem {
 const blocksGridKeyNavigation = (target: EventTarget | null): boolean => {
   if (isTypingTarget(target)) return true
   if (!(target instanceof HTMLElement)) return false
-  return target.tagName === 'BUTTON' && !target.hasAttribute('data-path')
+  return target.tagName === 'BUTTON' && !isGridItem(target)
 }
 
 interface UseGridKeyboardNavArgs {
@@ -49,15 +50,15 @@ const findRowNeighborPath = (
   direction: 1 | -1
 ): string | null => {
   if (!scrollRoot || !highlightPath) return null
-  const currentEl = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
+  const currentEl = findGridItem(scrollRoot, highlightPath)
   if (!currentEl) return null
 
   const currentRect = currentEl.getBoundingClientRect()
   const centerX = currentRect.left + currentRect.width / 2
 
-  const candidates = Array.from(scrollRoot.querySelectorAll<HTMLElement>('[data-path]'))
+  const candidates = findGridItems(scrollRoot)
     .filter((el) => el !== currentEl)
-    .map((el) => ({ path: el.dataset.path ?? '', rect: el.getBoundingClientRect() }))
+    .map((el) => ({ path: gridItemPath(el), rect: el.getBoundingClientRect() }))
     .filter(({ rect }) =>
       direction === 1 ? rect.top > currentRect.top + 1 : rect.top < currentRect.top - 1
     )
