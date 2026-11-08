@@ -36,8 +36,15 @@ const respondWithRange = async (
   rangeHeader: string
 ): Promise<Response> => {
   const fileStat = await stat(filePath)
-  const { start, end } = resolveByteRange(rangeHeader, fileStat.size)
+  const range = resolveByteRange(rangeHeader, fileStat.size)
+  if (!range) {
+    return new Response(null, {
+      status: 416,
+      headers: { 'Content-Range': `bytes */${fileStat.size}` }
+    })
+  }
 
+  const { start, end } = range
   return new Response(
     Readable.toWeb(createReadStream(filePath, { start, end })) as ReadableStream,
     {
