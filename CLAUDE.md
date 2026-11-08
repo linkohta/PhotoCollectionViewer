@@ -52,11 +52,11 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - `src/main/` — メインプロセス（Node.js）
   - `index.ts` — エントリポイント。`local-file://` カスタムプロトコル（`fs.readFile` で画像を返す。Windowsのドライブレター絡みの URL 正規化の癖に注意 — コード内コメント参照）、ウィンドウ生成、起動時の設定移行呼び出し
   - `ipc/handlers.ts` — `ipcMain.handle` の配線のみ。実処理は `services/` や `store/` に委譲する
-  - `services/` — IPCハンドラーから呼ばれる実処理本体。`folderScan.ts`（フォルダ・ZIP・画像の一覧取得）、`imageDataUrl.ts`（sharp/nativeImageによる画像データURL生成）、`renamePath.ts`（ファイル・フォルダのリネーム、お気に入りパス追従）、`deleteFolder.ts` / `moveToUnnecessary.ts`（ごみ箱への移動）、`confirmDialog.ts`（「今後表示しない」付きの確認ダイアログ）、`zipDialogs.ts` / `settingsDialogs.ts`（ZIP 解凍の確認、設定のエクスポート/インポートのダイアログ）
+  - `services/` — IPCハンドラーから呼ばれる実処理本体。`folderScan.ts`（フォルダ・ZIP・画像の一覧取得）、`imageDataUrl.ts`（sharp/nativeImageによる画像データURL生成）、`renamePath.ts`（ファイル・フォルダのリネーム、お気に入りパス追従）、`deleteFolder.ts` / `moveToUnnecessary.ts`（ごみ箱への移動）、`confirmDialog.ts`（「今後表示しない」付きの確認ダイアログ）、`zipDialogs.ts` / `settingsDialogs.ts` / `folderDialogs.ts`（ZIP 解凍の確認、設定のエクスポート/インポート、フォルダ選択のダイアログ）、`trash.ts`（ごみ箱への移動の共通処理）
   - `store/` — 永続化層。`appRoot.ts`（保存先ディレクトリの解決）、`appState.ts`（`app-state.json` の読み書き・レガシー移行・インポート/エクスポート）、`favorites.ts` / `session.ts` / `windowState.ts` / `confirmations.ts`（`appState.ts` 経由の薄いラッパー）、`thumbnailCache.ts`（サムネイルディスクキャッシュ）、`warmup.ts`（フォーカス復帰時のキャッシュ再ウォームアップ）
   - `utils/` — `zipArchive.ts`（ZIP 展開ロジック）、`atomicWrite.ts`（一時ファイル経由のアトミックな書き込み）
 - `src/preload/index.ts` — `contextBridge` で `window.photoCollection` API を公開。レンダラーはこの API の型（`PhotoCollectionAPI`）だけを `env.d.ts` 経由で参照する
-- `src/shared/` — 3つのプロセスすべてで使う型（`types.ts`: `ImageFile`, `FavoriteFolder`, `SessionData` 等）と定数（`constants.ts`）。electron・Node・React などに依存しない純粋な TypeScript に限る（ESLint で検査）
+- `src/shared/` — 3つのプロセスすべてで使う型（`types.ts`: `ImageFile`, `FavoriteFolder`, `SessionData` 等）、IPC のチャネル名（`ipcChannels.ts`）、定数（`constants.ts`）。electron・Node・React などに依存しない純粋な TypeScript に限る（ESLint で検査）
 - `src/renderer/src/` — React + TypeScript の UI
   - `App.tsx` — トップレベルのタブ状態管理とハンドラーの合成
   - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useProgressiveImageSource` 等）。**コンポーネントは表示、hooksがロジック**という分担
@@ -64,7 +64,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
   - `components/` — 表示コンポーネント（`Sidebar`, `TabBar`, `TabContent`, `ThumbnailGrid`, `ImageViewer`, `ContextMenu` 等）
   - `types/` — レンダラーだけで使う型（`tab.ts`: タブの状態、`grid.ts`: サムネイル一覧の項目の種類・検索元）
 
-プロセス間のデータフローは常に「renderer → `window.photoCollection.xxx()`（preload） → `ipcMain.handle`（main） → `services/`・`store/`・`utils/`」の一方向。新しい機能を追加する際は、この3層（preload の API / IPCハンドラー / services・store・utils の本体）を揃えて実装し、やり取りする型は `src/shared/types.ts` に置くこと。
+プロセス間のデータフローは常に「renderer → `window.photoCollection.xxx()`（preload） → `ipcMain.handle`（main） → `services/`・`store/`・`utils/`」の一方向。新しい機能を追加する際は、この3層（preload の API / IPCハンドラー / services・store・utils の本体）を揃えて実装し、やり取りする型は `src/shared/types.ts` に置くこと。チャネル名は文字列で書かず、`src/shared/ipcChannels.ts` の `IPC` に preload の API と同じ名前のキーで追加して、preload とハンドラーの両方でその定数を使う（`preload/index.test.ts` と `ipc/handlers.test.ts` が、API・チャネル・ハンドラーの一致を検査する）。
 
 設定ファイルまわりを変更する際は、`app-state.json` の保存先が `userData` であること・旧パスからの移行ロジックがあることを前提に、`appRoot.ts` / `appState.ts` の既存の仕組みに沿わせること。
 

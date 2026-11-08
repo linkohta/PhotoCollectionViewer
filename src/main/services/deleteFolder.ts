@@ -1,10 +1,9 @@
-import { shell } from 'electron'
 import { basename } from 'path'
 import { confirmUnlessDisabled } from './confirmDialog'
+import { moveToTrash } from './trash'
 
-// Asks for confirmation, then moves the folder to the Recycle Bin rather than
-// deleting it outright, so a mistaken delete can still be restored from
-// Explorer. Returns false when the user cancels.
+// Asks for confirmation, then moves the folder to the Recycle Bin. Returns
+// false when the user cancels.
 export async function confirmAndDeleteFolder(folderPath: string): Promise<boolean> {
   const confirmed = await confirmUnlessDisabled('deleteFolder', {
     type: 'warning',
@@ -18,10 +17,6 @@ export async function confirmAndDeleteFolder(folderPath: string): Promise<boolea
   })
   if (!confirmed) return false
 
-  try {
-    await shell.trashItem(folderPath)
-  } catch {
-    throw new Error('フォルダの削除に失敗しました')
-  }
+  await moveToTrash(folderPath, 'フォルダの削除に失敗しました')
   return true
 }

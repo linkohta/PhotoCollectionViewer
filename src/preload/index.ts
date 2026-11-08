@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { IPC } from '../shared/ipcChannels'
 import type {
   ConfirmationKind,
   ConfirmationSettings,
@@ -11,70 +12,69 @@ import type {
 } from '../shared/types'
 
 const api = {
-  openFolderDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:openFolder'),
+  openFolderDialog: (): Promise<string | null> => ipcRenderer.invoke(IPC.openFolderDialog),
   scanFolder: (folderPath: string, rootPath?: string): Promise<FolderCollection> =>
-    ipcRenderer.invoke('folder:scan', folderPath, rootPath),
+    ipcRenderer.invoke(IPC.scanFolder, folderPath, rootPath),
   searchSubfolders: (folderPath: string, query: string): Promise<SubfolderSearchResult[]> =>
-    ipcRenderer.invoke('folder:searchSubfolders', folderPath, query),
+    ipcRenderer.invoke(IPC.searchSubfolders, folderPath, query),
   getFolderPreviewImage: (folderPath: string): Promise<ImageFile | null> =>
-    ipcRenderer.invoke('folder:previewImage', folderPath),
-  extractZip: (zipPath: string): Promise<string> => ipcRenderer.invoke('zip:extract', zipPath),
+    ipcRenderer.invoke(IPC.getFolderPreviewImage, folderPath),
+  extractZip: (zipPath: string): Promise<string> => ipcRenderer.invoke(IPC.extractZip, zipPath),
   confirmExtractZip: (
     zipName: string,
     extractPath: string,
     isExtracted: boolean
   ): Promise<boolean> =>
-    ipcRenderer.invoke('zip:confirmExtract', zipName, extractPath, isExtracted),
+    ipcRenderer.invoke(IPC.confirmExtractZip, zipName, extractPath, isExtracted),
   getThumbnailPath: (
     filePath: string,
     maxSize: number,
     modified: number,
     fileSize: number
   ): Promise<string | null> =>
-    ipcRenderer.invoke('image:thumbnailPath', filePath, maxSize, modified, fileSize),
+    ipcRenderer.invoke(IPC.getThumbnailPath, filePath, maxSize, modified, fileSize),
   getImageDataUrl: (filePath: string): Promise<string | null> =>
-    ipcRenderer.invoke('image:dataUrl', filePath),
+    ipcRenderer.invoke(IPC.getImageDataUrl, filePath),
   getThumbnailDataUrl: (
     filePath: string,
     maxSize: number,
     modified: number,
     fileSize: number
   ): Promise<string | null> =>
-    ipcRenderer.invoke('image:thumbnailDataUrl', filePath, maxSize, modified, fileSize),
-  getFavorites: (): Promise<FavoriteFolder[]> => ipcRenderer.invoke('favorites:get'),
+    ipcRenderer.invoke(IPC.getThumbnailDataUrl, filePath, maxSize, modified, fileSize),
+  getFavorites: (): Promise<FavoriteFolder[]> => ipcRenderer.invoke(IPC.getFavorites),
   addFavorite: (folderPath: string): Promise<FavoriteFolder[]> =>
-    ipcRenderer.invoke('favorites:add', folderPath),
+    ipcRenderer.invoke(IPC.addFavorite, folderPath),
   removeFavorite: (folderPath: string): Promise<FavoriteFolder[]> =>
-    ipcRenderer.invoke('favorites:remove', folderPath),
-  getSession: (): Promise<SessionData> => ipcRenderer.invoke('session:get'),
+    ipcRenderer.invoke(IPC.removeFavorite, folderPath),
+  getSession: (): Promise<SessionData> => ipcRenderer.invoke(IPC.getSession),
   saveSession: (session: SessionData): Promise<SessionData> =>
-    ipcRenderer.invoke('session:save', session),
+    ipcRenderer.invoke(IPC.saveSession, session),
   renamePath: (targetPath: string, newName: string): Promise<string> =>
-    ipcRenderer.invoke('fs:rename', targetPath, newName),
+    ipcRenderer.invoke(IPC.renamePath, targetPath, newName),
   // Resolves false when the user cancels the confirmation dialog.
   deleteFolder: (folderPath: string): Promise<boolean> =>
-    ipcRenderer.invoke('fs:deleteFolder', folderPath),
+    ipcRenderer.invoke(IPC.deleteFolder, folderPath),
   // Moves the file to the Recycle Bin.
   moveToUnnecessary: (targetPath: string): Promise<void> =>
-    ipcRenderer.invoke('fs:moveToUnnecessary', targetPath),
+    ipcRenderer.invoke(IPC.moveToUnnecessary, targetPath),
   setWarmupContext: (images: WarmupImageDescriptor[], maxSize: number): void =>
-    ipcRenderer.send('warmup:setContext', images, maxSize),
-  getConfirmations: (): Promise<ConfirmationSettings> =>
-    ipcRenderer.invoke('settings:getConfirmations'),
+    ipcRenderer.send(IPC.setWarmupContext, images, maxSize),
+  getConfirmations: (): Promise<ConfirmationSettings> => ipcRenderer.invoke(IPC.getConfirmations),
   setConfirmation: (kind: ConfirmationKind, enabled: boolean): Promise<ConfirmationSettings> =>
-    ipcRenderer.invoke('settings:setConfirmation', kind, enabled),
+    ipcRenderer.invoke(IPC.setConfirmation, kind, enabled),
   // Fires when a dialog's "don't show again" checkbox changes the settings.
   // Returns an unsubscribe function.
   onConfirmationsChanged: (callback: (settings: ConfirmationSettings) => void): (() => void) => {
     const listener = (_event: IpcRendererEvent, settings: ConfirmationSettings): void =>
       callback(settings)
-    ipcRenderer.on('settings:confirmationsChanged', listener)
+    ipcRenderer.on(IPC.onConfirmationsChanged, listener)
     return () => {
-      ipcRenderer.removeListener('settings:confirmationsChanged', listener)
+      ipcRenderer.removeListener(IPC.onConfirmationsChanged, listener)
     }
   },
-  exportSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:export'),
-  importSettings: (): Promise<boolean> => ipcRenderer.invoke('settings:import')
+  exportSettings: (): Promise<boolean> => ipcRenderer.invoke(IPC.exportSettings),
+  importSettings: (): Promise<boolean> => ipcRenderer.invoke(IPC.importSettings)
 }
 
 contextBridge.exposeInMainWorld('photoCollection', api)
