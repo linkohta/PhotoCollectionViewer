@@ -1,7 +1,15 @@
 import { useCallback } from 'react'
+import {
+  findTab,
+  planViewerExit,
+  removeImage,
+  removeSubfolder,
+  selectImage,
+  showGrid,
+  stepImage
+} from '../state/tabTransitions'
 import type { SearchOrigin } from '../types/grid'
-import type { TabState } from '../types/tab'
-import { isSameOrChildPath } from '../utils/files'
+import type { TabState, UpdateTab } from '../types/tab'
 import { useBrowseFolder } from './useBrowseFolder'
 import { useZipNavigation } from './useZipNavigation'
 import { useRenamePropagation } from './useRenamePropagation'
@@ -9,7 +17,7 @@ import { useRenamePropagation } from './useRenamePropagation'
 interface UseFolderNavigationArgs {
   tabs: TabState[]
   activeTabId: string
-  updateTab: (tabId: string, updater: (tab: TabState) => TabState) => void
+  updateTab: UpdateTab
   addTab: (tab?: TabState) => TabState
 }
 
@@ -83,7 +91,7 @@ export function useFolderNavigation({
 
   const handleSelectSubfolder = useCallback(
     async (tabId: string, subfolderPath: string, searchOrigin?: SearchOrigin) => {
-      const tab = tabs.find((item) => item.id === tabId)
+      const tab = findTab(tabs, tabId)
       if (!tab?.rootFolderPath) return
       await openSubfolderInTab(tabId, subfolderPath, tab.rootFolderPath, searchOrigin)
     },
@@ -104,7 +112,7 @@ export function useFolderNavigation({
 
   const handleGoUp = useCallback(
     async (tabId: string) => {
-      const tab = tabs.find((item) => item.id === tabId)
+      const tab = findTab(tabs, tabId)
       if (!tab?.collection?.parentPath || !tab.rootFolderPath) return
       await browseFolder(tabId, tab.collection.parentPath, tab.rootFolderPath, {
         highlightPath: tab.collection.path
@@ -115,7 +123,7 @@ export function useFolderNavigation({
 
   const handleGoBack = useCallback(
     async (tabId: string) => {
-      const tab = tabs.find((item) => item.id === tabId)
+      const tab = findTab(tabs, tabId)
       const entry = tab?.history[tab.history.length - 1]
       if (!tab || !entry) return
       await browseFolder(tabId, entry.folderPath, entry.rootFolderPath, {
@@ -129,68 +137,29 @@ export function useFolderNavigation({
 
   const handleSelectImage = useCallback(
     (tabId: string, index: number) => {
-      updateTab(tabId, (tab) => ({
-        ...tab,
-        selectedIndex: index,
-        viewMode: 'viewer',
-        returnToParentOnCloseViewer: false,
-        highlightPath: null
-      }))
+      updateTab(tabId, (tab) => selectImage(tab, index))
     },
     [updateTab]
   )
 
   const handleCloseViewer = useCallback(
     async (tabId: string) => {
-      const tab = tabs.find((item) => item.id === tabId)
+      const tab = findTab(tabs, tabId)
       if (!tab) return
 
-      // A folder containing only images has no grid worth returning to, so
-      // closing the viewer always goes up one level - whether the viewer was
-      // opened automatically (entering such a folder) or by hand (selecting
-      // an image inside one already open).
-      const isImageOnlyFolder =
-        tab.collection != null &&
-        tab.collection.subfolders.length === 0 &&
-        tab.collection.zipFiles.length === 0
-
-      if ((tab.returnToParentOnCloseViewer || isImageOnlyFolder) && tab.rootFolderPath) {
-        const targetFolder = tab.returnFolderPath ?? tab.collection?.parentPath ?? null
-        if (targetFolder) {
-          await browseFolder(tabId, targetFolder, tab.rootFolderPath, {
-            highlightPath: tab.collection?.path,
-            searchQuery: tab.returnSearchQuery ?? undefined,
-            historyMode: 'back'
-          })
-          return
-        }
-      }
-
-      const lastViewedImagePath =
-        tab.selectedIndex !== null
-          ? (tab.collection?.images[tab.selectedIndex]?.path ?? null)
-          : null
-
-      if (tab.collection && tab.rootFolderPath) {
-        await browseFolder(tabId, tab.collection.path, tab.rootFolderPath, {
-          highlightPath: lastViewedImagePath ?? undefined
-        })
+      const exit = planViewerExit(tab)
+      if (exit.type === 'browse') {
+        await browseFolder(tabId, exit.folderPath, exit.rootFolderPath, exit.options)
         return
       }
-
-      updateTab(tabId, (current) => ({
-        ...current,
-        viewMode: 'grid',
-        returnToParentOnCloseViewer: false,
-        highlightPath: lastViewedImagePath
-      }))
+      updateTab(tabId, (current) => showGrid(current, exit.highlightPath))
     },
     [tabs, browseFolder, updateTab]
   )
 
   const handleRefreshFolder = useCallback(
     async (tabId: string) => {
-      const tab = tabs.find((item) => item.id === tabId)
+      const tab = findTab(tabs, tabId)
       if (!tab?.collection || !tab.rootFolderPath) return
       await browseFolder(tabId, tab.collection.path, tab.rootFolderPath, {
         highlightPath: tab.highlightPath ?? undefined
@@ -201,15 +170,7 @@ export function useFolderNavigation({
 
   const handleNavigate = useCallback(
     (tabId: string, direction: -1 | 1) => {
-      updateTab(tabId, (tab) => {
-        if (!tab.collection || tab.selectedIndex === null) return tab
-
-        const total = tab.collection.images.length
-        if (total === 0) return tab
-
-        const next = (tab.selectedIndex + direction + total) % total
-        return { ...tab, selectedIndex: next }
-      })
+      updateTab(tabId, (tab) => stepImage(tab, direction))
     },
     [updateTab]
   )
@@ -218,33 +179,7 @@ export function useFolderNavigation({
     async (tabId: string, path: string) => {
       await window.photoCollection.moveToUnnecessary(path)
 
-      updateTab(tabId, (tab) => {
-        if (!tab.collection) return tab
-
-        const removedIndex = tab.collection.images.findIndex((image) => image.path === path)
-        if (removedIndex === -1) return tab
-
-        const images = tab.collection.images.filter((image) => image.path !== path)
-
-        let nextSelectedIndex = tab.selectedIndex
-        let nextViewMode = tab.viewMode
-        if (tab.selectedIndex !== null) {
-          if (images.length === 0) {
-            nextSelectedIndex = null
-            nextViewMode = 'grid'
-          } else {
-            nextSelectedIndex = Math.min(tab.selectedIndex, images.length - 1)
-          }
-        }
-
-        return {
-          ...tab,
-          collection: { ...tab.collection, images },
-          selectedIndex: nextSelectedIndex,
-          viewMode: nextViewMode,
-          highlightPath: tab.highlightPath === path ? null : tab.highlightPath
-        }
-      })
+      updateTab(tabId, (tab) => removeImage(tab, path))
     },
     [updateTab]
   )
@@ -256,24 +191,7 @@ export function useFolderNavigation({
       const deleted = await window.photoCollection.deleteFolder(path)
       if (!deleted) return false
 
-      updateTab(tabId, (tab) => {
-        if (!tab.collection) return tab
-        return {
-          ...tab,
-          collection: {
-            ...tab.collection,
-            subfolders: tab.collection.subfolders.filter(
-              (subfolder) => !isSameOrChildPath(subfolder.path, path)
-            )
-          },
-          highlightPath:
-            tab.highlightPath && isSameOrChildPath(tab.highlightPath, path)
-              ? null
-              : tab.highlightPath,
-          // "←" must not lead back into the deleted folder.
-          history: tab.history.filter((entry) => !isSameOrChildPath(entry.folderPath, path))
-        }
-      })
+      updateTab(tabId, (tab) => removeSubfolder(tab, path))
       return true
     },
     [updateTab]

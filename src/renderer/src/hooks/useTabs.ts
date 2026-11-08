@@ -1,19 +1,18 @@
 import { useCallback, useMemo, useReducer } from 'react'
 import type { TabSnapshot } from '../../../shared/types'
+import { findTab } from '../state/tabTransitions'
 import { initialTabsState, tabsReducer } from '../state/tabsReducer'
-import { createEmptyTab, restoreTabFromSnapshot, type TabState } from '../types/tab'
+import { createEmptyTab, type TabState, type TabUpdater } from '../types/tab'
+import { restoreTabFromSnapshot } from '../utils/restoreTab'
 
 export function useTabs() {
   const [{ tabs, activeTabId, closedTabs }, dispatch] = useReducer(tabsReducer, undefined, () =>
     initialTabsState(createEmptyTab())
   )
 
-  const activeTab = useMemo(
-    () => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0]!,
-    [tabs, activeTabId]
-  )
+  const activeTab = useMemo(() => findTab(tabs, activeTabId) ?? tabs[0]!, [tabs, activeTabId])
 
-  const updateTab = useCallback((tabId: string, updater: (tab: TabState) => TabState) => {
+  const updateTab = useCallback((tabId: string, updater: TabUpdater) => {
     dispatch({ type: 'update', tabId, updater })
   }, [])
 

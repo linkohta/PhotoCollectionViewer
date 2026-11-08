@@ -1,19 +1,7 @@
 import { useCallback } from 'react'
-import { getTabTitle, type TabState } from '../types/tab'
-import { nextFolderHistory, type HistoryMode } from '../utils/folderHistory'
-
-export interface BrowseOptions {
-  resetRoot?: boolean
-  // Use rootPath as the tab's root as-is (going back to a folder that was
-  // opened under a different root), instead of keeping the current root.
-  replaceRoot?: boolean
-  historyMode?: HistoryMode
-  fromSubfolder?: boolean
-  highlightPath?: string
-  returnFolderPath?: string
-  returnSearchQuery?: string
-  searchQuery?: string
-}
+import type { BrowseOptions } from '../types/browse'
+import { getTabTitle, type UpdateTab } from '../types/tab'
+import { nextFolderHistory } from '../utils/folderHistory'
 
 export type BrowseFolder = (
   tabId: string,
@@ -23,7 +11,7 @@ export type BrowseFolder = (
 ) => Promise<void>
 
 interface UseBrowseFolderArgs {
-  updateTab: (tabId: string, updater: (tab: TabState) => TabState) => void
+  updateTab: UpdateTab
 }
 
 // Central navigation primitive: every folder/subfolder/breadcrumb/go-up/zip
