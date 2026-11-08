@@ -18,7 +18,7 @@ const FULL_PRELOAD_RANGE = 3
 const THUMBNAIL_PRELOAD_RANGE = 20
 // Within this distance, previews are fetched as data URLs (getThumbnailDataUrl)
 // instead of file paths. The main process keeps their raw bytes in memory
-// (see bufferCache in thumbnailCache.ts), so redisplaying one needs no disk
+// (see bufferCache in main/services/thumbnails.ts), so redisplaying one needs no disk
 // access at all even if the OS has evicted the file from its cache in the
 // meantime - unlike a `local-file://` path, which always re-reads from disk.
 const HOT_PREVIEW_RANGE = 5

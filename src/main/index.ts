@@ -4,7 +4,7 @@ import { app, BrowserWindow } from 'electron'
 import { registerIpcHandlers } from './ipc/handlers'
 import { serveLocalFiles } from './protocol/localFileProtocol'
 import { migrateLegacyStoreFiles } from './store/appState'
-import { startPeriodicWarmup, warmupWindow } from './store/warmup'
+import { startPeriodicWarmup, warmupWindow } from './services/warmup'
 import { createMainWindow } from './window/mainWindow'
 
 app.whenReady().then(() => {

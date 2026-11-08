@@ -1,6 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
-import { clearWarmupContext } from '../store/warmup'
+import { clearWarmupContext } from '../services/warmup'
 import { getWindowState, trackWindowState } from '../store/windowState'
 
 // The paths below are relative to out/main: the whole main process is bundled
