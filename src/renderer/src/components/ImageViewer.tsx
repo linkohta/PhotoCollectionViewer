@@ -102,15 +102,7 @@ export function ImageViewer({
         imagePath={image.path}
         showLoadingBadge={!isVideo && !isFullLoaded && !!imageSrc}
         hideZoomControls={isVideo}
-        onClose={onClose}
-        onNavigate={onNavigate}
-        onFit={transform.fitToScreen}
-        onActualSize={transform.showActualSize}
-        onZoomIn={() => transform.zoom(0.2)}
-        onZoomOut={() => transform.zoom(-0.2)}
-        onRotate={transform.rotateClockwise}
-        onReset={transform.resetView}
-        onMoveToTrash={onMoveToTrash}
+        onCommand={runCommand}
       />
 
       {isVideo ? (

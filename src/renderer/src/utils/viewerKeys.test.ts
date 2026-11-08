@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { mapViewerKey } from './viewerKeys'
+import {
+  mapViewerKey,
+  VIEWER_KEY_BINDINGS,
+  VIEWER_SHORTCUT_LABELS,
+  viewerButtonTitle
+} from './viewerKeys'
 
 describe('mapViewerKey', () => {
   it.each([
@@ -53,5 +58,31 @@ describe('mapViewerKey', () => {
   it('ignores other keys', () => {
     expect(mapViewerKey('a', false)).toBeNull()
     expect(mapViewerKey('Enter', false)).toBeNull()
+  })
+})
+
+// The KeyboardEvent.key a label stands for: named keys are spelled out, a
+// one-letter key cap is the lowercase letter and Shift+ makes it uppercase.
+const NAMED_KEYS: Record<string, string> = { Esc: 'Escape', '←': 'ArrowLeft', '→': 'ArrowRight' }
+const keyForLabel = (label: string): string => {
+  if (label.startsWith('Shift+')) return label.slice('Shift+'.length).toUpperCase()
+  return NAMED_KEYS[label] ?? (label.length === 1 ? label.toLowerCase() : label)
+}
+
+describe('VIEWER_SHORTCUT_LABELS', () => {
+  it.each(Object.entries(VIEWER_SHORTCUT_LABELS))(
+    'names a key that really runs %s',
+    (command, label) => {
+      expect(VIEWER_KEY_BINDINGS[keyForLabel(label)]?.command).toBe(command)
+    }
+  )
+})
+
+describe('viewerButtonTitle', () => {
+  it('adds the key, then the note', () => {
+    expect(viewerButtonTitle('画面に合わせる', 'fit')).toBe('画面に合わせる (F)')
+    expect(viewerButtonTitle('前の画像', 'previous', '※最初で押すと最後へ')).toBe(
+      '前の画像 (←) ※最初で押すと最後へ'
+    )
   })
 })

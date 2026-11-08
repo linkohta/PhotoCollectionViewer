@@ -1,4 +1,5 @@
 import type { FitMode } from '../hooks/useImageTransform'
+import { viewerButtonTitle, type ViewerCommand } from '../utils/viewerKeys'
 
 interface ImageViewerToolbarProps {
   fitMode: FitMode
@@ -8,16 +9,27 @@ interface ImageViewerToolbarProps {
   imagePath: string
   showLoadingBadge: boolean
   hideZoomControls?: boolean
-  onClose: () => void
-  onNavigate: (direction: -1 | 1) => void
-  onFit: () => void
-  onActualSize: () => void
-  onZoomIn: () => void
-  onZoomOut: () => void
-  onRotate: () => void
-  onReset: () => void
-  onMoveToTrash: () => void
+  // Runs a button's command, the same way its key does.
+  onCommand: (command: ViewerCommand) => void
 }
+
+interface ZoomControl {
+  command: ViewerCommand
+  text: string
+  title: string
+  // Shown as pressed while the image is in this fit mode.
+  activeIn?: FitMode
+}
+
+// The buttons that only make sense for an image, not a video.
+const ZOOM_CONTROLS: readonly ZoomControl[] = [
+  { command: 'fit', text: 'フィット', title: '画面に合わせる', activeIn: 'fit' },
+  { command: 'actualSize', text: '原寸', title: '元のサイズで表示', activeIn: 'actual' },
+  { command: 'zoomIn', text: '＋', title: '拡大' },
+  { command: 'zoomOut', text: '－', title: '縮小' },
+  { command: 'rotateClockwise', text: '↻', title: '右回転' },
+  { command: 'resetView', text: 'リセット', title: 'リセット' }
+]
 
 export function ImageViewerToolbar({
   fitMode,
@@ -27,23 +39,15 @@ export function ImageViewerToolbar({
   imagePath,
   showLoadingBadge,
   hideZoomControls,
-  onClose,
-  onNavigate,
-  onFit,
-  onActualSize,
-  onZoomIn,
-  onZoomOut,
-  onRotate,
-  onReset,
-  onMoveToTrash
+  onCommand
 }: ImageViewerToolbarProps): JSX.Element {
   return (
     <div className="viewer-toolbar">
       <button
         type="button"
         className="btn"
-        onClick={onClose}
-        title="一覧に戻る (Esc)"
+        onClick={() => onCommand('close')}
+        title={viewerButtonTitle('一覧に戻る', 'close')}
         tabIndex={-1}
       >
         ← 一覧
@@ -53,9 +57,9 @@ export function ImageViewerToolbar({
         <button
           type="button"
           className="btn"
-          onClick={() => onNavigate(-1)}
+          onClick={() => onCommand('previous')}
           disabled={total <= 1}
-          title="前の画像 (←) ※最初で押すと最後へ"
+          title={viewerButtonTitle('前の画像', 'previous', '※最初で押すと最後へ')}
           tabIndex={-1}
         >
           ‹
@@ -66,9 +70,9 @@ export function ImageViewerToolbar({
         <button
           type="button"
           className="btn"
-          onClick={() => onNavigate(1)}
+          onClick={() => onCommand('next')}
           disabled={total <= 1}
-          title="次の画像 (→) ※最後で押すと最初へ"
+          title={viewerButtonTitle('次の画像', 'next', '※最後で押すと最初へ')}
           tabIndex={-1}
         >
           ›
@@ -77,50 +81,26 @@ export function ImageViewerToolbar({
 
       {!hideZoomControls && (
         <div className="viewer-controls">
-          <button
-            type="button"
-            className={`btn ${fitMode === 'fit' ? 'active' : ''}`}
-            onClick={onFit}
-            title="画面に合わせる (F)"
-            tabIndex={-1}
-          >
-            フィット
-          </button>
-          <button
-            type="button"
-            className={`btn ${fitMode === 'actual' ? 'active' : ''}`}
-            onClick={onActualSize}
-            title="元のサイズで表示 (1)"
-            tabIndex={-1}
-          >
-            原寸
-          </button>
-          <button type="button" className="btn" onClick={onZoomIn} title="拡大 (+)" tabIndex={-1}>
-            ＋
-          </button>
-          <button type="button" className="btn" onClick={onZoomOut} title="縮小 (-)" tabIndex={-1}>
-            －
-          </button>
-          <button type="button" className="btn" onClick={onRotate} title="右回転 (R)" tabIndex={-1}>
-            ↻
-          </button>
-          <button
-            type="button"
-            className="btn"
-            onClick={onReset}
-            title="リセット (0)"
-            tabIndex={-1}
-          >
-            リセット
-          </button>
+          {ZOOM_CONTROLS.map(({ command, text, title, activeIn }) => (
+            <button
+              key={command}
+              type="button"
+              className={activeIn ? `btn ${fitMode === activeIn ? 'active' : ''}` : 'btn'}
+              onClick={() => onCommand(command)}
+              title={viewerButtonTitle(title, command)}
+              tabIndex={-1}
+            >
+              {text}
+            </button>
+          ))}
         </div>
       )}
 
       <button
         type="button"
         className="btn danger"
-        onClick={onMoveToTrash}
-        title="ごみ箱へ移動 (Delete)"
+        onClick={() => onCommand('moveToTrash')}
+        title={viewerButtonTitle('ごみ箱へ移動', 'moveToTrash')}
         tabIndex={-1}
       >
         ごみ箱へ移動

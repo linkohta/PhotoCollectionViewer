@@ -1,27 +1,27 @@
 import { useEffect, useRef } from 'react'
 import { suspendViewerKeyboardHandler } from '../utils/viewerKeyboard'
 
-interface ContextMenuProps {
+type MenuEntryKey = 'onOpenInNewTab' | 'onRename' | 'onMoveToTrash' | 'onDelete'
+
+// Each entry is shown when its callback is passed. Clicking one runs it and
+// closes the menu.
+type ContextMenuProps = Partial<Record<MenuEntryKey, () => void>> & {
   x: number
   y: number
   label: string
-  onOpenInNewTab?: () => void
-  onRename?: () => void
-  onMoveToTrash?: () => void
-  onDelete?: () => void
   onClose: () => void
 }
 
-export function ContextMenu({
-  x,
-  y,
-  label,
-  onOpenInNewTab,
-  onRename,
-  onMoveToTrash,
-  onDelete,
-  onClose
-}: ContextMenuProps): JSX.Element {
+// The entries in the order they appear in the menu.
+const MENU_ENTRIES: readonly { key: MenuEntryKey; text: string; danger?: boolean }[] = [
+  { key: 'onOpenInNewTab', text: '新しいタブで開く' },
+  { key: 'onRename', text: '名前の変更' },
+  { key: 'onMoveToTrash', text: 'ごみ箱へ移動' },
+  { key: 'onDelete', text: '削除', danger: true }
+]
+
+export function ContextMenu(props: ContextMenuProps): JSX.Element {
+  const { x, y, label, onClose } = props
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Keys pressed while the menu is open are for the menu, not for the grid or
@@ -53,54 +53,23 @@ export function ContextMenu({
   return (
     <div ref={menuRef} className="context-menu" style={{ top: y, left: x }} role="menu">
       <div className="context-menu-title">{label}</div>
-      {onOpenInNewTab && (
-        <button
-          type="button"
-          className="context-menu-item"
-          onClick={() => {
-            onOpenInNewTab()
-            onClose()
-          }}
-        >
-          新しいタブで開く
-        </button>
-      )}
-      {onRename && (
-        <button
-          type="button"
-          className="context-menu-item"
-          onClick={() => {
-            onRename()
-            onClose()
-          }}
-        >
-          名前の変更
-        </button>
-      )}
-      {onMoveToTrash && (
-        <button
-          type="button"
-          className="context-menu-item"
-          onClick={() => {
-            onMoveToTrash()
-            onClose()
-          }}
-        >
-          ごみ箱へ移動
-        </button>
-      )}
-      {onDelete && (
-        <button
-          type="button"
-          className="context-menu-item danger"
-          onClick={() => {
-            onDelete()
-            onClose()
-          }}
-        >
-          削除
-        </button>
-      )}
+      {MENU_ENTRIES.map(({ key, text, danger }) => {
+        const run = props[key]
+        if (!run) return null
+        return (
+          <button
+            key={key}
+            type="button"
+            className={danger ? 'context-menu-item danger' : 'context-menu-item'}
+            onClick={() => {
+              run()
+              onClose()
+            }}
+          >
+            {text}
+          </button>
+        )
+      })}
     </div>
   )
 }
