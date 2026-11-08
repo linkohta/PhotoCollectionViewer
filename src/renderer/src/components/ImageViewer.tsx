@@ -4,7 +4,8 @@ import { isTypingTarget } from '../utils/imagePreload'
 import { registerViewerKeyboardHandler } from '../utils/viewerKeyboard'
 import { toLocalFileUrl } from '../../../shared/localFileUrl'
 import { useImageTransform } from '../hooks/useImageTransform'
-import { useProgressiveImageSource } from '../hooks/useProgressiveImageSource'
+import { useNeighborPreload } from '../hooks/useNeighborPreload'
+import { useViewerImageSource } from '../hooks/useViewerImageSource'
 import { ImageViewerToolbar } from './ImageViewerToolbar'
 
 interface ImageViewerProps {
@@ -39,13 +40,12 @@ export function ImageViewer({
   const [videoError, setVideoError] = useState(false)
 
   const transform = useImageTransform(image.path)
-  const { imageSrc, isFullLoaded } = useProgressiveImageSource({
+  const { imageSrc, isFullLoaded } = useViewerImageSource({
     image,
-    allImages,
-    index,
     fullUrl,
     onNaturalSize: transform.setNaturalSize
   })
+  useNeighborPreload(allImages, index)
 
   useEffect(() => {
     setVideoError(false)

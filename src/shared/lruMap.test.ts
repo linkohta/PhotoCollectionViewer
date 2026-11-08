@@ -35,4 +35,26 @@ describe('LruMap', () => {
 
     expect(keysOf(map, ['a', 'b', 'c'])).toEqual(['b', 'c'])
   })
+
+  it('hands each dropped entry to onEvict', () => {
+    const evicted: string[] = []
+    const map = new LruMap<string, number>(2, (value, key) => evicted.push(`${key}=${value}`))
+    map.set('a', 1)
+    map.set('b', 2)
+    map.set('c', 3)
+    map.set('d', 4)
+
+    expect(evicted).toEqual(['a=1', 'b=2'])
+  })
+
+  it('lists its values from the least recently stored, and can be emptied', () => {
+    const map = new LruMap<string, number>(3)
+    map.set('a', 1)
+    map.set('b', 2)
+    map.set('a', 3)
+
+    expect([...map.values()]).toEqual([2, 3])
+    map.clear()
+    expect(map.size).toBe(0)
+  })
 })
