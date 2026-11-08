@@ -85,6 +85,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
   - React コンポーネントは、公開・非公開を問わず `function` 宣言にする（`react/function-component-definition`）。
   - 1ファイル300行まで（`max-lines`）。既に超えているファイルは `eslint.config.mjs` の例外リストに載せてあり、分割したらリストから外す。
   - プロセスをまたぐ import の禁止（`no-restricted-imports`）: renderer から `electron`・main・preload（`env.d.ts` を除く）、main から renderer、preload から main・renderer、shared から `electron`・Node の標準モジュール・React・各プロセスのコード。
+  - `components/` から `window.photoCollection` を直接呼ばない（`no-restricted-syntax`）。メインプロセスとのやり取りはフック（`hooks/`）に置き、取得の手順そのものは `utils/thumbnailSource.ts` のように API を引数で受け取る純粋な関数にしてテストする。
 - **ユーザーとの応対は必ず日本語で行うこと**。
 
 ## テスト

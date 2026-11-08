@@ -1,28 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { RefObject } from 'react'
-import { toLocalFileUrl } from '../../../shared/localFileUrl'
-
-const PREVIEW_THUMBNAIL_SIZE = 200
-
-const loadFolderPreview = async (folderPath: string): Promise<string | null> => {
-  const image = await window.photoCollection.getFolderPreviewImage(folderPath)
-  if (!image) return null
-
-  const thumbnailPath = await window.photoCollection.getThumbnailPath(
-    image.path,
-    PREVIEW_THUMBNAIL_SIZE,
-    image.modified,
-    image.size
-  )
-  if (thumbnailPath) return toLocalFileUrl(thumbnailPath)
-
-  return window.photoCollection.getThumbnailDataUrl(
-    image.path,
-    PREVIEW_THUMBNAIL_SIZE,
-    image.modified,
-    image.size
-  )
-}
+import { loadFolderPreview } from '../utils/thumbnailSource'
+import { useInView } from './useInView'
 
 // Lazily resolves the thumbnail shown inside a subfolder card's folder icon
 // (the folder's first image, like Explorer's folder previews). Loading only
@@ -35,33 +14,22 @@ export function useFolderPreview(
   const [src, setSrc] = useState<string | null>(null)
 
   useEffect(() => {
-    const element = elementRef.current
-    if (!element) return
-
-    let cancelled = false
     setSrc(null)
+  }, [folderPath, elementRef, scrollRoot])
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return
-        observer.disconnect()
-        void loadFolderPreview(folderPath)
-          .then((url) => {
-            if (!cancelled) setSrc(url)
-          })
-          .catch(() => {
-            // no preview - the plain folder icon stays
-          })
-      },
-      { root: scrollRoot, rootMargin: '240px' }
-    )
-
-    observer.observe(element)
+  useInView(elementRef, scrollRoot, folderPath, () => {
+    let cancelled = false
+    void loadFolderPreview(window.photoCollection, folderPath)
+      .then((url) => {
+        if (!cancelled) setSrc(url)
+      })
+      .catch(() => {
+        // no preview - the plain folder icon stays
+      })
     return () => {
       cancelled = true
-      observer.disconnect()
     }
-  }, [folderPath, elementRef, scrollRoot])
+  })
 
   return src
 }
