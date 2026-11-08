@@ -3,7 +3,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import AdmZip from 'adm-zip'
 import sharp from 'sharp'
-import type { ConfirmationSettings, FavoriteFolder, SessionData } from '../../src/preload/types'
+import type { ConfirmationSettings, FavoriteFolder, SessionData } from '../../src/shared/types'
 
 export interface TestEnvironment {
   baseDir: string

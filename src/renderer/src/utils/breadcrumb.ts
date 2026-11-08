@@ -1,4 +1,4 @@
-import type { FolderCollection } from '../../../preload/index'
+import type { FolderCollection } from '../../../shared/types'
 
 const joinPath = (base: string, segment: string): string => {
   const sep = base.includes('\\') ? '\\' : '/'

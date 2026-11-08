@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import type { FavoriteFolder } from '../../../preload/index'
+import type { FavoriteFolder } from '../../../shared/types'
 
 export function useFavorites() {
   const [favorites, setFavorites] = useState<FavoriteFolder[]>([])

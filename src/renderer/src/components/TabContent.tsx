@@ -1,6 +1,7 @@
 import { ThumbnailGrid } from './ThumbnailGrid'
 import { ImageViewer } from './ImageViewer'
-import type { FavoriteFolder, ZipArchive } from '../../../preload/index'
+import type { FavoriteFolder, ZipArchive } from '../../../shared/types'
+import type { SearchOrigin } from '../types/grid'
 import type { TabState } from '../types/tab'
 
 interface TabContentProps {
@@ -8,10 +9,7 @@ interface TabContentProps {
   favorites: FavoriteFolder[]
   onOpenDialog: () => void
   onOpenFolder: (path: string) => void
-  onSelectSubfolder: (
-    path: string,
-    searchOrigin?: { originFolderPath: string; query: string }
-  ) => void
+  onSelectSubfolder: (path: string, searchOrigin?: SearchOrigin) => void
   onConsumePendingSearchQuery: () => void
   onOpenSubfolderInNewTab: (path: string) => void
   onHighlightChange: (path: string) => void

@@ -1,6 +1,6 @@
 import { dialog, type MessageBoxOptions } from 'electron'
 import { isConfirmationEnabled, setConfirmationEnabled } from '../store/confirmations'
-import type { ConfirmationKind } from '../../preload/types'
+import type { ConfirmationKind } from '../../shared/types'
 
 // Shows a confirmation dialog unless the user turned it off, with a "don't
 // show again" checkbox. The first button must be the confirming one. The

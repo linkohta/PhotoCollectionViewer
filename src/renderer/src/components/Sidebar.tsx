@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ConfirmationKind, ConfirmationSettings, FavoriteFolder } from '../../../preload/index'
+import type { ConfirmationKind, ConfirmationSettings, FavoriteFolder } from '../../../shared/types'
 import { ContextMenu } from './ContextMenu'
 
 interface SidebarProps {

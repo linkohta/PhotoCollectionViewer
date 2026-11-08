@@ -8,21 +8,7 @@ import type {
   SessionData,
   SubfolderSearchResult,
   WarmupImageDescriptor
-} from './types'
-
-export type {
-  ConfirmationKind,
-  ConfirmationSettings,
-  ImageFile,
-  Subfolder,
-  SubfolderSearchResult,
-  ZipArchive,
-  FolderCollection,
-  FavoriteFolder,
-  TabSnapshot,
-  SessionData,
-  WarmupImageDescriptor
-} from './types'
+} from '../shared/types'
 
 const api = {
   openFolderDialog: (): Promise<string | null> => ipcRenderer.invoke('dialog:openFolder'),

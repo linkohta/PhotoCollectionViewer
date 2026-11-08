@@ -1,13 +1,10 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron'
 import { getFavorites, addFavorite, removeFavorite } from '../store/favorites'
-import { getSession, saveSession, type SessionData } from '../store/session'
-import {
-  getConfirmations,
-  setConfirmationEnabled,
-  type ConfirmationKind
-} from '../store/confirmations'
+import type { ConfirmationKind, SessionData, WarmupImageDescriptor } from '../../shared/types'
+import { getSession, saveSession } from '../store/session'
+import { getConfirmations, setConfirmationEnabled } from '../store/confirmations'
 import { getOrCreateThumbnailPath, getThumbnailDataUrl } from '../store/thumbnailCache'
-import { setWarmupContext, type WarmupImageDescriptor } from '../store/warmup'
+import { setWarmupContext } from '../store/warmup'
 import { extractZipArchive } from '../utils/zipArchive'
 import { scanFolder, searchSubfolders, findFolderPreviewImage } from '../services/folderScan'
 import { createImageDataUrl } from '../services/imageDataUrl'

@@ -1,6 +1,5 @@
-import { readAppStateSlice, writeAppStateSlice, type FavoriteFolder } from './appState'
-
-export type { FavoriteFolder }
+import type { FavoriteFolder } from '../../shared/types'
+import { readAppStateSlice, writeAppStateSlice } from './appState'
 
 function readStore(): FavoriteFolder[] {
   return readAppStateSlice('favorites')

@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import type { ZipArchive } from '../../../preload/index'
+import type { ZipArchive } from '../../../shared/types'
 import type { TabState } from '../types/tab'
 import type { BrowseFolder } from './useBrowseFolder'
 

@@ -1,14 +1,4 @@
-import type { FolderCollection } from '../../../preload/index'
-
-export type ViewMode = 'grid' | 'viewer'
-
-export interface TabSnapshot {
-  title: string
-  rootFolderPath: string | null
-  currentFolderPath: string | null
-  selectedIndex: number | null
-  viewMode: ViewMode
-}
+import type { FolderCollection, TabSnapshot, ViewMode } from '../../../shared/types'
 
 export interface TabState {
   id: string

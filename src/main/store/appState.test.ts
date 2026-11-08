@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { FavoriteFolder, TabSnapshot } from '../../preload/types'
+import type { FavoriteFolder, TabSnapshot } from '../../shared/types'
 import {
   exportAppState,
   importAppState,

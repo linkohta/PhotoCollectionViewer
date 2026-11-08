@@ -4,6 +4,16 @@ import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import eslintConfigPrettier from 'eslint-config-prettier'
 
+const rendererElectronImport = {
+  name: 'electron',
+  message:
+    'レンダラーから electron は使えません。preload の window.photoCollection を経由してください。'
+}
+const rendererMainImports = {
+  group: ['**/main/**'],
+  message: 'レンダラーからメインプロセスのコードは import できません。IPC を経由してください。'
+}
+
 export default tseslint.config(
   {
     ignores: [
@@ -84,21 +94,25 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            {
-              name: 'electron',
-              message:
-                'レンダラーから electron は使えません。preload の window.photoCollection を経由してください。'
-            }
-          ],
+          paths: [rendererElectronImport],
           patterns: [
+            rendererMainImports,
             {
-              group: ['**/main/**'],
-              message:
-                'レンダラーからメインプロセスのコードは import できません。IPC を経由してください。'
+              group: ['**/preload/**', '**/preload'],
+              message: '共有の型は src/shared/types から import してください。'
             }
           ]
         }
+      ]
+    }
+  },
+  {
+    // The one renderer file that needs the preload API's type.
+    files: ['src/renderer/src/env.d.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: [rendererElectronImport], patterns: [rendererMainImports] }
       ]
     }
   },
@@ -128,6 +142,36 @@ export default tseslint.config(
             {
               group: ['**/main/**', '**/renderer/**'],
               message: 'preload からメインプロセス・レンダラーのコードは import できません。'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    // Used by all three processes, so it must not depend on any of them.
+    files: ['src/shared/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            'electron',
+            'react',
+            'react-dom',
+            'fs',
+            'fs/promises',
+            'path',
+            'os',
+            'crypto'
+          ].map((name) => ({
+            name,
+            message: 'src/shared には、どのプロセスでも動く純粋な TypeScript だけを置きます。'
+          })),
+          patterns: [
+            {
+              group: ['node:*', '**/main/**', '**/preload/**', '**/renderer/**'],
+              message: 'src/shared には、どのプロセスでも動く純粋な TypeScript だけを置きます。'
             }
           ]
         }

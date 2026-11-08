@@ -41,12 +41,14 @@ export interface FavoriteFolder {
   addedAt: number
 }
 
+export type ViewMode = 'grid' | 'viewer'
+
 export interface TabSnapshot {
   title: string
   rootFolderPath: string | null
   currentFolderPath: string | null
   selectedIndex: number | null
-  viewMode: 'grid' | 'viewer'
+  viewMode: ViewMode
 }
 
 export interface SessionData {

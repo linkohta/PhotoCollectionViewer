@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { FolderCollection, ImageFile, ZipArchive } from '../../../preload/index'
+import type { FolderCollection, ImageFile, ZipArchive } from '../../../shared/types'
+import type { GridItemKind, SearchOrigin } from '../types/grid'
 import { buildBreadcrumb, buildCountLabel } from '../utils/breadcrumb'
 import { useGridScrollRestore } from '../hooks/useGridScrollRestore'
 import { useSubfolderSearch } from '../hooks/useSubfolderSearch'
@@ -9,11 +10,6 @@ import { SubfolderCard } from './SubfolderCard'
 import { ThumbnailCard } from './ThumbnailCard'
 import { ZipCard } from './ZipCard'
 
-interface SubfolderSearchOrigin {
-  originFolderPath: string
-  query: string
-}
-
 interface ThumbnailGridProps {
   collection: FolderCollection
   rootFolderPath: string | null
@@ -22,7 +18,7 @@ interface ThumbnailGridProps {
   onConsumePendingSearchQuery: () => void
   onHighlightChange: (path: string) => void
   onSelect: (index: number) => void
-  onSelectSubfolder: (path: string, searchOrigin?: SubfolderSearchOrigin) => void
+  onSelectSubfolder: (path: string, searchOrigin?: SearchOrigin) => void
   onOpenSubfolderInNewTab: (path: string) => void
   onSelectZip: (zipFile: ZipArchive) => void
   onOpenZipInNewTab: (zipFile: ZipArchive) => void
@@ -40,12 +36,12 @@ interface ItemMenuState {
   y: number
   path: string
   name: string
-  kind: 'subfolder' | 'zip' | 'image'
+  kind: GridItemKind
   zipFile?: ZipArchive
 }
 
 interface RenamingState {
-  kind: 'subfolder' | 'zip' | 'image'
+  kind: GridItemKind
   path: string
 }
 

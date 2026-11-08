@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { FolderCollection } from '../../../preload/index'
+import type { FolderCollection } from '../../../shared/types'
 import { buildBreadcrumb, buildCountLabel } from './breadcrumb'
 
 const collectionAt = (path: string, name: string): FolderCollection => ({

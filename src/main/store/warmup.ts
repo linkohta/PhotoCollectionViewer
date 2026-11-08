@@ -1,16 +1,11 @@
 import { BrowserWindow } from 'electron'
+import type { WarmupImageDescriptor } from '../../shared/types'
 import {
   getOrCreateThumbnailPath,
   getThumbnailDataUrl,
   warmSourceFile,
   ThumbnailQueue
 } from './thumbnailCache'
-
-export interface WarmupImageDescriptor {
-  path: string
-  modified: number
-  size: number
-}
 
 interface WarmupContext {
   images: WarmupImageDescriptor[]
