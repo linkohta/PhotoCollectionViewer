@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { useFolderPreview } from '../hooks/useFolderPreview'
+import { CardFrame } from './CardFrame'
 import { RenameInput } from './RenameInput'
 
 interface SubfolderCardProps {
@@ -50,29 +51,25 @@ export function SubfolderCard({
   onRenameSubmit,
   onRenameCancel
 }: SubfolderCardProps): JSX.Element {
-  if (isRenaming) {
-    return (
-      <div className="subfolder-card folder-card renaming">
-        <FolderIcon path={path} scrollRoot={scrollRoot} />
-        <RenameInput initialName={name} onSubmit={onRenameSubmit} onCancel={onRenameCancel} />
-      </div>
-    )
-  }
-
   return (
-    <button
-      type="button"
-      className={`subfolder-card folder-card ${isHighlighted ? 'highlighted' : ''}`}
-      data-path={path}
-      onClick={onSelect}
-      onContextMenu={onContextMenu}
+    <CardFrame
+      className="subfolder-card folder-card"
+      path={path}
       title={path}
+      isHighlighted={isHighlighted}
+      isRenaming={isRenaming}
+      onSelect={onSelect}
+      onContextMenu={onContextMenu}
     >
       <FolderIcon path={path} scrollRoot={scrollRoot} />
-      <span className="subfolder-name-group">
-        <span className="subfolder-name">{name}</span>
-        {subtitle && <span className="subfolder-subtitle">{subtitle}</span>}
-      </span>
-    </button>
+      {isRenaming ? (
+        <RenameInput initialName={name} onSubmit={onRenameSubmit} onCancel={onRenameCancel} />
+      ) : (
+        <span className="subfolder-name-group">
+          <span className="subfolder-name">{name}</span>
+          {subtitle && <span className="subfolder-subtitle">{subtitle}</span>}
+        </span>
+      )}
+    </CardFrame>
   )
 }

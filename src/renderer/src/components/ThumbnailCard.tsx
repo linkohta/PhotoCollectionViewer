@@ -1,8 +1,9 @@
 import { useRef } from 'react'
-import type { MouseEvent, RefObject } from 'react'
+import type { MouseEvent } from 'react'
 import type { ImageFile } from '../../../shared/types'
 import { useThumbnailSource } from '../hooks/useThumbnailSource'
 import { formatFileSize } from '../utils/files'
+import { CardFrame } from './CardFrame'
 import { RenameInput } from './RenameInput'
 
 interface ThumbnailCardProps {
@@ -66,37 +67,30 @@ export function ThumbnailCard({
     </div>
   )
 
-  if (isRenaming) {
-    return (
-      <div ref={cardRef as RefObject<HTMLDivElement>} className="thumbnail-card renaming">
-        {imageWrap}
-        <div className="thumbnail-info">
+  return (
+    <CardFrame
+      className="thumbnail-card"
+      path={image.path}
+      title={image.name}
+      isHighlighted={isHighlighted}
+      isRenaming={isRenaming}
+      onSelect={() => onSelect(index)}
+      onContextMenu={(event) => onContextMenu(event, image)}
+      frameRef={cardRef}
+    >
+      {imageWrap}
+      <div className="thumbnail-info">
+        {isRenaming ? (
           <RenameInput
             initialName={image.name}
             onSubmit={onRenameSubmit}
             onCancel={onRenameCancel}
           />
-          <span className="thumbnail-size">{formatFileSize(image.size)}</span>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <button
-      ref={cardRef as RefObject<HTMLButtonElement>}
-      type="button"
-      className={`thumbnail-card ${isHighlighted ? 'highlighted' : ''}`}
-      data-path={image.path}
-      onClick={() => onSelect(index)}
-      onContextMenu={(event) => onContextMenu(event, image)}
-      title={image.name}
-    >
-      {imageWrap}
-      <div className="thumbnail-info">
-        <span className="thumbnail-name">{image.name}</span>
+        ) : (
+          <span className="thumbnail-name">{image.name}</span>
+        )}
         <span className="thumbnail-size">{formatFileSize(image.size)}</span>
       </div>
-    </button>
+    </CardFrame>
   )
 }
