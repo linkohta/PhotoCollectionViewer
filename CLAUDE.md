@@ -62,7 +62,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 - `src/shared/` — 3つのプロセスすべてで使う型（`types.ts`: `ImageFile`, `FavoriteFolder`, `SessionData` 等）、IPC のチャネル名（`ipcChannels.ts`）、定数（`constants.ts`）、件数に上限のある LRU の Map（`lruMap.ts`）、扱う画像・動画の拡張子の表（`media.ts`。フォルダの読み込み・MIME・デコード方法・GIF 判定はすべてこの表から決まる）、`local-file://` の URL とパスの変換（`localFileUrl.ts`。Windows のドライブレターが URL のホスト名として届く癖に注意 — コード内コメント参照）。electron・Node・React などに依存しない純粋な TypeScript に限る（ESLint で検査）
 - `src/renderer/src/` — React + TypeScript の UI
   - `App.tsx` — トップレベルのタブ状態管理とハンドラーの合成
-  - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useProgressiveImageSource` 等）。**コンポーネントは表示、hooksがロジック**という分担
+  - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useProgressiveImageSource` 等）。**コンポーネントは表示、hooksがロジック**という分担。`useFolderNavigation` はフォルダの閲覧（`useFolderBrowsing`）・ビューワー（`useViewerNavigation`）・ファイルの変更（`useCollectionMutations`）・ZIP（`useZipNavigation`）をまとめて1つのオブジェクトで返す。これらの関数はタブを `useLatestRef` 経由で実行時に読むので、タブが変わっても作り直されない（クロージャで `tabs` を参照すると、変更のたびに関数と、それを受け取るコンポーネントの処理が作り直される）
   - `state/` — React に依存しない純粋な状態遷移。`tabsReducer.ts`（タブの一覧・アクティブなタブ・閉じたタブの記録の reducer）、`tabTransitions.ts`（1つのタブの状態遷移: 画像の選択・前後移動・削除、サブフォルダの削除、ビューワーを閉じたあとの移動先）。フックはこれらを呼ぶだけにする。開発時（StrictMode）は reducer が2回実行されるため、新しいタブの id のように実行のたびに変わる値は action に入れて渡し、reducer の中では作らない
   - `styles/` — すべてグローバルな CSS。`global.css`（リセット・スクロールバー、`tokens.css` の読み込み）、`tokens.css`（色の CSS 変数。色を足すときは値を直接書かずにここへ追加する）、`App.css`（`app/` の領域ごとの部分ファイルを読み込む。**読み込む順番がそのまま適用順**で、後のルールが同じ詳細度の前のルールを打ち消している箇所があるため、順番を変えない）
   - `components/` — 表示コンポーネント（`Sidebar`, `TabBar`, `TabContent`, `ThumbnailGrid`, `ImageViewer`, `ContextMenu` 等）
