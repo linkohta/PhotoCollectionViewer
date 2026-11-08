@@ -55,11 +55,11 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
   - `window/mainWindow.ts` — メインウィンドウの生成
   - `protocol/` — `local-file://` カスタムプロトコル。`localFileProtocol.ts`（`fs` でファイルを読んで返す。動画のシーク用に Range にも応じる）、`rangeRequest.ts`（Range ヘッダーの解析）
   - `ipc/handlers.ts` — `ipcMain.handle` の配線のみ。実処理は `services/` や `store/` に委譲する
-  - `services/` — IPCハンドラーから呼ばれる実処理本体。`folderScan.ts`（フォルダ・ZIP・画像の一覧取得）、`imageDataUrl.ts`（sharp/nativeImageによる画像データURL生成）、`renamePath.ts`（ファイル・フォルダのリネーム、お気に入りパス追従）、`deleteFolder.ts` / `moveToUnnecessary.ts`（ごみ箱への移動）、`confirmDialog.ts`（「今後表示しない」付きの確認ダイアログ）、`zipDialogs.ts` / `settingsDialogs.ts` / `folderDialogs.ts`（ZIP 解凍の確認、設定のエクスポート/インポート、フォルダ選択のダイアログ）、`trash.ts`（ごみ箱への移動の共通処理）
-  - `store/` — 永続化層。`appRoot.ts`（保存先ディレクトリの解決）、`appState.ts`（`app-state.json` の読み書き・レガシー移行・インポート/エクスポート）、`favorites.ts` / `session.ts` / `windowState.ts` / `confirmations.ts`（`appState.ts` 経由の薄いラッパー）、`thumbnailCache.ts`（サムネイルディスクキャッシュ）、`warmup.ts`（フォーカス復帰時のキャッシュ再ウォームアップ）
-  - `utils/` — `zipArchive.ts`（ZIP 展開ロジック）、`atomicWrite.ts`（一時ファイル経由のアトミックな書き込み）
+  - `services/` — IPCハンドラーから呼ばれる実処理本体。`folderScan.ts`（フォルダ・ZIP・画像の一覧取得）、`imageDataUrl.ts`（sharp/nativeImageによる画像データURL生成）、`renamePath.ts`（ファイル・フォルダのリネーム、お気に入りパス追従）、`deleteFolder.ts` / `moveToUnnecessary.ts`（ごみ箱への移動）、`confirmDialog.ts`（「今後表示しない」付きの確認ダイアログ）、`zipDialogs.ts` / `settingsDialogs.ts` / `folderDialogs.ts`（ZIP 解凍の確認、設定のエクスポート/インポート、フォルダ選択のダイアログ）、`trash.ts`（ごみ箱への移動の共通処理）、`thumbnails.ts`（サムネイルの生成と、パス・JPEG のバイト列のメモリ上のキャッシュ）、`warmup.ts`（フォーカス復帰時・定期的なキャッシュの再ウォームアップ）
+  - `store/` — 永続化層。`appRoot.ts`（保存先ディレクトリの解決）、`appState.ts`（`app-state.json` の読み書き・レガシー移行・インポート/エクスポート）、`favorites.ts` / `session.ts` / `windowState.ts` / `confirmations.ts`（`appState.ts` 経由の薄いラッパー）、`thumbnailDiskCache.ts`（サムネイルの保存先 `userData/thumbnails/` とファイル名。**ファイル名の決め方を変えると既存のサムネイルがすべて使われなくなる**ため、`services/thumbnails.test.ts` のゴールデン値で固定している）
+  - `utils/` — `zipArchive.ts`（ZIP 展開ロジック）、`atomicWrite.ts`（一時ファイル経由のアトミックな書き込み）、`concurrencyLimiter.ts`（同時に実行する非同期処理の数の制限）
 - `src/preload/index.ts` — `contextBridge` で `window.photoCollection` API を公開。レンダラーはこの API の型（`PhotoCollectionAPI`）だけを `env.d.ts` 経由で参照する
-- `src/shared/` — 3つのプロセスすべてで使う型（`types.ts`: `ImageFile`, `FavoriteFolder`, `SessionData` 等）、IPC のチャネル名（`ipcChannels.ts`）、定数（`constants.ts`）、扱う画像・動画の拡張子の表（`media.ts`。フォルダの読み込み・MIME・デコード方法・GIF 判定はすべてこの表から決まる）、`local-file://` の URL とパスの変換（`localFileUrl.ts`。Windows のドライブレターが URL のホスト名として届く癖に注意 — コード内コメント参照）。electron・Node・React などに依存しない純粋な TypeScript に限る（ESLint で検査）
+- `src/shared/` — 3つのプロセスすべてで使う型（`types.ts`: `ImageFile`, `FavoriteFolder`, `SessionData` 等）、IPC のチャネル名（`ipcChannels.ts`）、定数（`constants.ts`）、件数に上限のある LRU の Map（`lruMap.ts`）、扱う画像・動画の拡張子の表（`media.ts`。フォルダの読み込み・MIME・デコード方法・GIF 判定はすべてこの表から決まる）、`local-file://` の URL とパスの変換（`localFileUrl.ts`。Windows のドライブレターが URL のホスト名として届く癖に注意 — コード内コメント参照）。electron・Node・React などに依存しない純粋な TypeScript に限る（ESLint で検査）
 - `src/renderer/src/` — React + TypeScript の UI
   - `App.tsx` — トップレベルのタブ状態管理とハンドラーの合成
   - `hooks/` — ロジック本体（`useTabs`, `useFolderNavigation`, `useSessionPersistence`, `useFavorites`, `useImageTransform`, `useProgressiveImageSource` 等）。**コンポーネントは表示、hooksがロジック**という分担
