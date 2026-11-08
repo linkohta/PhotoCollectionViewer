@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { MouseEvent, RefObject } from 'react'
 import type { ImageFile } from '../../../shared/types'
-import { toLocalFileUrl } from '../../../shared/localFileUrl'
+import { useThumbnailSource } from '../hooks/useThumbnailSource'
 import { formatFileSize } from '../utils/files'
 import { RenameInput } from './RenameInput'
 
@@ -30,75 +30,11 @@ export function ThumbnailCard({
 }: ThumbnailCardProps): JSX.Element {
   const isVideo = image.mediaType === 'video'
   const cardRef = useRef<HTMLElement>(null)
-  const [src, setSrc] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const loadThumbnail = useCallback(async (): Promise<void> => {
-    // Videos have no sharp-generated thumbnail - the local-file:// URL is
-    // handed straight to a <video preload="metadata"> element below, which
-    // renders the first frame itself.
-    if (isVideo) {
-      setSrc(toLocalFileUrl(image.path))
-      return
-    }
-
-    setLoading(true)
-    try {
-      const path = await window.photoCollection.getThumbnailPath(
-        image.path,
-        200,
-        image.modified,
-        image.size
-      )
-      if (path) {
-        setSrc(toLocalFileUrl(path))
-        return
-      }
-
-      const dataUrl = await window.photoCollection.getImageDataUrl(image.path)
-      if (dataUrl) {
-        setSrc(dataUrl)
-      }
-    } finally {
-      setLoading(false)
-    }
-  }, [isVideo, image.path, image.modified, image.size])
-
-  useEffect(() => {
-    const element = cardRef.current
-    if (!element) return
-
-    let loaded = false
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting || loaded) return
-        loaded = true
-        observer.disconnect()
-        void loadThumbnail()
-      },
-      {
-        root: scrollRoot,
-        rootMargin: '240px'
-      }
-    )
-
-    observer.observe(element)
-    return () => {
-      observer.disconnect()
-    }
-  }, [loadThumbnail, scrollRoot])
-
-  const handleImageError = useCallback(() => {
-    if (isVideo) return
-    void window.photoCollection.getImageDataUrl(image.path).then((dataUrl) => {
-      if (dataUrl) {
-        setSrc(dataUrl)
-      }
-    })
-  }, [isVideo, image.path])
-
-  const handleVideoError = useCallback(() => setSrc(null), [])
+  const { src, loading, handleImageError, handleVideoError } = useThumbnailSource(
+    image,
+    cardRef,
+    scrollRoot
+  )
 
   const imageWrap = (
     <div className="thumbnail-image-wrap">

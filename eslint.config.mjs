@@ -84,6 +84,21 @@ export default tseslint.config(
       'max-lines': 'off'
     }
   },
+  {
+    // CLAUDE.md: components show things, hooks hold the logic - including
+    // the calls to the main process.
+    files: ['src/renderer/src/components/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.name='window'][property.name='photoCollection']",
+          message:
+            'コンポーネントから window.photoCollection を呼ばず、hooks/ のフックを経由してください。'
+        }
+      ]
+    }
+  },
   // Each process only talks to the others through preload / IPC.
   {
     files: ['src/renderer/**/*.{ts,tsx}'],
