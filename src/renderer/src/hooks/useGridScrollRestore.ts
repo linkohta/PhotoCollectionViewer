@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { findGridItem } from '../utils/gridItemElements'
 
 // Keyed by folder path so returning to a folder (e.g. via "go up" or a
 // breadcrumb) restores the scroll position it was left at, instead of
@@ -21,7 +22,7 @@ export function useGridScrollRestore(
     restoredPathRef.current = collectionPath
 
     if (highlightPath) {
-      const target = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
+      const target = findGridItem(scrollRoot, highlightPath)
       if (target) {
         target.scrollIntoView({ block: 'center' })
         return
@@ -35,7 +36,7 @@ export function useGridScrollRestore(
   // arrow keys, without re-triggering the initial mount/restore effect above.
   useEffect(() => {
     if (!scrollRoot || !highlightPath || restoredPathRef.current !== collectionPath) return
-    const target = scrollRoot.querySelector(`[data-path="${CSS.escape(highlightPath)}"]`)
+    const target = findGridItem(scrollRoot, highlightPath)
     target?.scrollIntoView({ block: 'nearest' })
   }, [scrollRoot, collectionPath, highlightPath])
 

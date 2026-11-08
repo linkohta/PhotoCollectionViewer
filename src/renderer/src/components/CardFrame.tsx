@@ -1,4 +1,5 @@
 import type { MouseEvent, ReactNode, Ref } from 'react'
+import { gridItemAttributes } from '../utils/gridItemElements'
 
 interface CardFrameProps {
   // The card's own classes, e.g. "subfolder-card zip-card".
@@ -41,7 +42,7 @@ export function CardFrame({
       ref={frameRef as Ref<HTMLButtonElement>}
       type="button"
       className={`${className} ${isHighlighted ? 'highlighted' : ''}`}
-      data-path={path}
+      {...gridItemAttributes(path)}
       onClick={onSelect}
       onContextMenu={onContextMenu}
       title={title}
