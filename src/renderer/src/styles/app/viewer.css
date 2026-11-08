@@ -3,7 +3,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #0a0a0a;
+  background: var(--color-surface-viewer);
   outline: none;
 }
 
@@ -12,8 +12,8 @@
   align-items: center;
   gap: 12px;
   padding: 8px 16px;
-  background: #1a1a1a;
-  border-bottom: 1px solid #2a2a2a;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border-subtle);
   flex-shrink: 0;
   flex-wrap: wrap;
 }
@@ -32,7 +32,7 @@
 
 .viewer-counter {
   font-size: 13px;
-  color: #aaa;
+  color: var(--color-text-secondary);
   min-width: 60px;
   text-align: center;
 }
@@ -45,7 +45,7 @@
 .viewer-filename {
   margin-left: auto;
   font-size: 13px;
-  color: #888;
+  color: var(--color-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -53,7 +53,7 @@
 }
 
 .viewer-loading-badge {
-  color: #666;
+  color: var(--color-text-faint);
   font-size: 11px;
 }
 
@@ -61,14 +61,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.viewer-image.preview {
-  filter: none;
-}
-
-.viewer-image.loaded {
-  filter: none;
 }
 
 .viewer-canvas {

@@ -2,23 +2,23 @@
 .btn {
   padding: 6px 12px;
   border-radius: 6px;
-  background: #333;
-  color: #e8e8e8;
+  background: var(--color-control);
+  color: var(--color-text);
   transition: background 0.15s;
   font-size: 13px;
 }
 
 .btn:hover:not(:disabled) {
-  background: #444;
+  background: var(--color-control-hover);
 }
 
 .btn.primary {
-  background: #4a6cf7;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-text-strong);
 }
 
 .btn.primary:hover:not(:disabled) {
-  background: #5a7cff;
+  background: var(--color-accent-hover);
 }
 
 .btn.full-width {
@@ -26,28 +26,28 @@
 }
 
 .btn.active {
-  background: #4a6cf7;
-  color: #fff;
+  background: var(--color-accent);
+  color: var(--color-text-strong);
 }
 
 .btn.danger {
-  background: #7a2b2b;
-  color: #fff;
+  background: var(--color-danger);
+  color: var(--color-text-strong);
 }
 
 .btn.danger:hover:not(:disabled) {
-  background: #9c3838;
+  background: var(--color-danger-hover);
 }
 
 .favorite-toggle {
   width: 100%;
   padding: 8px 12px;
   border-radius: 6px;
-  background: #2a2a2a;
+  background: var(--color-surface-raised);
   text-align: center;
 }
 
 .favorite-toggle.active {
-  background: #3d3520;
-  color: #ffd700;
+  background: var(--color-favorite-bg);
+  color: var(--color-favorite);
 }

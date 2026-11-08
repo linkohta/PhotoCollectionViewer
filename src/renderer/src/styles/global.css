@@ -1,3 +1,5 @@
+@import './tokens.css';
+
 *,
 *::before,
 *::after {
@@ -16,8 +18,8 @@ body,
 body {
   font-family: 'Segoe UI', 'Yu Gothic UI', 'Meiryo', sans-serif;
   font-size: 14px;
-  color: #e8e8e8;
-  background: #1a1a1a;
+  color: var(--color-text);
+  background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -48,10 +50,10 @@ ul {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--color-scrollbar-thumb);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--color-scrollbar-thumb-hover);
 }
