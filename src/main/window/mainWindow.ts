@@ -22,7 +22,9 @@ export function createMainWindow(): void {
     icon: join(__dirname, '../../resources/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      // The preload script only uses contextBridge and ipcRenderer, which work
+      // in a sandboxed renderer.
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false
     }
