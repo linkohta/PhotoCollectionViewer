@@ -11,10 +11,6 @@ import type {
   ZipArchive
 } from '../../shared/types'
 
-// .flv is listed so it shows up alongside videos in the grid, but Chromium
-// has no built-in FLV demuxer - playback in the viewer's <video> element will
-// fail on most FLV files, which the renderer surfaces as an error instead of
-// silently omitting the file from the list.
 const mediaKindOf = (filename: string): MediaFormat['kind'] | undefined =>
   MEDIA_FORMATS.get(extname(filename).toLowerCase())?.kind
 
@@ -30,6 +26,42 @@ function isZipFile(filename: string): boolean {
   return extname(filename).toLowerCase() === '.zip'
 }
 
+// Folders such as .git are left out of the grid, the search and the previews.
+const isHiddenFolder = (name: string): boolean => name.startsWith('.')
+
+// Every list the app shows is in this order, so "file2" comes before "file10".
+const compareNaturally = (a: string, b: string): number =>
+  a.localeCompare(b, undefined, { numeric: true })
+
+const byName = (a: { name: string }, b: { name: string }): number =>
+  compareNaturally(a.name, b.name)
+
+// Rejects when the file can't be read.
+const toImageFile = async (
+  folderPath: string,
+  name: string,
+  mediaType: ImageFile['mediaType']
+): Promise<ImageFile> => {
+  const filePath = join(folderPath, name)
+  const fileStat = await stat(filePath)
+  return { path: filePath, name, size: fileStat.size, modified: fileStat.mtimeMs, mediaType }
+}
+
+// Rejects when the file can't be read.
+const toZipArchive = async (folderPath: string, name: string): Promise<ZipArchive> => {
+  const filePath = join(folderPath, name)
+  const fileStat = await stat(filePath)
+  const extractPath = getZipExtractPath(filePath)
+  return {
+    path: filePath,
+    name,
+    size: fileStat.size,
+    modified: fileStat.mtimeMs,
+    extractPath,
+    isExtracted: existsSync(extractPath)
+  }
+}
+
 export async function scanFolder(folderPath: string, rootPath?: string): Promise<FolderCollection> {
   const entries = await readdir(folderPath, { withFileTypes: true })
   const images: ImageFile[] = []
@@ -38,7 +70,7 @@ export async function scanFolder(folderPath: string, rootPath?: string): Promise
 
   for (const entry of entries) {
     if (entry.isDirectory()) {
-      if (entry.name.startsWith('.')) continue
+      if (isHiddenFolder(entry.name)) continue
       subfolders.push({
         path: join(folderPath, entry.name),
         name: entry.name
@@ -49,18 +81,8 @@ export async function scanFolder(folderPath: string, rootPath?: string): Promise
     if (!entry.isFile()) continue
 
     if (isZipFile(entry.name)) {
-      const filePath = join(folderPath, entry.name)
       try {
-        const fileStat = await stat(filePath)
-        const extractPath = getZipExtractPath(filePath)
-        zipFiles.push({
-          path: filePath,
-          name: entry.name,
-          size: fileStat.size,
-          modified: fileStat.mtimeMs,
-          extractPath,
-          isExtracted: existsSync(extractPath)
-        })
+        zipFiles.push(await toZipArchive(folderPath, entry.name))
       } catch {
         // skip unreadable zip files
       }
@@ -70,24 +92,16 @@ export async function scanFolder(folderPath: string, rootPath?: string): Promise
     const isVideo = isVideoFile(entry.name)
     if (!isVideo && !isImageFile(entry.name)) continue
 
-    const filePath = join(folderPath, entry.name)
     try {
-      const fileStat = await stat(filePath)
-      images.push({
-        path: filePath,
-        name: entry.name,
-        size: fileStat.size,
-        modified: fileStat.mtimeMs,
-        mediaType: isVideo ? 'video' : 'image'
-      })
+      images.push(await toImageFile(folderPath, entry.name, isVideo ? 'video' : 'image'))
     } catch {
       // skip unreadable files
     }
   }
 
-  subfolders.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
-  zipFiles.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
-  images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+  subfolders.sort(byName)
+  zipFiles.sort(byName)
+  images.sort(byName)
 
   const parentDir = dirname(folderPath)
   const canGoUp =
@@ -125,7 +139,7 @@ export async function searchSubfolders(
     }
 
     for (const entry of entries) {
-      if (!entry.isDirectory() || entry.name.startsWith('.')) continue
+      if (!entry.isDirectory() || isHiddenFolder(entry.name)) continue
 
       const entryPath = join(currentPath, entry.name)
       const relativeParts_ = [...relativeParts, entry.name]
@@ -143,7 +157,7 @@ export async function searchSubfolders(
   }
 
   await walk(folderPath, [])
-  results.sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true }))
+  results.sort((a, b) => compareNaturally(a.relativePath, b.relativePath))
   return results
 }
 
@@ -166,25 +180,14 @@ export async function findFolderPreviewImage(
     return null
   }
 
-  const compareNames = (a: string, b: string): number =>
-    a.localeCompare(b, undefined, { numeric: true })
-
   const imageNames = entries
     .filter((entry) => entry.isFile() && isImageFile(entry.name))
     .map((entry) => entry.name)
-    .sort(compareNames)
+    .sort(compareNaturally)
 
   for (const name of imageNames) {
-    const filePath = join(folderPath, name)
     try {
-      const fileStat = await stat(filePath)
-      return {
-        path: filePath,
-        name,
-        size: fileStat.size,
-        modified: fileStat.mtimeMs,
-        mediaType: 'image'
-      }
+      return await toImageFile(folderPath, name, 'image')
     } catch {
       // try the next image
     }
@@ -193,9 +196,9 @@ export async function findFolderPreviewImage(
   if (depth <= 0) return null
 
   const subfolderNames = entries
-    .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+    .filter((entry) => entry.isDirectory() && !isHiddenFolder(entry.name))
     .map((entry) => entry.name)
-    .sort(compareNames)
+    .sort(compareNaturally)
 
   for (const name of subfolderNames) {
     const found = await findFolderPreviewImage(join(folderPath, name), depth - 1)

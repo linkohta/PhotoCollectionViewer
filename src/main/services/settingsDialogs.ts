@@ -28,13 +28,10 @@ export async function importSettingsViaDialog(): Promise<boolean> {
 
   const confirmed = await confirmUnlessDisabled('importSettings', {
     type: 'question',
-    buttons: ['インポート', 'キャンセル'],
-    defaultId: 0,
-    cancelId: 1,
-    noLink: true,
     title: '設定をインポート',
     message: '現在の設定を上書きしてインポートしますか？',
-    detail: '反映のためアプリの表示を再読み込みします。'
+    detail: '反映のためアプリの表示を再読み込みします。',
+    confirmLabel: 'インポート'
   })
   if (!confirmed) return false
 
