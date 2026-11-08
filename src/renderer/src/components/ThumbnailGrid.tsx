@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { FolderCollection, ImageFile, ZipArchive } from '../../../shared/types'
-import type { GridItemKind, SearchOrigin } from '../types/grid'
+import type { GridItemKind } from '../types/grid'
+import type { GridActions } from '../utils/tabActions'
 import { buildBreadcrumb, buildCountLabel } from '../utils/breadcrumb'
 import { useGridScrollRestore } from '../hooks/useGridScrollRestore'
 import { useSubfolderSearch } from '../hooks/useSubfolderSearch'
@@ -15,20 +16,8 @@ interface ThumbnailGridProps {
   rootFolderPath: string | null
   highlightPath: string | null
   pendingSearchQuery: string | null
-  onConsumePendingSearchQuery: () => void
-  onHighlightChange: (path: string) => void
-  onSelect: (index: number) => void
-  onSelectSubfolder: (path: string, searchOrigin?: SearchOrigin) => void
-  onOpenSubfolderInNewTab: (path: string) => void
-  onSelectZip: (zipFile: ZipArchive) => void
-  onOpenZipInNewTab: (zipFile: ZipArchive) => void
-  onGoUp: () => void
   canGoBack: boolean
-  onGoBack: () => void
-  onRenameItem: (path: string, newName: string) => Promise<void>
-  onMoveToTrash: (path: string) => void
-  onDeleteSubfolder: (path: string) => Promise<boolean>
-  onRefreshFolder: () => void
+  actions: GridActions
 }
 
 interface ItemMenuState {
@@ -50,20 +39,8 @@ export function ThumbnailGrid({
   rootFolderPath,
   highlightPath,
   pendingSearchQuery,
-  onConsumePendingSearchQuery,
-  onHighlightChange,
-  onSelect,
-  onSelectSubfolder,
-  onOpenSubfolderInNewTab,
-  onSelectZip,
-  onOpenZipInNewTab,
-  onGoUp,
   canGoBack,
-  onGoBack,
-  onRenameItem,
-  onMoveToTrash,
-  onDeleteSubfolder,
-  onRefreshFolder
+  actions
 }: ThumbnailGridProps): JSX.Element {
   const [itemMenu, setItemMenu] = useState<ItemMenuState | null>(null)
   const [renaming, setRenaming] = useState<RenamingState | null>(null)
@@ -80,7 +57,11 @@ export function ThumbnailGrid({
     searchResults,
     filteredSubfolders,
     removeSearchResult
-  } = useSubfolderSearch({ collection, pendingSearchQuery, onConsumePendingSearchQuery })
+  } = useSubfolderSearch({
+    collection,
+    pendingSearchQuery,
+    onConsumePendingSearchQuery: actions.consumePendingSearchQuery
+  })
 
   useGridKeyboardNav({
     collection,
@@ -89,23 +70,23 @@ export function ThumbnailGrid({
     scrollRoot,
     isSearching,
     subfolderQuery,
-    onHighlightChange,
-    onSelectSubfolder,
-    onSelectZip,
-    onSelect,
-    onGoUp,
+    onHighlightChange: actions.highlight,
+    onSelectSubfolder: actions.selectSubfolder,
+    onSelectZip: actions.selectZip,
+    onSelect: actions.selectImage,
+    onGoUp: actions.goUp,
     canGoBack,
-    onGoBack
+    onGoBack: actions.goBack
   })
 
   const handleRenameSubmit = async (newName: string): Promise<void> => {
     if (!renaming) return
-    await onRenameItem(renaming.path, newName)
+    await actions.renameItem(renaming.path, newName)
     setRenaming(null)
   }
 
   const handleDeleteSubfolder = async (path: string): Promise<void> => {
-    if (await onDeleteSubfolder(path)) removeSearchResult(path)
+    if (await actions.deleteSubfolder(path)) removeSearchResult(path)
   }
 
   const openItemMenu = (
@@ -133,7 +114,7 @@ export function ThumbnailGrid({
         // Mouse "back" side button, same as the "←" button
         if (event.button !== 3 || !canGoBack) return
         event.preventDefault()
-        onGoBack()
+        actions.goBack()
       }}
     >
       <header className="grid-header">
@@ -142,7 +123,7 @@ export function ThumbnailGrid({
             <button
               type="button"
               className="btn breadcrumb-back"
-              onClick={onGoBack}
+              onClick={actions.goBack}
               disabled={!canGoBack}
               title="前のフォルダに戻る (Alt+← / Backspace)"
             >
@@ -152,7 +133,7 @@ export function ThumbnailGrid({
               <button
                 type="button"
                 className="btn breadcrumb-up"
-                onClick={onGoUp}
+                onClick={actions.goUp}
                 title="上のフォルダへ (Esc)"
               >
                 ↑
@@ -164,7 +145,7 @@ export function ThumbnailGrid({
                 <button
                   type="button"
                   className={`breadcrumb-link ${index === breadcrumbs.length - 1 ? 'current' : ''}`}
-                  onClick={() => onSelectSubfolder(crumb.path)}
+                  onClick={() => actions.selectSubfolder(crumb.path)}
                   disabled={index === breadcrumbs.length - 1}
                   title={crumb.label}
                 >
@@ -178,7 +159,7 @@ export function ThumbnailGrid({
             <button
               type="button"
               className="btn grid-refresh"
-              onClick={onRefreshFolder}
+              onClick={actions.refresh}
               title="一覧を更新"
             >
               ⟳ 更新
@@ -212,7 +193,7 @@ export function ThumbnailGrid({
                     isHighlighted={subfolder.path === highlightPath}
                     isRenaming={renaming?.kind === 'subfolder' && renaming.path === subfolder.path}
                     onSelect={() =>
-                      onSelectSubfolder(
+                      actions.selectSubfolder(
                         subfolder.path,
                         isSearching
                           ? { originFolderPath: collection.path, query: subfolderQuery }
@@ -247,7 +228,7 @@ export function ThumbnailGrid({
                   zipFile={zipFile}
                   isHighlighted={zipFile.path === highlightPath}
                   isRenaming={renaming?.kind === 'zip' && renaming.path === zipFile.path}
-                  onSelect={() => onSelectZip(zipFile)}
+                  onSelect={() => actions.selectZip(zipFile)}
                   onContextMenu={(event) =>
                     openItemMenu(event, zipFile.path, zipFile.name, 'zip', zipFile)
                   }
@@ -270,7 +251,7 @@ export function ThumbnailGrid({
                   index={index}
                   scrollRoot={scrollRoot}
                   isHighlighted={image.path === highlightPath}
-                  onSelect={onSelect}
+                  onSelect={actions.selectImage}
                   onContextMenu={(event, targetImage) =>
                     openItemMenu(event, targetImage.path, targetImage.name, 'image')
                   }
@@ -300,12 +281,12 @@ export function ThumbnailGrid({
               ? undefined
               : () =>
                   itemMenu.kind === 'zip' && itemMenu.zipFile
-                    ? onOpenZipInNewTab(itemMenu.zipFile)
-                    : onOpenSubfolderInNewTab(itemMenu.path)
+                    ? actions.openZipInNewTab(itemMenu.zipFile)
+                    : actions.openSubfolderInNewTab(itemMenu.path)
           }
           onRename={() => setRenaming({ kind: itemMenu.kind, path: itemMenu.path })}
           onMoveToTrash={
-            itemMenu.kind === 'image' ? () => onMoveToTrash(itemMenu.path) : undefined
+            itemMenu.kind === 'image' ? () => actions.moveToTrash(itemMenu.path) : undefined
           }
           onDelete={
             itemMenu.kind === 'subfolder'

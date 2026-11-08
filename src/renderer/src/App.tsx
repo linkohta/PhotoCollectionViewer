@@ -9,6 +9,7 @@ import { useTabs } from './hooks/useTabs'
 import { useSessionPersistence } from './hooks/useSessionPersistence'
 import { useFavorites } from './hooks/useFavorites'
 import { useFolderNavigation } from './hooks/useFolderNavigation'
+import { useActiveTabActions } from './hooks/useActiveTabActions'
 import { useConfirmationSettings } from './hooks/useConfirmationSettings'
 import './styles/App.css'
 
@@ -33,14 +34,6 @@ export default function App(): JSX.Element {
   const navigation = useFolderNavigation({ tabs, activeTabId, updateTab, addTab })
   const { confirmations, setConfirmation } = useConfirmationSettings()
 
-  const handleRenameItem = useCallback(
-    async (path: string, newName: string) => {
-      await navigation.handleRenameItem(activeTab.id, path, newName)
-      await refreshFavorites()
-    },
-    [navigation, activeTab.id, refreshFavorites]
-  )
-
   const mainRef = useRef<HTMLElement>(null)
 
   const focusMain = useCallback(() => {
@@ -48,6 +41,15 @@ export default function App(): JSX.Element {
       mainRef.current?.focus({ preventScroll: true })
     })
   }, [])
+
+  const tabActions = useActiveTabActions({
+    tabId: activeTab.id,
+    rootFolderPath: activeTab.rootFolderPath,
+    navigation,
+    updateTab,
+    focusMain,
+    refreshFavorites
+  })
 
   useEffect(() => installViewerKeyboardListener(), [])
 
@@ -78,21 +80,6 @@ export default function App(): JSX.Element {
     [selectTab, focusMain]
   )
 
-  const handleSelectImage = useCallback(
-    (index: number) => {
-      navigation.handleSelectImage(activeTab.id, index)
-      focusMain()
-    },
-    [navigation, activeTab.id, focusMain]
-  )
-
-  const handleHighlightChange = useCallback(
-    (path: string) => {
-      updateTab(activeTab.id, (tab) => ({ ...tab, highlightPath: path }))
-    },
-    [updateTab, activeTab.id]
-  )
-
   const handleToggleFavorite = useCallback(() => {
     if (!activeTab.rootFolderPath) return
     void toggleFavorite(activeTab.rootFolderPath)
@@ -120,29 +107,6 @@ export default function App(): JSX.Element {
       window.alert(toUserMessage(error, '設定のインポートに失敗しました'))
     }
   }, [])
-
-  const handleMoveToTrash = useCallback(
-    async (path: string) => {
-      try {
-        await navigation.handleMoveToTrash(activeTab.id, path)
-      } catch (error) {
-        window.alert(toUserMessage(error, '画像をごみ箱へ移動できませんでした'))
-      }
-    },
-    [navigation, activeTab.id]
-  )
-
-  const handleDeleteSubfolder = useCallback(
-    async (path: string): Promise<boolean> => {
-      try {
-        return await navigation.handleDeleteSubfolder(activeTab.id, path)
-      } catch (error) {
-        window.alert(toUserMessage(error, 'フォルダの削除に失敗しました'))
-        return false
-      }
-    },
-    [navigation, activeTab.id]
-  )
 
   return (
     <div className="app">
@@ -181,29 +145,7 @@ export default function App(): JSX.Element {
             favorites={favorites}
             onOpenDialog={navigation.handleOpenDialog}
             onOpenFolder={navigation.openFolderInActiveTab}
-            onSelectSubfolder={(path, searchOrigin) =>
-              void navigation.handleSelectSubfolder(activeTab.id, path, searchOrigin)
-            }
-            onConsumePendingSearchQuery={() =>
-              updateTab(activeTab.id, (tab) => ({ ...tab, pendingSearchQuery: null }))
-            }
-            onOpenSubfolderInNewTab={(path) =>
-              void navigation.handleOpenSubfolderInNewTab(path, activeTab.rootFolderPath)
-            }
-            onHighlightChange={handleHighlightChange}
-            onSelectZip={(zipFile) => void navigation.handleSelectZip(activeTab.id, zipFile)}
-            onOpenZipInNewTab={(zipFile) =>
-              void navigation.handleOpenZipInNewTab(zipFile, activeTab.rootFolderPath)
-            }
-            onGoUp={() => void navigation.handleGoUp(activeTab.id)}
-            onGoBack={() => void navigation.handleGoBack(activeTab.id)}
-            onRenameItem={handleRenameItem}
-            onSelectImage={handleSelectImage}
-            onCloseViewer={() => void navigation.handleCloseViewer(activeTab.id)}
-            onNavigate={(direction) => navigation.handleNavigate(activeTab.id, direction)}
-            onMoveToTrash={(path) => void handleMoveToTrash(path)}
-            onDeleteSubfolder={handleDeleteSubfolder}
-            onRefreshFolder={() => void navigation.handleRefreshFolder(activeTab.id)}
+            actions={tabActions}
           />
         </main>
       </div>
