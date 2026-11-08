@@ -149,7 +149,8 @@ npm start
 
 | パス | 役割 |
 |------|------|
-| `src/main/index.ts` | メインプロセス、`local-file` プロトコル |
+| `src/main/index.ts` | メインプロセスのエントリポイント |
+| `src/main/protocol/localFileProtocol.ts` | `local-file` プロトコル（画像・動画の配信） |
 | `src/main/ipc/handlers.ts` | IPC（フォルダ読み込み、ZIP、セッション、お気に入り等） |
 | `src/main/utils/zipArchive.ts` | ZIP 解凍（同名フォルダ平坦化、パストラバーサル対策） |
 | `src/main/store/session.ts` | セッション永続化 |
