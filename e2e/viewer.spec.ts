@@ -1,5 +1,6 @@
 import type { Locator } from '@playwright/test'
-import { LARGE_IMAGE } from './support/environment'
+import { launchApp } from './support/app'
+import { addImage, LARGE_IMAGE } from './support/environment'
 import { expect, test } from './support/test'
 
 const renderedWidth = (image: Locator) => async (): Promise<number> =>
@@ -47,4 +48,44 @@ test('switches between fit, actual size and zoom', async ({ app }) => {
 
   await window.keyboard.press('1')
   await expect.poll(width).toBe(LARGE_IMAGE.width)
+})
+
+test('keeps actual size working after a video has been shown', async ({ app }) => {
+  const { window } = app
+  const image = window.locator('img.viewer-image.loaded')
+  const width = renderedWidth(image)
+
+  // Opened on the video, then moved to the image.
+  await window.locator('.thumbnail-card', { hasText: 'clip.mp4' }).click()
+  await expect(window.locator('.viewer-counter')).toHaveText('4 / 4')
+  await window.keyboard.press('ArrowLeft')
+  await expect(image).toBeVisible()
+  await window.keyboard.press('1')
+  await expect.poll(width).toBe(LARGE_IMAGE.width)
+
+  // Image, then video, then back to the image.
+  await window.keyboard.press('ArrowRight')
+  await expect(window.locator('.viewer-filename')).toContainText('clip.mp4')
+  await window.keyboard.press('ArrowLeft')
+  await expect(image).toBeVisible()
+  await window.keyboard.press('1')
+  await expect.poll(width).toBe(LARGE_IMAGE.width)
+})
+
+test('shows an image larger than the preview at its own size', async ({ env }) => {
+  // The viewer first shows a preview of at most 960px, whose size used to win
+  // over the full image's now and then.
+  await addImage(env, 'big.png', 2400, 1600)
+
+  const { electronApp, window } = await launchApp(env)
+  try {
+    await window.locator('.thumbnail-card', { hasText: 'big.png' }).click()
+    const image = window.locator('img.viewer-image.loaded')
+    await expect(image).toBeVisible()
+
+    await window.keyboard.press('1')
+    await expect.poll(renderedWidth(image)).toBe(2400)
+  } finally {
+    await electronApp.close()
+  }
 })
