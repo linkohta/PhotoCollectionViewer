@@ -2,9 +2,10 @@ import type { TabSnapshot } from '../../../shared/types'
 import { createEmptyTab, getTabTitle, type TabState } from '../types/tab'
 
 // Rebuilds a saved tab (session restore, Ctrl+Shift+T), rescanning the folder
-// it showed.
+// it showed. It keeps the group it was in; adding it puts it back there if
+// that group still exists.
 export async function restoreTabFromSnapshot(snapshot: TabSnapshot): Promise<TabState> {
-  const tab = createEmptyTab()
+  const tab = createEmptyTab(snapshot.groupId ?? null)
   tab.title = snapshot.title
   tab.rootFolderPath = snapshot.rootFolderPath
   tab.viewMode = snapshot.viewMode

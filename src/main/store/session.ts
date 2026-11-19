@@ -10,7 +10,8 @@ export function saveSession(session: SessionData): SessionData {
   const normalized: SessionData = {
     tabs: session.tabs,
     activeTabIndex: session.activeTabIndex,
-    closedTabs: session.closedTabs.slice(0, MAX_CLOSED_TABS)
+    closedTabs: session.closedTabs.slice(0, MAX_CLOSED_TABS),
+    groups: session.groups
   }
 
   writeAppStateSlice('session', normalized)

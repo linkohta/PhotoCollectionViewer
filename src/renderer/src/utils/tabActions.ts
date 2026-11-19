@@ -55,7 +55,6 @@ export type TabNavigation = Pick<
 
 interface TabActionsDeps {
   tabId: string
-  rootFolderPath: string | null
   navigation: TabNavigation
   updateTab: UpdateTab
   // Gives the keyboard focus back to the tab's content.
@@ -67,7 +66,6 @@ interface TabActionsDeps {
 
 export const bindTabActions = ({
   tabId,
-  rootFolderPath,
   navigation,
   updateTab,
   focusMain,
@@ -89,10 +87,9 @@ export const bindTabActions = ({
     },
     selectSubfolder: (path, searchOrigin) =>
       void navigation.handleSelectSubfolder(tabId, path, searchOrigin),
-    openSubfolderInNewTab: (path) =>
-      void navigation.handleOpenSubfolderInNewTab(path, rootFolderPath),
+    openSubfolderInNewTab: (path) => void navigation.handleOpenSubfolderInNewTab(tabId, path),
     selectZip: (zipFile) => void navigation.handleSelectZip(tabId, zipFile),
-    openZipInNewTab: (zipFile) => void navigation.handleOpenZipInNewTab(zipFile, rootFolderPath),
+    openZipInNewTab: (zipFile) => void navigation.handleOpenZipInNewTab(tabId, zipFile),
     highlight: (path) => updateTab(tabId, (tab) => ({ ...tab, highlightPath: path })),
     consumePendingSearchQuery: () =>
       updateTab(tabId, (tab) => ({ ...tab, pendingSearchQuery: null })),

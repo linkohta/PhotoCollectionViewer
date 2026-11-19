@@ -1,8 +1,19 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import type { TabGroup } from '../../../shared/types'
+import type { TabGroupActions } from '../hooks/useTabs'
+import { findGroup } from '../state/tabGroups'
+import { findTab } from '../state/tabTransitions'
 import type { TabState } from '../types/tab'
+import { buildTabBarEntries } from '../utils/tabBarEntries'
+import { tabMenuItems } from '../utils/tabMenu'
+import { PopupMenu } from './PopupMenu'
+import { TabGroupLabel } from './TabGroupLabel'
+import { TabGroupPanel } from './TabGroupPanel'
+import { TabItem } from './TabItem'
 
 interface TabBarProps {
   tabs: TabState[]
+  groups: TabGroup[]
   activeTabId: string
   canRestore: boolean
   onSelectTab: (tabId: string) => void
@@ -10,22 +21,39 @@ interface TabBarProps {
   onNewTab: () => void
   onRestoreClosedTab: () => void
   onReorderTabs: (sourceId: string, targetId: string, insertAfter: boolean) => void
+  groupActions: TabGroupActions
 }
 
 type DropHint = { tabId: string; insertAfter: boolean }
+type TabMenu = { tabId: string; x: number; y: number }
+type GroupPanel = { groupId: string; isNew: boolean }
 
 export function TabBar({
   tabs,
+  groups,
   activeTabId,
   canRestore,
   onSelectTab,
   onCloseTab,
   onNewTab,
   onRestoreClosedTab,
-  onReorderTabs
+  onReorderTabs,
+  groupActions
 }: TabBarProps): JSX.Element {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dropHint, setDropHint] = useState<DropHint | null>(null)
+  const [tabMenu, setTabMenu] = useState<TabMenu | null>(null)
+  const [groupPanel, setGroupPanel] = useState<GroupPanel | null>(null)
+  // The element of each group shown, which its panel opens below.
+  const groupElements = useRef(new Map<string, HTMLDivElement>())
+
+  const entries = useMemo(
+    () => buildTabBarEntries(tabs, groups, activeTabId),
+    [tabs, groups, activeTabId]
+  )
+
+  const closeTabMenu = useCallback(() => setTabMenu(null), [])
+  const closeGroupPanel = useCallback(() => setGroupPanel(null), [])
 
   const clearDragState = useCallback(() => {
     setDraggingId(null)
@@ -42,8 +70,6 @@ export function TabBar({
     )
   }, [])
 
-  // The close button isn't draggable itself, so a drag that starts on it
-  // belongs to the tab and moves it like any other.
   const handleDragStart = useCallback((event: React.DragEvent<HTMLDivElement>, tabId: string) => {
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', tabId)
@@ -78,56 +104,54 @@ export function TabBar({
     [clearDragState, onReorderTabs]
   )
 
+  const renderTab = (tab: TabState): JSX.Element => (
+    <TabItem
+      key={tab.id}
+      tab={tab}
+      isActive={tab.id === activeTabId}
+      isDragging={tab.id === draggingId}
+      dropHint={dropHint?.tabId === tab.id ? (dropHint.insertAfter ? 'after' : 'before') : null}
+      onSelect={() => onSelectTab(tab.id)}
+      onClose={() => onCloseTab(tab.id)}
+      onContextMenu={(event) => {
+        event.preventDefault()
+        setTabMenu({ tabId: tab.id, x: event.clientX, y: event.clientY })
+      }}
+      onDragStart={(event) => handleDragStart(event, tab.id)}
+      onDragOver={(event) => handleDragOver(event, tab.id)}
+      onDrop={(event) => handleDrop(event, tab.id)}
+      onDragEnd={clearDragState}
+    />
+  )
+
+  const menuTab = tabMenu ? findTab(tabs, tabMenu.tabId) : undefined
+  const panelGroup = groupPanel ? findGroup(groups, groupPanel.groupId) : undefined
+
   return (
     <div className="tab-bar">
       <div className="tab-list" onDragLeave={clearDragState}>
-        {tabs.map((tab) => {
-          const isActive = tab.id === activeTabId
-          const statusSuffix = tab.viewMode === 'viewer' ? ' · 表示中' : ''
-          const isDragging = tab.id === draggingId
-          const dropBefore = dropHint?.tabId === tab.id && !dropHint.insertAfter
-          const dropAfter = dropHint?.tabId === tab.id && dropHint.insertAfter
-
-          return (
+        {entries.map((entry) =>
+          entry.kind === 'tab' ? (
+            renderTab(entry.tab)
+          ) : (
             <div
-              key={tab.id}
-              className={`tab-item ${isActive ? 'active' : ''} ${tab.loading ? 'loading' : ''} ${isDragging ? 'dragging' : ''} ${dropBefore ? 'drop-before' : ''} ${dropAfter ? 'drop-after' : ''}`}
-              draggable
-              onDragStart={(event) => handleDragStart(event, tab.id)}
-              onDragOver={(event) => handleDragOver(event, tab.id)}
-              onDrop={(event) => handleDrop(event, tab.id)}
-              onDragEnd={clearDragState}
+              key={entry.group.id}
+              ref={(element) => {
+                if (element) groupElements.current.set(entry.group.id, element)
+                else groupElements.current.delete(entry.group.id)
+              }}
+              className={`tab-group tab-group-color-${entry.group.color} ${entry.group.collapsed ? 'collapsed' : ''}`}
             >
-              <button
-                type="button"
-                className="tab-label"
-                tabIndex={-1}
-                onClick={() => onSelectTab(tab.id)}
-                title={tab.collection?.path ?? tab.title}
-              >
-                {tab.loading && <span className="tab-spinner" aria-hidden="true" />}
-                <span className="tab-title">
-                  {tab.title}
-                  {statusSuffix}
-                </span>
-              </button>
-              <button
-                type="button"
-                className="tab-close"
-                draggable={false}
-                onMouseDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
-                  event.stopPropagation()
-                  onCloseTab(tab.id)
-                }}
-                title="タブを閉じる"
-                aria-label={`${tab.title} を閉じる`}
-              >
-                ×
-              </button>
+              <TabGroupLabel
+                group={entry.group}
+                tabCount={entry.tabCount}
+                onToggleCollapsed={() => groupActions.toggleGroupCollapsed(entry.group.id)}
+                onOpenPanel={() => setGroupPanel({ groupId: entry.group.id, isNew: false })}
+              />
+              {entry.tabs.map(renderTab)}
             </div>
           )
-        })}
+        )}
       </div>
       <button
         type="button"
@@ -141,6 +165,40 @@ export function TabBar({
       <button type="button" className="tab-new btn" onClick={onNewTab} title="新しいタブ">
         +
       </button>
+
+      {tabMenu && menuTab && (
+        <PopupMenu
+          x={tabMenu.x}
+          y={tabMenu.y}
+          label={menuTab.title}
+          items={tabMenuItems(menuTab, {
+            groups: entries.flatMap((entry) => (entry.kind === 'group' ? [entry.group] : [])),
+            actions: groupActions,
+            createGroup: () =>
+              setGroupPanel({ groupId: groupActions.createGroup(menuTab.id), isNew: true }),
+            closeTab: () => onCloseTab(menuTab.id)
+          })}
+          onClose={closeTabMenu}
+        />
+      )}
+      {groupPanel && panelGroup && (
+        <TabGroupPanel
+          key={`${panelGroup.id}-${groupPanel.isNew}`}
+          group={panelGroup}
+          isNew={groupPanel.isNew}
+          getAnchor={() => groupElements.current.get(panelGroup.id)}
+          onChange={(changes) => groupActions.updateGroup(panelGroup.id, changes)}
+          onAddTab={() => {
+            groupActions.addNewTabToGroup(panelGroup.id)
+            closeGroupPanel()
+          }}
+          onUngroup={() => {
+            groupActions.ungroup(panelGroup.id)
+            closeGroupPanel()
+          }}
+          onClose={closeGroupPanel}
+        />
+      )}
     </div>
   )
 }

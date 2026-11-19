@@ -38,7 +38,7 @@ vi.mock('./appRoot', async () => {
   }
 })
 
-const DEFAULT_SESSION = { tabs: [], activeTabIndex: 0, closedTabs: [] }
+const DEFAULT_SESSION = { tabs: [], activeTabIndex: 0, closedTabs: [], groups: [] }
 const DEFAULT_CONFIRMATIONS = { extractZip: true, deleteFolder: true, importSettings: true }
 
 const favorite: FavoriteFolder = { path: 'C:\\Photos', name: 'Photos', addedAt: 1700000000000 }
@@ -119,9 +119,14 @@ describe('reading and writing slices', () => {
   })
 
   it('fills in what a saved session lacks', () => {
-    writeJson(storePath(), { session: { activeTabIndex: 2, closedTabs: 'none' } })
+    writeJson(storePath(), { session: { activeTabIndex: 2, closedTabs: 'none', groups: {} } })
 
-    expect(readAppStateSlice('session')).toEqual({ tabs: [], activeTabIndex: 2, closedTabs: [] })
+    expect(readAppStateSlice('session')).toEqual({
+      tabs: [],
+      activeTabIndex: 2,
+      closedTabs: [],
+      groups: []
+    })
   })
 
   it('reads a file that cannot be parsed as the defaults', () => {
@@ -251,7 +256,8 @@ describe('migrating settings from older versions', () => {
     expect(readAppStateSlice('session')).toEqual({
       tabs: [snapshot],
       activeTabIndex: 2,
-      closedTabs: []
+      closedTabs: [],
+      groups: []
     })
     expect(readAppStateSlice('windowState')).toEqual({ width: 1200, height: 800 })
     expect(readdirSync(env.appRootDir)).toEqual(['app-state.json'])

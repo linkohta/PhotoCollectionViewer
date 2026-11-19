@@ -1,3 +1,5 @@
+import type { TAB_GROUP_COLORS } from './constants'
+
 export interface ImageFile {
   path: string
   name: string
@@ -43,18 +45,34 @@ export interface FavoriteFolder {
 
 export type ViewMode = 'grid' | 'viewer'
 
+export type TabGroupColor = (typeof TAB_GROUP_COLORS)[number]
+
+// A named, coloured group of tabs, like Firefox's tab groups. Which tabs are
+// in it is kept on the tabs (TabSnapshot.groupId), and they always sit next
+// to each other in the tab bar.
+export interface TabGroup {
+  id: string
+  name: string
+  color: TabGroupColor
+  // Only the label (and the active tab, if it is in the group) is shown.
+  collapsed: boolean
+}
+
 export interface TabSnapshot {
   title: string
   rootFolderPath: string | null
   currentFolderPath: string | null
   selectedIndex: number | null
   viewMode: ViewMode
+  // The TabGroup the tab is in. Sessions saved before tab groups lack it.
+  groupId?: string | null
 }
 
 export interface SessionData {
   tabs: TabSnapshot[]
   activeTabIndex: number
   closedTabs: TabSnapshot[]
+  groups: TabGroup[]
 }
 
 // Which confirmation dialogs are shown. false means the action proceeds

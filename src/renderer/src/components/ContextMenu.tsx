@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { suspendViewerKeyboardHandler } from '../utils/viewerKeyboard'
+import type { PopupMenuItem } from '../types/menu'
+import { PopupMenu } from './PopupMenu'
 
 type MenuEntryKey = 'onOpenInNewTab' | 'onRename' | 'onMoveToTrash' | 'onDelete'
 
@@ -22,54 +22,10 @@ const MENU_ENTRIES: readonly { key: MenuEntryKey; text: string; danger?: boolean
 
 export function ContextMenu(props: ContextMenuProps): JSX.Element {
   const { x, y, label, onClose } = props
-  const menuRef = useRef<HTMLDivElement>(null)
+  const items = MENU_ENTRIES.flatMap(({ key, text, danger }): PopupMenuItem[] => {
+    const run = props[key]
+    return run ? [{ key, text, danger, onSelect: run }] : []
+  })
 
-  // Keys pressed while the menu is open are for the menu, not for the grid or
-  // the viewer behind it.
-  useEffect(() => suspendViewerKeyboardHandler(), [])
-
-  useEffect(() => {
-    const handlePointerDown = (event: MouseEvent): void => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        onClose()
-      }
-    }
-
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onClose()
-    }
-
-    window.addEventListener('mousedown', handlePointerDown)
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('scroll', onClose, true)
-
-    return () => {
-      window.removeEventListener('mousedown', handlePointerDown)
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('scroll', onClose, true)
-    }
-  }, [onClose])
-
-  return (
-    <div ref={menuRef} className="context-menu" style={{ top: y, left: x }} role="menu">
-      <div className="context-menu-title">{label}</div>
-      {MENU_ENTRIES.map(({ key, text, danger }) => {
-        const run = props[key]
-        if (!run) return null
-        return (
-          <button
-            key={key}
-            type="button"
-            className={danger ? 'context-menu-item danger' : 'context-menu-item'}
-            onClick={() => {
-              run()
-              onClose()
-            }}
-          >
-            {text}
-          </button>
-        )
-      })}
-    </div>
-  )
+  return <PopupMenu x={x} y={y} label={label} items={items} onClose={onClose} />
 }
