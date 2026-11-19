@@ -31,10 +31,10 @@ export const nextGroupColor = (groups: readonly TabGroup[]): TabGroupColor => {
   return TAB_GROUP_COLORS.reduce((best, color) => (uses(color) < uses(best) ? color : best))
 }
 
-const lastIndexInGroup = (tabs: readonly TabState[], groupId: string): number =>
+export const lastIndexInGroup = (tabs: readonly TabState[], groupId: string): number =>
   tabs.findLastIndex((tab) => tab.groupId === groupId)
 
-const withoutEmptyGroups = (layout: TabLayout): TabLayout => {
+export const withoutEmptyGroups = (layout: TabLayout): TabLayout => {
   const groups = layout.groups.filter((group) =>
     layout.tabs.some((tab) => tab.groupId === group.id)
   )
@@ -112,37 +112,6 @@ export const updateGroup = (
   groupId: string,
   change: (group: TabGroup) => TabGroup
 ): TabGroup[] => groups.map((group) => (group.id === groupId ? change(group) : group))
-
-// After the tab has been dragged to a new place: dropped between two tabs of
-// one group, it joins that group; otherwise it keeps its own group only while
-// it is still next to the rest of it.
-export const regroupMovedTab = (layout: TabLayout, tabId: string): TabLayout => {
-  const { tabs } = layout
-  const index = tabs.findIndex((tab) => tab.id === tabId)
-  const tab = tabs[index]
-  if (!tab) return layout
-
-  const before = tabs[index - 1]?.groupId ?? null
-  const after = tabs[index + 1]?.groupId ?? null
-  const own = tab.groupId
-  const besideOwnGroup =
-    own !== null &&
-    (before === own ||
-      after === own ||
-      !tabs.some((other) => other !== tab && other.groupId === own))
-
-  let groupId: string | null = null
-  if (before !== null && before === after) {
-    groupId = before
-  } else if (besideOwnGroup) {
-    groupId = own
-  }
-  if (groupId === own) return layout
-
-  const next = [...tabs]
-  next[index] = { ...tab, groupId }
-  return withoutEmptyGroups({ ...layout, tabs: next })
-}
 
 // The tab to activate after the active one, at index, was closed: the one
 // that slid into its place, or else the nearest one before it - passing over

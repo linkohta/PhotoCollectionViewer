@@ -23,7 +23,8 @@ export default function App(): JSX.Element {
     updateTab,
     addTab,
     selectTab,
-    reorderTabs,
+    moveTab,
+    moveGroup,
     closeTab,
     restoreClosedTab,
     restoreSession,
@@ -137,7 +138,8 @@ export default function App(): JSX.Element {
           onCloseTab={closeTab}
           onNewTab={() => addTab()}
           onRestoreClosedTab={() => void restoreClosedTab()}
-          onReorderTabs={reorderTabs}
+          onMoveTab={moveTab}
+          onMoveGroup={moveGroup}
           groupActions={groupActions}
         />
 

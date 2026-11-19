@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useReducer } from 'react'
 import type { TabSnapshot } from '../../../shared/types'
 import type { TabGroupChanges } from '../state/tabGroups'
+import type { GroupDropTarget, TabDropTarget } from '../state/tabMoves'
 import { findTab } from '../state/tabTransitions'
 import { initialTabsState, tabsReducer } from '../state/tabsReducer'
 import { createEmptyTab, type TabState, type TabUpdater } from '../types/tab'
@@ -41,8 +42,16 @@ export function useTabs() {
     dispatch({ type: 'select', tabId })
   }, [])
 
-  const reorderTabs = useCallback((sourceId: string, targetId: string, insertAfter: boolean) => {
-    dispatch({ type: 'reorder', sourceId, targetId, insertAfter })
+  // Returns the id of the group made when the tab is dropped onto a tab
+  // outside any group (see makesGroup).
+  const moveTab = useCallback((tabId: string, target: TabDropTarget) => {
+    const newGroupId = crypto.randomUUID()
+    dispatch({ type: 'moveTab', tabId, target, newGroupId })
+    return newGroupId
+  }, [])
+
+  const moveGroup = useCallback((groupId: string, target: GroupDropTarget) => {
+    dispatch({ type: 'moveGroup', groupId, target })
   }, [])
 
   const closeTab = useCallback((tabId: string) => {
@@ -102,7 +111,8 @@ export function useTabs() {
     updateTab,
     addTab,
     selectTab,
-    reorderTabs,
+    moveTab,
+    moveGroup,
     closeTab,
     restoreClosedTab,
     restoreSession,

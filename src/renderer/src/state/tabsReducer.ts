@@ -5,7 +5,6 @@ import {
   addTabToGroup,
   createGroup,
   insertTab,
-  regroupMovedTab,
   removeTab,
   removeTabFromGroup,
   restoreGroups,
@@ -15,6 +14,7 @@ import {
   type TabGroupChanges,
   type TabLayout
 } from './tabGroups'
+import { moveGroup, moveTab, type GroupDropTarget, type TabDropTarget } from './tabMoves'
 
 export interface TabsState {
   tabs: TabState[]
@@ -34,7 +34,10 @@ export type TabsAction =
   // end of the tab bar.
   | { type: 'add'; tab: TabState }
   | { type: 'select'; tabId: string }
-  | { type: 'reorder'; sourceId: string; targetId: string; insertAfter: boolean }
+  // Dragged and dropped. newGroupId names the group made by dropping a tab
+  // onto a tab outside any group.
+  | { type: 'moveTab'; tabId: string; target: TabDropTarget; newGroupId: string }
+  | { type: 'moveGroup'; groupId: string; target: GroupDropTarget }
   // replacement takes the place of the last tab, so there is always one.
   | { type: 'close'; tabId: string; replacement: TabState }
   | { type: 'forgetClosedTab'; snapshot: TabSnapshot }
@@ -60,26 +63,6 @@ export function initialTabsState(tab: TabState): TabsState {
 
 const withLayout = (state: TabsState, { tabs, groups }: TabLayout): TabsState =>
   tabs === state.tabs && groups === state.groups ? state : { ...state, tabs, groups }
-
-const reorderTabs = (
-  state: TabsState,
-  sourceId: string,
-  targetId: string,
-  insertAfter: boolean
-): TabsState => {
-  const fromIndex = state.tabs.findIndex((tab) => tab.id === sourceId)
-  const toIndex = state.tabs.findIndex((tab) => tab.id === targetId)
-  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-    return state
-  }
-
-  const next = [...state.tabs]
-  const [moved] = next.splice(fromIndex, 1)
-  const adjustedToIndex = next.findIndex((tab) => tab.id === targetId)
-  const insertAt = insertAfter ? adjustedToIndex + 1 : adjustedToIndex
-  next.splice(insertAt, 0, moved!)
-  return withLayout(state, regroupMovedTab({ tabs: next, groups: state.groups }, sourceId))
-}
 
 // Closing the active tab activates the one that slides into its place, or the
 // new last tab when it was the last one (passing over collapsed groups).
@@ -130,8 +113,10 @@ export function tabsReducer(state: TabsState, action: TabsAction): TabsState {
       return { ...withLayout(state, insertTab(state, action.tab)), activeTabId: action.tab.id }
     case 'select':
       return { ...state, activeTabId: action.tabId }
-    case 'reorder':
-      return reorderTabs(state, action.sourceId, action.targetId, action.insertAfter)
+    case 'moveTab':
+      return withLayout(state, moveTab(state, action.tabId, action.target, action.newGroupId))
+    case 'moveGroup':
+      return withLayout(state, moveGroup(state, action.groupId, action.target))
     case 'close':
       return closeTab(state, action.tabId, action.replacement)
     case 'forgetClosedTab':

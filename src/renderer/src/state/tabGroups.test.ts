@@ -7,7 +7,6 @@ import {
   createGroup,
   insertTab,
   nextGroupColor,
-  regroupMovedTab,
   removeTab,
   removeTabFromGroup,
   restoreGroups,
@@ -151,40 +150,6 @@ describe('ungroupTabs', () => {
 
     expect(describeLayout(ungrouped)).toBe('a b c d H:e')
     expect(groupIds(ungrouped)).toEqual(['H'])
-  })
-})
-
-describe('regroupMovedTab', () => {
-  // Moves the tab to the given index, as dragging does, then regroups it.
-  const moveTo = (title: string, index: number): TabLayout => {
-    const layout = sample()
-    const tab = find(layout, title)
-    const tabs = layout.tabs.filter((candidate) => candidate !== tab)
-    tabs.splice(index, 0, tab)
-    return regroupMovedTab({ ...layout, tabs }, tab.id)
-  }
-
-  it('joins the group it was dropped into the middle of', () => {
-    expect(describeLayout(moveTo('a', 1))).toBe('G:b G:a G:c d H:e')
-    expect(describeLayout(moveTo('e', 2))).toBe('a G:b G:e G:c d')
-  })
-
-  it('keeps its group while it stays next to the rest of it', () => {
-    expect(describeLayout(moveTo('c', 1))).toBe('a G:c G:b d H:e')
-    expect(describeLayout(moveTo('b', 2))).toBe('a G:c G:b d H:e')
-  })
-
-  it('leaves its group when moved away from it', () => {
-    expect(describeLayout(moveTo('b', 4))).toBe('a G:c d H:e b')
-  })
-
-  it('keeps the group it is the only tab in, wherever it goes', () => {
-    expect(describeLayout(moveTo('e', 0))).toBe('H:e a G:b G:c d')
-  })
-
-  it('stays out of a group it was dropped at the edge of', () => {
-    expect(describeLayout(moveTo('d', 1))).toBe('a d G:b G:c H:e')
-    expect(describeLayout(moveTo('a', 2))).toBe('G:b G:c a d H:e')
   })
 })
 
