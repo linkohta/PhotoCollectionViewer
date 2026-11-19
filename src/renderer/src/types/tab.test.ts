@@ -23,9 +23,14 @@ describe('createEmptyTab', () => {
       viewMode: 'grid',
       loading: false,
       error: null,
-      history: []
+      history: [],
+      groupId: null
     })
     expect(createEmptyTab().id).not.toBe(tab.id)
+  })
+
+  it('can create the tab for a group', () => {
+    expect(createEmptyTab('group-1').groupId).toBe('group-1')
   })
 })
 
@@ -41,7 +46,7 @@ describe('getTabTitle', () => {
 describe('tabToSnapshot / hasRestorableContent', () => {
   it('keeps what is needed to reopen the tab', () => {
     const tab = {
-      ...createEmptyTab(),
+      ...createEmptyTab('group-1'),
       title: '2024',
       rootFolderPath: 'C:\\Photos',
       collection: collectionAt('C:\\Photos\\2024', '2024'),
@@ -54,7 +59,8 @@ describe('tabToSnapshot / hasRestorableContent', () => {
       rootFolderPath: 'C:\\Photos',
       currentFolderPath: 'C:\\Photos\\2024',
       selectedIndex: 3,
-      viewMode: 'viewer'
+      viewMode: 'viewer',
+      groupId: 'group-1'
     })
     expect(hasRestorableContent(tab)).toBe(true)
     expect(hasRestorableContent(createEmptyTab())).toBe(false)

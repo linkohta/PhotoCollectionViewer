@@ -5,7 +5,6 @@ import type { FolderNavigation } from './useFolderNavigation'
 
 interface UseActiveTabActionsArgs {
   tabId: string
-  rootFolderPath: string | null
   navigation: FolderNavigation
   updateTab: UpdateTab
   focusMain: () => void
@@ -13,10 +12,9 @@ interface UseActiveTabActionsArgs {
 }
 
 // The grid and viewer actions bound to the active tab, kept as the same
-// objects until the active tab (or its root folder) changes.
+// objects until the active tab changes.
 export function useActiveTabActions({
   tabId,
-  rootFolderPath,
   navigation,
   updateTab,
   focusMain,
@@ -26,13 +24,12 @@ export function useActiveTabActions({
     () =>
       bindTabActions({
         tabId,
-        rootFolderPath,
         navigation,
         updateTab,
         focusMain,
         refreshFavorites,
         showError: (message) => window.alert(message)
       }),
-    [tabId, rootFolderPath, navigation, updateTab, focusMain, refreshFavorites]
+    [tabId, navigation, updateTab, focusMain, refreshFavorites]
   )
 }

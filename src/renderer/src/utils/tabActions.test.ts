@@ -36,7 +36,6 @@ const fakeNavigation = (): TabNavigation => ({
 const bind = (navigation: TabNavigation = fakeNavigation()) => {
   const deps = {
     tabId: TAB_ID,
-    rootFolderPath: ROOT,
     navigation,
     updateTab: vi.fn(),
     focusMain: vi.fn(),
@@ -74,14 +73,15 @@ describe('bindTabActions', () => {
     expect(navigation.handleNavigate).toHaveBeenCalledWith(TAB_ID, -1)
   })
 
-  it('opens new tabs under the root folder of the bound tab', () => {
+  // The new tab takes its root folder and group from the bound tab.
+  it('opens new tabs from the bound tab', () => {
     const { navigation, actions } = bind()
 
     actions.grid.openSubfolderInNewTab('C:\\Photos\\trip')
     actions.grid.openZipInNewTab(ZIP)
 
-    expect(navigation.handleOpenSubfolderInNewTab).toHaveBeenCalledWith('C:\\Photos\\trip', ROOT)
-    expect(navigation.handleOpenZipInNewTab).toHaveBeenCalledWith(ZIP, ROOT)
+    expect(navigation.handleOpenSubfolderInNewTab).toHaveBeenCalledWith(TAB_ID, 'C:\\Photos\\trip')
+    expect(navigation.handleOpenZipInNewTab).toHaveBeenCalledWith(TAB_ID, ZIP)
   })
 
   it('gives the focus back after opening an image', () => {

@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import type { ZipArchive } from '../../../shared/types'
-import type { TabState, UpdateTab } from '../types/tab'
+import { createEmptyTab, type TabState, type UpdateTab } from '../types/tab'
 import type { BrowseFolder } from './useBrowseFolder'
 
 interface UseZipNavigationArgs {
@@ -51,16 +51,19 @@ export function useZipNavigation({
     [getTab, openZipInTab]
   )
 
+  // The new tab joins the group of the tab it was opened from, if any.
   const handleOpenZipInNewTab = useCallback(
-    async (zipFile: ZipArchive, rootFolderPath: string | null) => {
-      if (!rootFolderPath) return
+    async (fromTabId: string, zipFile: ZipArchive) => {
+      const from = getTab(fromTabId)
+      if (!from?.rootFolderPath) return
+      const { rootFolderPath, groupId } = from
       // Ask before creating the tab, so cancelling leaves no empty tab behind.
       if (!(await confirmOpenZip(zipFile))) return
 
-      const tab = addTab()
+      const tab = addTab(createEmptyTab(groupId))
       await openZipInTab(tab.id, zipFile, rootFolderPath)
     },
-    [addTab, openZipInTab]
+    [getTab, addTab, openZipInTab]
   )
 
   return useMemo(

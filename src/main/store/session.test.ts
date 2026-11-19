@@ -3,7 +3,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_CLOSED_TABS } from '../../shared/constants'
-import type { TabSnapshot } from '../../shared/types'
+import type { SessionData, TabGroup, TabSnapshot } from '../../shared/types'
 import { getSession, saveSession } from './session'
 
 const env = vi.hoisted(() => ({ appRootDir: '' }))
@@ -26,6 +26,10 @@ const snapshot: TabSnapshot = {
   viewMode: 'grid'
 }
 
+const group: TabGroup = { id: 'group-1', name: 'Trips', color: 'blue', collapsed: false }
+
+const EMPTY_SESSION: SessionData = { tabs: [], activeTabIndex: 0, closedTabs: [], groups: [] }
+
 const storePath = (): string => join(env.appRootDir, 'app-state.json')
 const writeSavedSession = (session: unknown): void =>
   writeFileSync(storePath(), JSON.stringify({ session }))
@@ -42,23 +46,29 @@ afterEach(() => {
 // must always get lists and a number, whatever the file holds.
 describe('getSession', () => {
   it('returns an empty session without a settings file', () => {
-    expect(getSession()).toEqual({ tabs: [], activeTabIndex: 0, closedTabs: [] })
+    expect(getSession()).toEqual(EMPTY_SESSION)
   })
 
   it('returns the saved session', () => {
-    writeSavedSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs: [snapshot] })
+    const saved: SessionData = {
+      tabs: [{ ...snapshot, groupId: group.id }],
+      activeTabIndex: 0,
+      closedTabs: [snapshot],
+      groups: [group]
+    }
+    writeSavedSession(saved)
 
-    expect(getSession()).toEqual({ tabs: [snapshot], activeTabIndex: 0, closedTabs: [snapshot] })
+    expect(getSession()).toEqual(saved)
   })
 
   it.each([
-    [{ activeTabIndex: 2 }, { tabs: [], activeTabIndex: 2, closedTabs: [] }],
+    [{ activeTabIndex: 2 }, { ...EMPTY_SESSION, activeTabIndex: 2 }],
     [
-      { tabs: [snapshot], activeTabIndex: '1', closedTabs: 'none' },
-      { tabs: [snapshot], activeTabIndex: 0, closedTabs: [] }
+      { tabs: [snapshot], activeTabIndex: '1', closedTabs: 'none', groups: 'none' },
+      { ...EMPTY_SESSION, tabs: [snapshot] }
     ],
-    ['not a session', { tabs: [], activeTabIndex: 0, closedTabs: [] }],
-    [null, { tabs: [], activeTabIndex: 0, closedTabs: [] }]
+    ['not a session', EMPTY_SESSION],
+    [null, EMPTY_SESSION]
   ])('fills in what the saved session %j lacks', (saved, expected) => {
     writeSavedSession(saved)
 
@@ -73,10 +83,18 @@ describe('saveSession', () => {
       title: `${i}`
     }))
 
-    saveSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs })
+    saveSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs, groups: [] })
 
     const saved = JSON.parse(readFileSync(storePath(), 'utf-8')).session
     expect(saved.closedTabs).toHaveLength(MAX_CLOSED_TABS)
     expect(getSession().closedTabs).toEqual(closedTabs.slice(0, MAX_CLOSED_TABS))
+  })
+
+  it('keeps the tab groups', () => {
+    const tabs = [{ ...snapshot, groupId: group.id }]
+
+    saveSession({ tabs, activeTabIndex: 0, closedTabs: [], groups: [group] })
+
+    expect(getSession()).toMatchObject({ tabs, groups: [group] })
   })
 })

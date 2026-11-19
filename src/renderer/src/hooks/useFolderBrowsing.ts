@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import type { SearchOrigin } from '../types/grid'
-import type { TabState } from '../types/tab'
+import { createEmptyTab, type TabState } from '../types/tab'
 import type { BrowseFolder } from './useBrowseFolder'
 
 interface UseFolderBrowsingArgs {
@@ -68,16 +68,20 @@ export function useFolderBrowsing({
     [getTab, browseFolder]
   )
 
+  // Opened from a tab in a group, the new tab joins that group, as a link
+  // opened in a new tab does in Firefox.
   const handleOpenSubfolderInNewTab = useCallback(
-    async (subfolderPath: string, rootFolderPath: string | null) => {
-      const tab = addTab()
+    async (fromTabId: string, subfolderPath: string) => {
+      const from = getTab(fromTabId)
+      const rootFolderPath = from?.rootFolderPath ?? null
+      const tab = addTab(createEmptyTab(from?.groupId ?? null))
       const rootPath = rootFolderPath ?? subfolderPath
       await browseFolder(tab.id, subfolderPath, rootPath, {
         fromSubfolder: true,
         resetRoot: rootFolderPath == null
       })
     },
-    [addTab, browseFolder]
+    [getTab, addTab, browseFolder]
   )
 
   const handleGoUp = useCallback(

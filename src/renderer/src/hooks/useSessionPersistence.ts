@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { TabSnapshot } from '../../../shared/types'
+import type { TabGroup, TabSnapshot } from '../../../shared/types'
 import { tabToSnapshot, type TabState } from '../types/tab'
 import { restoreTabFromSnapshot } from '../utils/restoreTab'
 
@@ -7,13 +7,20 @@ const SAVE_DEBOUNCE_MS = 400
 
 interface UseSessionPersistenceArgs {
   tabs: TabState[]
+  groups: TabGroup[]
   activeTabId: string
   closedTabs: TabSnapshot[]
-  restoreSession: (tabs: TabState[], activeTabIndex: number, closedTabs: TabSnapshot[]) => void
+  restoreSession: (
+    tabs: TabState[],
+    activeTabIndex: number,
+    closedTabs: TabSnapshot[],
+    groups: readonly unknown[]
+  ) => void
 }
 
 export function useSessionPersistence({
   tabs,
+  groups,
   activeTabId,
   closedTabs,
   restoreSession
@@ -32,7 +39,7 @@ export function useSessionPersistence({
       )
       if (cancelled) return
 
-      restoreSession(restoredTabs, session.activeTabIndex, session.closedTabs)
+      restoreSession(restoredTabs, session.activeTabIndex, session.closedTabs, session.groups)
       setSessionReady(true)
     }
 
@@ -61,7 +68,8 @@ export function useSessionPersistence({
       void window.photoCollection.saveSession({
         tabs: tabs.map(tabToSnapshot),
         activeTabIndex,
-        closedTabs
+        closedTabs,
+        groups
       })
     }, SAVE_DEBOUNCE_MS)
 
@@ -70,7 +78,7 @@ export function useSessionPersistence({
         window.clearTimeout(saveTimerRef.current)
       }
     }
-  }, [tabs, activeTabId, closedTabs, sessionReady])
+  }, [tabs, groups, activeTabId, closedTabs, sessionReady])
 
   return { sessionReady }
 }

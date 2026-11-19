@@ -26,6 +26,8 @@ export interface TabState {
   // Folders previously shown in this tab (oldest first), walked back through
   // by the grid's "←" button. Kept in memory only, not saved in the session.
   history: FolderHistoryEntry[]
+  // The TabGroup the tab is in (see state/tabGroups.ts), or null.
+  groupId: string | null
 }
 
 // Replaces a tab with what updater returns for it (see useTabs).
@@ -37,7 +39,9 @@ export interface FolderHistoryEntry {
   rootFolderPath: string
 }
 
-export function createEmptyTab(): TabState {
+// A tab given a groupId goes into that group when it is added, if the group
+// still exists (see insertTab).
+export function createEmptyTab(groupId: string | null = null): TabState {
   return {
     id: crypto.randomUUID(),
     title: '新しいタブ',
@@ -52,7 +56,8 @@ export function createEmptyTab(): TabState {
     returnFolderPath: null,
     returnSearchQuery: null,
     pendingSearchQuery: null,
-    history: []
+    history: [],
+    groupId
   }
 }
 
@@ -71,7 +76,8 @@ export function tabToSnapshot(tab: TabState): TabSnapshot {
     rootFolderPath: tab.rootFolderPath,
     currentFolderPath: tab.collection?.path ?? null,
     selectedIndex: tab.selectedIndex,
-    viewMode: tab.viewMode
+    viewMode: tab.viewMode,
+    groupId: tab.groupId
   }
 }
 

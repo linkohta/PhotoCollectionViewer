@@ -120,3 +120,95 @@
   line-height: 1;
   flex-shrink: 0;
 }
+
+/* Tab groups: a label, then the group's tabs, underlined in its colour */
+.tab-group {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 2px solid var(--tab-group-color);
+}
+
+.tab-group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  flex-shrink: 0;
+  min-width: 16px;
+  max-width: 160px;
+  min-height: 20px;
+  margin: 0 4px 0 8px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--tab-group-color);
+  color: var(--color-tab-group-label-text);
+  font-size: 12px;
+  font-weight: 600;
+  transition: filter 0.15s;
+}
+
+.tab-group-label:hover {
+  filter: brightness(1.15);
+}
+
+.tab-group.collapsed .tab-group-label {
+  margin-right: 8px;
+}
+
+.tab-group-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-group-count {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+/* A group's colour, for its label, underline, swatch and menu dot */
+.tab-group-color-blue {
+  --tab-group-color: var(--color-tab-group-blue);
+}
+
+.tab-group-color-purple {
+  --tab-group-color: var(--color-tab-group-purple);
+}
+
+.tab-group-color-cyan {
+  --tab-group-color: var(--color-tab-group-cyan);
+}
+
+.tab-group-color-orange {
+  --tab-group-color: var(--color-tab-group-orange);
+}
+
+.tab-group-color-yellow {
+  --tab-group-color: var(--color-tab-group-yellow);
+}
+
+.tab-group-color-pink {
+  --tab-group-color: var(--color-tab-group-pink);
+}
+
+.tab-group-color-green {
+  --tab-group-color: var(--color-tab-group-green);
+}
+
+.tab-group-color-gray {
+  --tab-group-color: var(--color-tab-group-gray);
+}
+
+.tab-group-color-red {
+  --tab-group-color: var(--color-tab-group-red);
+}
+
+.tab-group-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--tab-group-color);
+  vertical-align: -1px;
+}

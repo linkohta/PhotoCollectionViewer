@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_CLOSED_TABS } from '../../../shared/constants'
-import type { TabSnapshot } from '../../../shared/types'
+import type { TabGroup, TabSnapshot } from '../../../shared/types'
 import { createEmptyTab, tabToSnapshot, type TabState } from '../types/tab'
 import { initialTabsState, tabsReducer, type TabsAction, type TabsState } from './tabsReducer'
 
@@ -14,9 +14,11 @@ const folderTab = (name: string): TabState => ({
 const stateOf = (
   tabs: TabState[],
   active: TabState,
-  closedTabs: TabSnapshot[] = []
+  closedTabs: TabSnapshot[] = [],
+  groups: TabGroup[] = []
 ): TabsState => ({
   tabs,
+  groups,
   activeTabId: active.id,
   closedTabs
 })
@@ -33,7 +35,12 @@ describe('tabsReducer', () => {
   const [a, b, c] = [folderTab('a'), folderTab('b'), folderTab('c')]
 
   it('starts with the given tab, active, and nothing closed', () => {
-    expect(initialTabsState(a)).toEqual({ tabs: [a], activeTabId: a.id, closedTabs: [] })
+    expect(initialTabsState(a)).toEqual({
+      tabs: [a],
+      groups: [],
+      activeTabId: a.id,
+      closedTabs: []
+    })
   })
 
   it('adds a tab at the end and activates it', () => {
@@ -172,13 +179,94 @@ describe('tabsReducer', () => {
     expect(state.closedTabs).toEqual([second])
   })
 
+  describe('groups', () => {
+    const group: TabGroup = { id: 'G', name: 'Trips', color: 'blue', collapsed: false }
+    const [g1, g2] = [
+      { ...folderTab('g1'), groupId: 'G' },
+      { ...folderTab('g2'), groupId: 'G' }
+    ]
+    const grouped = (active: TabState = a): TabsState =>
+      stateOf([a, g1, g2, b], active, [], [group])
+
+    it('adds a tab of a group to the end of the group and activates it', () => {
+      const tab = { ...folderTab('x'), groupId: 'G' }
+      const state = tabsReducer(grouped(), { type: 'add', tab })
+
+      expect(titles(state)).toEqual(['a', 'g1', 'g2', 'x', 'b'])
+      expect(activeTitle(state)).toBe('x')
+    })
+
+    it('creates, renames, recolours, collapses and ungroups a group', () => {
+      const run = (state: TabsState, ...actions: TabsAction[]): TabsState =>
+        actions.reduce(tabsReducer, state)
+      const changed = run(
+        stateOf([a, b], a),
+        { type: 'createGroup', tabId: b.id, groupId: 'N' },
+        { type: 'updateGroup', groupId: 'N', changes: { name: 'Sea', color: 'cyan' } },
+        { type: 'toggleGroupCollapsed', groupId: 'N' }
+      )
+
+      expect(changed.groups).toEqual([{ id: 'N', name: 'Sea', color: 'cyan', collapsed: true }])
+      expect(changed.tabs.map((tab) => tab.groupId)).toEqual([null, 'N'])
+      expect(run(changed, { type: 'ungroup', groupId: 'N' })).toMatchObject({
+        groups: [],
+        tabs: [{ groupId: null }, { groupId: null }]
+      })
+    })
+
+    it('moves a tab into and out of a group', () => {
+      const added = tabsReducer(grouped(), { type: 'addTabToGroup', tabId: b.id, groupId: 'G' })
+      const removed = tabsReducer(added, { type: 'removeTabFromGroup', tabId: g1.id })
+
+      expect(titles(added)).toEqual(['a', 'g1', 'g2', 'b'])
+      expect(titles(removed)).toEqual(['a', 'g2', 'b', 'g1'])
+      expect(removed.tabs.map((tab) => tab.groupId)).toEqual([null, 'G', 'G', null])
+    })
+
+    it('joins the group a tab is dragged into the middle of', () => {
+      const state = tabsReducer(grouped(), {
+        type: 'reorder',
+        sourceId: b.id,
+        targetId: g1.id,
+        insertAfter: true
+      })
+
+      expect(titles(state)).toEqual(['a', 'g1', 'b', 'g2'])
+      expect(state.tabs.map((tab) => tab.groupId)).toEqual([null, 'G', 'G', 'G'])
+    })
+
+    it('passes over a collapsed group when activating the next tab', () => {
+      const collapsed = { ...grouped(a), groups: [{ ...group, collapsed: true }] }
+
+      expect(activeTitle(close(collapsed, a))).toBe('b')
+    })
+
+    it('drops a group once its last tab is closed', () => {
+      expect(close(close(grouped(), g1), g2).groups).toEqual([])
+    })
+
+    it('restores the groups of the saved session', () => {
+      const state = tabsReducer(initialTabsState(createEmptyTab()), {
+        type: 'restoreSession',
+        tabs: [a, g1, g2],
+        activeTabIndex: 1,
+        closedTabs: [],
+        groups: [group, 'not a group']
+      })
+
+      expect(state.groups).toEqual([group])
+      expect(activeTitle(state)).toBe('g1')
+    })
+  })
+
   describe('restoreSession', () => {
     const restore = (tabs: TabState[], activeTabIndex: number): TabsState =>
       tabsReducer(initialTabsState(createEmptyTab()), {
         type: 'restoreSession',
         tabs,
         activeTabIndex,
-        closedTabs: [tabToSnapshot(c)]
+        closedTabs: [tabToSnapshot(c)],
+        groups: []
       })
 
     it('replaces the tabs and activates the saved one', () => {
@@ -200,7 +288,8 @@ describe('tabsReducer', () => {
         type: 'restoreSession',
         tabs: [],
         activeTabIndex: 0,
-        closedTabs: [tabToSnapshot(c)]
+        closedTabs: [tabToSnapshot(c)],
+        groups: []
       })
 
       expect(state.tabs).toBe(initial.tabs)

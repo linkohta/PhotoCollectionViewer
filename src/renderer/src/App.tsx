@@ -16,6 +16,7 @@ import './styles/App.css'
 export default function App(): JSX.Element {
   const {
     tabs,
+    groups,
     activeTabId,
     activeTab,
     closedTabs,
@@ -25,10 +26,11 @@ export default function App(): JSX.Element {
     reorderTabs,
     closeTab,
     restoreClosedTab,
-    restoreSession
+    restoreSession,
+    groupActions
   } = useTabs()
 
-  useSessionPersistence({ tabs, activeTabId, closedTabs, restoreSession })
+  useSessionPersistence({ tabs, groups, activeTabId, closedTabs, restoreSession })
 
   const { favorites, toggleFavorite, refreshFavorites } = useFavorites()
   const navigation = useFolderNavigation({ tabs, activeTabId, updateTab, addTab })
@@ -44,7 +46,6 @@ export default function App(): JSX.Element {
 
   const tabActions = useActiveTabActions({
     tabId: activeTab.id,
-    rootFolderPath: activeTab.rootFolderPath,
     navigation,
     updateTab,
     focusMain,
@@ -129,6 +130,7 @@ export default function App(): JSX.Element {
       <div className="main-area">
         <TabBar
           tabs={tabs}
+          groups={groups}
           activeTabId={activeTabId}
           canRestore={closedTabs.length > 0}
           onSelectTab={handleSelectTab}
@@ -136,6 +138,7 @@ export default function App(): JSX.Element {
           onNewTab={() => addTab()}
           onRestoreClosedTab={() => void restoreClosedTab()}
           onReorderTabs={reorderTabs}
+          groupActions={groupActions}
         />
 
         <main ref={mainRef} className="main-content" tabIndex={-1}>

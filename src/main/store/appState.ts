@@ -33,7 +33,7 @@ const DEFAULT_CONFIRMATIONS: ConfirmationSettings = {
 function defaultAppState(): AppState {
   return {
     favorites: [],
-    session: { tabs: [], activeTabIndex: 0, closedTabs: [] },
+    session: { tabs: [], activeTabIndex: 0, closedTabs: [], groups: [] },
     windowState: {},
     confirmations: { ...DEFAULT_CONFIRMATIONS }
   }
@@ -65,13 +65,15 @@ function normalizeAppState(data: Partial<AppState>): AppState {
 }
 
 // The renderer restores tabs straight from the session, so it always gets
-// lists and a number, whatever the file holds.
+// lists and a number, whatever the file holds. (What each group holds is
+// checked by the renderer, which also has to match the groups to the tabs.)
 function normalizeSession(value: unknown): SessionData {
   const data = (typeof value === 'object' && value !== null ? value : {}) as Partial<SessionData>
   return {
     tabs: Array.isArray(data.tabs) ? data.tabs : [],
     activeTabIndex: typeof data.activeTabIndex === 'number' ? data.activeTabIndex : 0,
-    closedTabs: Array.isArray(data.closedTabs) ? data.closedTabs : []
+    closedTabs: Array.isArray(data.closedTabs) ? data.closedTabs : [],
+    groups: Array.isArray(data.groups) ? data.groups : []
   }
 }
 

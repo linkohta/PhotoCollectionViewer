@@ -54,6 +54,18 @@
   --color-favorite: #ffd700;
   --color-favorite-bg: #3d3520;
 
+  /* Tab groups (one per TAB_GROUP_COLORS entry), and the text on their labels */
+  --color-tab-group-blue: #5b9cf5;
+  --color-tab-group-purple: #b98cf5;
+  --color-tab-group-cyan: #4fd1d9;
+  --color-tab-group-orange: #f5a35b;
+  --color-tab-group-yellow: #f2d55c;
+  --color-tab-group-pink: #f57fb6;
+  --color-tab-group-green: #6fd47f;
+  --color-tab-group-gray: #a3a3ad;
+  --color-tab-group-red: #f56b6b;
+  --color-tab-group-label-text: #141414;
+
   /* Loading spinner and scrollbars */
   --color-spinner-track: #555;
   --color-scrollbar-thumb: #444;
