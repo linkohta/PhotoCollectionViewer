@@ -1,5 +1,11 @@
 import { MAX_CLOSED_TABS } from '../../../shared/constants'
-import type { ClosedTab, ClosedTabGroup, TabGroup, TabSnapshot } from '../../../shared/types'
+import type {
+  ClosedTab,
+  ClosedTabGroup,
+  TabGroup,
+  TabGroupSnapshot,
+  TabSnapshot
+} from '../../../shared/types'
 import { hasRestorableContent, tabToSnapshot, type TabState } from '../types/tab'
 import { findGroup, removeTab, tabAfterClosing, toTabGroup } from './tabGroups'
 import type { TabsState } from './tabsReducer'
@@ -7,21 +13,32 @@ import type { TabsState } from './tabsReducer'
 export const isClosedGroup = (entry: ClosedTab): entry is ClosedTabGroup =>
   'kind' in entry && entry.kind === 'group'
 
-// The tabs of a closed group, leaving out whatever in the saved session is
-// not a tab.
-export const closedGroupTabs = (entry: ClosedTabGroup): TabSnapshot[] =>
-  Array.isArray(entry.tabs)
-    ? entry.tabs.filter((tab) => typeof tab === 'object' && tab !== null)
+// The tabs of a closed or saved group, leaving out whatever in the saved
+// session is not a tab.
+const readTabSnapshots = (value: unknown): TabSnapshot[] =>
+  Array.isArray(value)
+    ? value.filter((tab): tab is TabSnapshot => typeof tab === 'object' && tab !== null)
     : []
+
+export const snapshotTabs = (snapshot: TabGroupSnapshot): TabSnapshot[] =>
+  readTabSnapshots(snapshot.tabs)
 
 // Most recent first. Nothing is remembered for tabs that showed no folder.
 const remember = (closedTabs: ClosedTab[], entry: ClosedTab | null): ClosedTab[] =>
   entry ? [entry, ...closedTabs].slice(0, MAX_CLOSED_TABS) : closedTabs
 
-const closedGroupOf = (group: TabGroup, tabs: readonly TabState[]): ClosedTabGroup | null => {
+// The group with those of its tabs that showed a folder, or null if none did.
+const snapshotOf = (group: TabGroup, tabs: readonly TabState[]): TabGroupSnapshot | null => {
   const kept = tabs.filter(hasRestorableContent)
-  return kept.length > 0 ? { kind: 'group', group, tabs: kept.map(tabToSnapshot) } : null
+  return kept.length > 0 ? { group, tabs: kept.map(tabToSnapshot) } : null
 }
+
+const tabsOfGroup = (state: TabsState, groupId: string): TabState[] =>
+  state.tabs.filter((tab) => tab.groupId === groupId)
+
+// Whether 「グループを保存して閉じる」 has anything to keep.
+export const canSaveGroup = (tabs: readonly TabState[], groupId: string): boolean =>
+  tabs.some((tab) => tab.groupId === groupId && hasRestorableContent(tab))
 
 // Closing the last tab of a group closes the group too, so the group is
 // remembered with it and comes back with its name and colour.
@@ -29,7 +46,10 @@ const closedEntryFor = (state: TabsState, closing: TabState): ClosedTab | null =
   const group = findGroup(state.groups, closing.groupId)
   const lastOfGroup =
     group && !state.tabs.some((tab) => tab !== closing && tab.groupId === group.id)
-  if (lastOfGroup) return closedGroupOf(group, [closing])
+  if (lastOfGroup) {
+    const snapshot = snapshotOf(group, [closing])
+    return snapshot && { kind: 'group', ...snapshot }
+  }
   return hasRestorableContent(closing) ? tabToSnapshot(closing) : null
 }
 
@@ -44,7 +64,7 @@ export const closeTab = (state: TabsState, tabId: string, replacement: TabState)
   const closedTabs = remember(state.closedTabs, closedEntryFor(state, closing))
 
   if (state.tabs.length === 1) {
-    return { tabs: [replacement], groups: [], activeTabId: replacement.id, closedTabs }
+    return { ...state, tabs: [replacement], groups: [], activeTabId: replacement.id, closedTabs }
   }
 
   const { tabs, groups } = removeTab(state, tabId)
@@ -52,35 +72,76 @@ export const closeTab = (state: TabsState, tabId: string, replacement: TabState)
     tabId === state.activeTabId
       ? (tabAfterClosing(tabs, groups, index)?.id ?? state.activeTabId)
       : state.activeTabId
-  return { tabs, groups, activeTabId, closedTabs }
+  return { ...state, tabs, groups, activeTabId, closedTabs }
 }
 
-// Closes every tab of the group, remembered as one entry. The active tab, if
-// it was in the group, gives way as when closing a single tab.
+// Takes every tab of the group out. The active tab, if it was in the group,
+// gives way as when closing a single tab; an empty replacement takes the
+// place of the last tabs.
+const withoutGroup = (
+  state: TabsState,
+  groupId: string,
+  replacement: TabState
+): Pick<TabsState, 'tabs' | 'groups' | 'activeTabId'> => {
+  const first = state.tabs.findIndex((tab) => tab.groupId === groupId)
+  const tabs = state.tabs.filter((tab) => tab.groupId !== groupId)
+  const groups = state.groups.filter((group) => group.id !== groupId)
+  if (tabs.length === 0) return { tabs: [replacement], groups, activeTabId: replacement.id }
+
+  const activeLeaves = tabsOfGroup(state, groupId).some((tab) => tab.id === state.activeTabId)
+  const activeTabId = activeLeaves
+    ? (tabAfterClosing(tabs, groups, first)?.id ?? state.activeTabId)
+    : state.activeTabId
+  return { tabs, groups, activeTabId }
+}
+
+// Closes every tab of the group, remembered as one entry for Ctrl+Shift+T.
 export const closeGroup = (state: TabsState, groupId: string, replacement: TabState): TabsState => {
   const group = findGroup(state.groups, groupId)
   if (!group) return state
 
-  const closing = state.tabs.filter((tab) => tab.groupId === groupId)
-  const first = state.tabs.findIndex((tab) => tab.groupId === groupId)
-  const closedTabs = remember(state.closedTabs, closedGroupOf(group, closing))
-  const tabs = state.tabs.filter((tab) => tab.groupId !== groupId)
-  const groups = state.groups.filter((candidate) => candidate.id !== groupId)
-
-  if (tabs.length === 0) {
-    return { tabs: [replacement], groups, activeTabId: replacement.id, closedTabs }
+  const snapshot = snapshotOf(group, tabsOfGroup(state, groupId))
+  return {
+    ...state,
+    ...withoutGroup(state, groupId, replacement),
+    closedTabs: remember(state.closedTabs, snapshot && { kind: 'group', ...snapshot })
   }
-
-  const activeTabId = closing.some((tab) => tab.id === state.activeTabId)
-    ? (tabAfterClosing(tabs, groups, first)?.id ?? state.activeTabId)
-    : state.activeTabId
-  return { tabs, groups, activeTabId, closedTabs }
 }
 
-// Puts a closed group back at the end of the tab bar, as saved, and activates
-// its first tab. It keeps its old id (so a tab of it closed on its own earlier
-// can still go back into it) unless another group has taken that id, when it
-// gets newGroupId. A group the saved session garbled comes back as plain tabs.
+// 「グループを保存して閉じる」: closes the group's tabs and keeps the group,
+// newest first, to be opened again from the sidebar. A group without a tab
+// showing a folder has nothing to keep, and stays open.
+export const saveGroup = (state: TabsState, groupId: string, replacement: TabState): TabsState => {
+  const group = findGroup(state.groups, groupId)
+  const snapshot = group ? snapshotOf(group, tabsOfGroup(state, groupId)) : null
+  if (!snapshot) return state
+
+  return {
+    ...state,
+    ...withoutGroup(state, groupId, replacement),
+    savedGroups: [snapshot, ...state.savedGroups]
+  }
+}
+
+// The saved groups as read from the saved session: those whose group can be
+// read, each once.
+export const readSavedGroups = (saved: readonly unknown[]): TabGroupSnapshot[] => {
+  const groups: TabGroupSnapshot[] = []
+  for (const value of saved) {
+    if (typeof value !== 'object' || value === null) continue
+    const { group: savedGroup, tabs } = value as Record<string, unknown>
+    const group = toTabGroup(savedGroup)
+    if (!group || groups.some((known) => known.group.id === group.id)) continue
+    groups.push({ group, tabs: readTabSnapshots(tabs) })
+  }
+  return groups
+}
+
+// Puts a closed or saved group back at the end of the tab bar, as it was, and
+// activates its first tab. It keeps its old id (so a tab of it closed on its
+// own earlier can still go back into it) unless another group has taken that
+// id, when it gets newGroupId. A group the saved session garbled comes back as
+// plain tabs.
 export const restoreClosedGroup = (
   state: TabsState,
   savedGroup: unknown,

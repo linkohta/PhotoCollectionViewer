@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useReducer } from 'react'
-import type { ClosedTab } from '../../../shared/types'
-import { closedGroupTabs, isClosedGroup } from '../state/closedTabs'
+import type { ClosedTab, TabGroupSnapshot } from '../../../shared/types'
+import { isClosedGroup, snapshotTabs } from '../state/closedTabs'
 import type { TabGroupChanges } from '../state/tabGroups'
 import type { GroupDropTarget, TabDropTarget } from '../state/tabMoves'
 import { findTab } from '../state/tabTransitions'
@@ -21,10 +21,12 @@ export interface TabGroupActions {
   addNewTabToGroup: (groupId: string) => void
   // Closes all its tabs; Ctrl+Shift+T brings the group back as a whole.
   closeGroup: (groupId: string) => void
+  // Closes all its tabs, keeping the group in the sidebar to open again.
+  saveGroup: (groupId: string) => void
 }
 
 export function useTabs() {
-  const [{ tabs, groups, activeTabId, closedTabs }, dispatch] = useReducer(
+  const [{ tabs, groups, activeTabId, closedTabs, savedGroups }, dispatch] = useReducer(
     tabsReducer,
     undefined,
     () => initialTabsState(createEmptyTab())
@@ -61,35 +63,54 @@ export function useTabs() {
     dispatch({ type: 'close', tabId, replacement: createEmptyTab() })
   }, [])
 
+  // Rebuilds the tabs of a closed or saved group (rescanning their folders)
+  // and puts the group back.
+  const reopenGroup = useCallback(async (snapshot: TabGroupSnapshot) => {
+    const tabs = await Promise.all(snapshotTabs(snapshot).map((tab) => restoreTabFromSnapshot(tab)))
+    dispatch({ type: 'restoreGroup', group: snapshot.group, tabs, newGroupId: crypto.randomUUID() })
+  }, [])
+
   const restoreClosedTab = useCallback(async () => {
     const entry = closedTabs[0]
     if (!entry) return
 
     dispatch({ type: 'forgetClosedTab', entry })
     if (isClosedGroup(entry)) {
-      const tabs = await Promise.all(
-        closedGroupTabs(entry).map((snapshot) => restoreTabFromSnapshot(snapshot))
-      )
-      dispatch({ type: 'restoreGroup', group: entry.group, tabs, newGroupId: crypto.randomUUID() })
+      await reopenGroup(entry)
       return
     }
     const tab = await restoreTabFromSnapshot(entry)
     dispatch({ type: 'add', tab })
-  }, [closedTabs])
+  }, [closedTabs, reopenGroup])
+
+  // Opening a saved group takes it off the list in the sidebar.
+  const openSavedGroup = useCallback(
+    async (entry: TabGroupSnapshot) => {
+      dispatch({ type: 'forgetSavedGroup', entry })
+      await reopenGroup(entry)
+    },
+    [reopenGroup]
+  )
+
+  const deleteSavedGroup = useCallback((entry: TabGroupSnapshot) => {
+    dispatch({ type: 'forgetSavedGroup', entry })
+  }, [])
 
   const restoreSession = useCallback(
     (
       restoredTabs: TabState[],
       activeTabIndex: number,
       restoredClosedTabs: ClosedTab[],
-      restoredGroups: readonly unknown[]
+      restoredGroups: readonly unknown[],
+      restoredSavedGroups: readonly unknown[]
     ) => {
       dispatch({
         type: 'restoreSession',
         tabs: restoredTabs,
         activeTabIndex,
         closedTabs: restoredClosedTabs,
-        groups: restoredGroups
+        groups: restoredGroups,
+        savedGroups: restoredSavedGroups
       })
     },
     []
@@ -109,7 +130,9 @@ export function useTabs() {
       ungroup: (groupId) => dispatch({ type: 'ungroup', groupId }),
       addNewTabToGroup: (groupId) => dispatch({ type: 'add', tab: createEmptyTab(groupId) }),
       closeGroup: (groupId) =>
-        dispatch({ type: 'closeGroup', groupId, replacement: createEmptyTab() })
+        dispatch({ type: 'closeGroup', groupId, replacement: createEmptyTab() }),
+      saveGroup: (groupId) =>
+        dispatch({ type: 'saveGroup', groupId, replacement: createEmptyTab() })
     }),
     []
   )
@@ -120,6 +143,9 @@ export function useTabs() {
     activeTabId,
     activeTab,
     closedTabs,
+    savedGroups,
+    openSavedGroup,
+    deleteSavedGroup,
     updateTab,
     addTab,
     selectTab,

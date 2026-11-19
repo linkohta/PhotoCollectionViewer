@@ -20,6 +20,9 @@ export default function App(): JSX.Element {
     activeTabId,
     activeTab,
     closedTabs,
+    savedGroups,
+    openSavedGroup,
+    deleteSavedGroup,
     updateTab,
     addTab,
     selectTab,
@@ -31,7 +34,7 @@ export default function App(): JSX.Element {
     groupActions
   } = useTabs()
 
-  useSessionPersistence({ tabs, groups, activeTabId, closedTabs, restoreSession })
+  useSessionPersistence({ tabs, groups, activeTabId, closedTabs, savedGroups, restoreSession })
 
   const { favorites, toggleFavorite, refreshFavorites } = useFavorites()
   const navigation = useFolderNavigation({ tabs, activeTabId, updateTab, addTab })
@@ -126,6 +129,9 @@ export default function App(): JSX.Element {
         onImportSettings={() => void handleImportSettings()}
         confirmations={confirmations}
         onChangeConfirmation={(kind, enabled) => void setConfirmation(kind, enabled)}
+        savedGroups={savedGroups}
+        onOpenSavedGroup={(entry) => void openSavedGroup(entry)}
+        onDeleteSavedGroup={deleteSavedGroup}
       />
 
       <div className="main-area">

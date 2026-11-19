@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import type { ClosedTab, ClosedTabGroup, TabGroup } from '../../../shared/types'
+import type { ClosedTab, ClosedTabGroup, TabGroup, TabGroupSnapshot } from '../../../shared/types'
 import { createEmptyTab, tabToSnapshot, type TabState } from '../types/tab'
 import {
-  closedGroupTabs,
+  canSaveGroup,
   closeGroup,
   closeTab,
   isClosedGroup,
-  restoreClosedGroup
+  readSavedGroups,
+  restoreClosedGroup,
+  saveGroup,
+  snapshotTabs
 } from './closedTabs'
-import { tabsReducer, type TabsState } from './tabsReducer'
+import { initialTabsState, tabsReducer, type TabsState } from './tabsReducer'
 
 const group: TabGroup = { id: 'G', name: 'Trips', color: 'green', collapsed: true }
 
@@ -20,10 +23,9 @@ const folderTab = (name: string, groupId: string | null = null): TabState => ({
 })
 
 const stateOf = (tabs: TabState[], active: TabState, groups: TabGroup[] = [group]): TabsState => ({
+  ...initialTabsState(active),
   tabs,
-  groups,
-  activeTabId: active.id,
-  closedTabs: []
+  groups
 })
 
 const titles = (state: TabsState): string[] => state.tabs.map((tab) => tab.title)
@@ -101,6 +103,55 @@ describe('closeGroup', () => {
   })
 })
 
+describe('saveGroup', () => {
+  const [a, g1, g2] = [folderTab('a'), folderTab('g1', 'G'), folderTab('g2', 'G')]
+
+  it('closes the group and keeps it first, with its tabs that showed a folder', () => {
+    const older: TabGroupSnapshot = { group: { ...group, id: 'old' }, tabs: [] }
+    const empty = createEmptyTab('G')
+    const state = saveGroup(
+      { ...stateOf([a, g1, empty, g2], g1), savedGroups: [older] },
+      'G',
+      createEmptyTab()
+    )
+
+    expect(titles(state)).toEqual(['a'])
+    expect(state.groups).toEqual([])
+    expect(state.activeTabId).toBe(a.id)
+    expect(state.savedGroups).toEqual([{ group, tabs: [g1, g2].map(tabToSnapshot) }, older])
+    expect(state.closedTabs).toEqual([])
+  })
+
+  it('keeps a group open when none of its tabs shows a folder', () => {
+    const empty = createEmptyTab('G')
+    const state = stateOf([a, empty], a)
+
+    expect(canSaveGroup(state.tabs, 'G')).toBe(false)
+    expect(saveGroup(state, 'G', createEmptyTab())).toBe(state)
+    expect(canSaveGroup([a, g1], 'G')).toBe(true)
+  })
+})
+
+describe('readSavedGroups', () => {
+  it('keeps the groups it can read, each once', () => {
+    const snapshot = tabToSnapshot(folderTab('a'))
+    const other = { ...group, id: 'H' }
+
+    expect(
+      readSavedGroups([
+        { group, tabs: [snapshot, null] },
+        { group: { ...group, name: 'again' }, tabs: [] },
+        { group: 'not a group', tabs: [] },
+        { group: other, tabs: 'none' },
+        null
+      ])
+    ).toEqual([
+      { group, tabs: [snapshot] },
+      { group: other, tabs: [] }
+    ])
+  })
+})
+
 describe('restoreClosedGroup', () => {
   const a = folderTab('a')
   const restored = (): TabState[] => [folderTab('x', 'G'), folderTab('y', 'G')]
@@ -137,7 +188,7 @@ describe('restoreClosedGroup', () => {
   })
 })
 
-describe('isClosedGroup / closedGroupTabs', () => {
+describe('isClosedGroup / snapshotTabs', () => {
   it('tells a closed group from a closed tab', () => {
     const tab: ClosedTab = tabToSnapshot(folderTab('a'))
 
@@ -149,8 +200,8 @@ describe('isClosedGroup / closedGroupTabs', () => {
     const snapshot = tabToSnapshot(folderTab('a'))
     const saved = { kind: 'group', group, tabs: [snapshot, null, 'x'] } as unknown as ClosedTabGroup
 
-    expect(closedGroupTabs(saved)).toEqual([snapshot])
-    expect(closedGroupTabs({ ...saved, tabs: 'none' } as unknown as ClosedTabGroup)).toEqual([])
+    expect(snapshotTabs(saved)).toEqual([snapshot])
+    expect(snapshotTabs({ ...saved, tabs: 'none' } as unknown as ClosedTabGroup)).toEqual([])
   })
 })
 

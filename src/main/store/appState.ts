@@ -33,7 +33,7 @@ const DEFAULT_CONFIRMATIONS: ConfirmationSettings = {
 function defaultAppState(): AppState {
   return {
     favorites: [],
-    session: { tabs: [], activeTabIndex: 0, closedTabs: [], groups: [] },
+    session: { tabs: [], activeTabIndex: 0, closedTabs: [], groups: [], savedGroups: [] },
     windowState: {},
     confirmations: { ...DEFAULT_CONFIRMATIONS }
   }
@@ -73,7 +73,8 @@ function normalizeSession(value: unknown): SessionData {
     tabs: Array.isArray(data.tabs) ? data.tabs : [],
     activeTabIndex: typeof data.activeTabIndex === 'number' ? data.activeTabIndex : 0,
     closedTabs: Array.isArray(data.closedTabs) ? data.closedTabs : [],
-    groups: Array.isArray(data.groups) ? data.groups : []
+    groups: Array.isArray(data.groups) ? data.groups : [],
+    savedGroups: Array.isArray(data.savedGroups) ? data.savedGroups : []
   }
 }
 

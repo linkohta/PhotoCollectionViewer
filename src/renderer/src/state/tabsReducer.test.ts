@@ -16,12 +16,7 @@ const stateOf = (
   active: TabState,
   closedTabs: TabSnapshot[] = [],
   groups: TabGroup[] = []
-): TabsState => ({
-  tabs,
-  groups,
-  activeTabId: active.id,
-  closedTabs
-})
+): TabsState => ({ ...initialTabsState(active), tabs, groups, closedTabs })
 
 const titles = (state: TabsState): string[] => state.tabs.map((tab) => tab.title)
 
@@ -39,7 +34,8 @@ describe('tabsReducer', () => {
       tabs: [a],
       groups: [],
       activeTabId: a.id,
-      closedTabs: []
+      closedTabs: [],
+      savedGroups: []
     })
   })
 
@@ -250,7 +246,8 @@ describe('tabsReducer', () => {
         tabs: [a, g1, g2],
         activeTabIndex: 1,
         closedTabs: [],
-        groups: [group, 'not a group']
+        groups: [group, 'not a group'],
+        savedGroups: []
       })
 
       expect(state.groups).toEqual([group])
@@ -265,7 +262,8 @@ describe('tabsReducer', () => {
         tabs,
         activeTabIndex,
         closedTabs: [tabToSnapshot(c)],
-        groups: []
+        groups: [],
+        savedGroups: []
       })
 
     it('replaces the tabs and activates the saved one', () => {
@@ -288,7 +286,8 @@ describe('tabsReducer', () => {
         tabs: [],
         activeTabIndex: 0,
         closedTabs: [tabToSnapshot(c)],
-        groups: []
+        groups: [],
+        savedGroups: []
       })
 
       expect(state.tabs).toBe(initial.tabs)

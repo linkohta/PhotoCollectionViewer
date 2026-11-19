@@ -21,6 +21,10 @@ interface TabGroupPanelProps {
   onUngroup: () => void
   // Closes the group's tabs (Ctrl+Shift+T brings them back).
   onCloseGroup: () => void
+  // Closes the group's tabs, keeping the group in the sidebar. Offered only
+  // when canSave: some tab of it shows a folder.
+  onSaveGroup: () => void
+  canSave: boolean
   onClose: () => void
 }
 
@@ -33,6 +37,8 @@ export function TabGroupPanel({
   onAddTab,
   onUngroup,
   onCloseGroup,
+  onSaveGroup,
+  canSave,
   onClose
 }: TabGroupPanelProps): JSX.Element {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -106,6 +112,15 @@ export function TabGroupPanel({
         <div className="tab-group-panel-actions">
           <button type="button" className="context-menu-item" onClick={onAddTab}>
             グループに新しいタブを追加
+          </button>
+          <button
+            type="button"
+            className="context-menu-item"
+            onClick={onSaveGroup}
+            disabled={!canSave}
+            title={canSave ? undefined : 'フォルダを開いているタブがないため保存できません'}
+          >
+            グループを保存して閉じる
           </button>
           <button type="button" className="context-menu-item" onClick={onUngroup}>
             グループを解除

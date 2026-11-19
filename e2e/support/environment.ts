@@ -119,7 +119,8 @@ export function writeSettings(env: TestEnvironment): void {
       ],
       activeTabIndex: 0,
       closedTabs: [],
-      groups: []
+      groups: [],
+      savedGroups: []
     },
     windowState: { width: 1280, height: 800 },
     confirmations: { extractZip: false, deleteFolder: false, importSettings: false }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { ClosedTab, TabGroup } from '../../../shared/types'
+import type { ClosedTab, TabGroup, TabGroupSnapshot } from '../../../shared/types'
 import { tabToSnapshot, type TabState } from '../types/tab'
 import { restoreTabFromSnapshot } from '../utils/restoreTab'
 
@@ -10,11 +10,13 @@ interface UseSessionPersistenceArgs {
   groups: TabGroup[]
   activeTabId: string
   closedTabs: ClosedTab[]
+  savedGroups: TabGroupSnapshot[]
   restoreSession: (
     tabs: TabState[],
     activeTabIndex: number,
     closedTabs: ClosedTab[],
-    groups: readonly unknown[]
+    groups: readonly unknown[],
+    savedGroups: readonly unknown[]
   ) => void
 }
 
@@ -23,6 +25,7 @@ export function useSessionPersistence({
   groups,
   activeTabId,
   closedTabs,
+  savedGroups,
   restoreSession
 }: UseSessionPersistenceArgs): { sessionReady: boolean } {
   const [sessionReady, setSessionReady] = useState(false)
@@ -39,7 +42,13 @@ export function useSessionPersistence({
       )
       if (cancelled) return
 
-      restoreSession(restoredTabs, session.activeTabIndex, session.closedTabs, session.groups)
+      restoreSession(
+        restoredTabs,
+        session.activeTabIndex,
+        session.closedTabs,
+        session.groups,
+        session.savedGroups
+      )
       setSessionReady(true)
     }
 
@@ -69,7 +78,8 @@ export function useSessionPersistence({
         tabs: tabs.map(tabToSnapshot),
         activeTabIndex,
         closedTabs,
-        groups
+        groups,
+        savedGroups
       })
     }, SAVE_DEBOUNCE_MS)
 
@@ -78,7 +88,7 @@ export function useSessionPersistence({
         window.clearTimeout(saveTimerRef.current)
       }
     }
-  }, [tabs, groups, activeTabId, closedTabs, sessionReady])
+  }, [tabs, groups, activeTabId, closedTabs, savedGroups, sessionReady])
 
   return { sessionReady }
 }
