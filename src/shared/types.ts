@@ -68,10 +68,23 @@ export interface TabSnapshot {
   groupId?: string | null
 }
 
+// A group closed as a whole (or along with its last tab), which Ctrl+Shift+T
+// brings back as one, with its name and colour.
+export interface ClosedTabGroup {
+  kind: 'group'
+  group: TabGroup
+  tabs: TabSnapshot[]
+}
+
+// What Ctrl+Shift+T brings back. Sessions saved before tab groups hold only
+// tabs.
+export type ClosedTab = TabSnapshot | ClosedTabGroup
+
 export interface SessionData {
   tabs: TabSnapshot[]
   activeTabIndex: number
-  closedTabs: TabSnapshot[]
+  // Most recently closed first; a group counts as one.
+  closedTabs: ClosedTab[]
   groups: TabGroup[]
 }
 

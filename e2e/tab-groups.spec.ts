@@ -66,6 +66,35 @@ test('groups tabs, names and collapses the group, and keeps it after a restart',
   }
 })
 
+test('closes a whole group and brings it back with Ctrl+Shift+T', async ({ app, env }) => {
+  const { window } = app
+  await window.locator('.folder-card', { hasText: 'Albums' }).click({ button: 'right' })
+  await chooseMenuItem(window, '新しいタブで開く')
+  await openTabMenu(window, 'library')
+  await chooseMenuItem(window, '新しいグループに追加')
+  await window.keyboard.type('Trips')
+  await window.keyboard.press('Enter')
+  await openTabMenu(window, 'Albums')
+  await chooseMenuItem(window, 'グループ「Trips」に追加')
+  const group = window.locator('.tab-group')
+  await expect(group.locator('.tab-title')).toHaveText(['library', 'Albums'])
+
+  // Closing the last tabs leaves an empty one in their place.
+  await group.locator('.tab-group-label').click({ button: 'right' })
+  await window.getByRole('button', { name: 'グループを閉じる' }).click()
+  await expect(group).toHaveCount(0)
+  await expect(window.locator('.tab-title')).toHaveText(['新しいタブ'])
+  await expect
+    .poll(() => readSavedSession(env).closedTabs[0])
+    .toMatchObject({ kind: 'group', group: { name: 'Trips' } })
+
+  await window.keyboard.press('Control+Shift+T')
+  await expect(group.locator('.tab-group-name')).toHaveText('Trips')
+  await expect(group.locator('.tab-title')).toHaveText(['library', 'Albums'])
+  await expect(window.locator('.tab-item.active .tab-title')).toHaveText('library')
+  await expect(window.locator('.tab-restore')).toBeDisabled()
+})
+
 test('moves tabs into and out of a group, and ungroups it', async ({ app }) => {
   const { window } = app
   const group = window.locator('.tab-group')

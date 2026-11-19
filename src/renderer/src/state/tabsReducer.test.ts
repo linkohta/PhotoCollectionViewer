@@ -169,7 +169,7 @@ describe('tabsReducer', () => {
     const [first, second] = [tabToSnapshot(a), tabToSnapshot(b)]
     const state = tabsReducer(stateOf([c], c, [first, second]), {
       type: 'forgetClosedTab',
-      snapshot: first
+      entry: first
     })
 
     expect(state.closedTabs).toEqual([second])
