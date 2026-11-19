@@ -1,46 +1,36 @@
+import type { DragSourceProps } from '../hooks/useTabDragAndDrop'
 import type { TabState } from '../types/tab'
-
-type DragHandler = (event: React.DragEvent<HTMLDivElement>) => void
 
 interface TabItemProps {
   tab: TabState
   isActive: boolean
   isDragging: boolean
-  // Where the dragged tab would go, when it is over this one.
-  dropHint: 'before' | 'after' | null
+  // Where the dragged tab or group would go, when it is over this tab: a line
+  // before or after it, or the tab itself for making a group of the two.
+  dropMark: 'before' | 'after' | 'onto' | null
+  dragProps: DragSourceProps
   onSelect: () => void
   onClose: () => void
   onContextMenu: (event: React.MouseEvent<HTMLDivElement>) => void
-  onDragStart: DragHandler
-  onDragOver: DragHandler
-  onDrop: DragHandler
-  onDragEnd: () => void
 }
 
 export function TabItem({
   tab,
   isActive,
   isDragging,
-  dropHint,
+  dropMark,
+  dragProps,
   onSelect,
   onClose,
-  onContextMenu,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd
+  onContextMenu
 }: TabItemProps): JSX.Element {
   const statusSuffix = tab.viewMode === 'viewer' ? ' · 表示中' : ''
 
   return (
     <div
-      className={`tab-item ${isActive ? 'active' : ''} ${tab.loading ? 'loading' : ''} ${isDragging ? 'dragging' : ''} ${dropHint === 'before' ? 'drop-before' : ''} ${dropHint === 'after' ? 'drop-after' : ''}`}
-      draggable
+      className={`tab-item ${isActive ? 'active' : ''} ${tab.loading ? 'loading' : ''} ${isDragging ? 'dragging' : ''} ${dropMark ? `drop-${dropMark}` : ''}`}
       onContextMenu={onContextMenu}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      {...dragProps}
     >
       <button
         type="button"

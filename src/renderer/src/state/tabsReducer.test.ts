@@ -64,39 +64,35 @@ describe('tabsReducer', () => {
     expect(titles(state)).toEqual(['a', 'renamed'])
   })
 
-  describe('reorder', () => {
-    const reorder = (source: TabState, target: TabState, insertAfter: boolean): string[] =>
+  describe('moveTab', () => {
+    const move = (source: TabState, target: TabState, place: 'before' | 'after'): string[] =>
       titles(
         tabsReducer(stateOf([a, b, c], a), {
-          type: 'reorder',
-          sourceId: source.id,
-          targetId: target.id,
-          insertAfter
+          type: 'moveTab',
+          tabId: source.id,
+          target: { kind: 'tab', tabId: target.id, place },
+          newGroupId: 'N'
         })
       )
 
     it('moves a tab before or after the target', () => {
-      expect(reorder(a, c, false)).toEqual(['b', 'a', 'c'])
-      expect(reorder(a, c, true)).toEqual(['b', 'c', 'a'])
-      expect(reorder(c, a, false)).toEqual(['c', 'a', 'b'])
-      expect(reorder(c, a, true)).toEqual(['a', 'c', 'b'])
+      expect(move(a, c, 'before')).toEqual(['b', 'a', 'c'])
+      expect(move(a, c, 'after')).toEqual(['b', 'c', 'a'])
+      expect(move(c, a, 'before')).toEqual(['c', 'a', 'b'])
+      expect(move(c, a, 'after')).toEqual(['a', 'c', 'b'])
     })
 
     it('leaves the state alone when dropped on itself or an unknown tab', () => {
       const state = stateOf([a, b, c], a)
-      const unknown = folderTab('x')
+      const onto = (target: TabState): TabsAction => ({
+        type: 'moveTab',
+        tabId: a.id,
+        target: { kind: 'tab', tabId: target.id, place: 'after' },
+        newGroupId: 'N'
+      })
 
-      expect(
-        tabsReducer(state, { type: 'reorder', sourceId: a.id, targetId: a.id, insertAfter: true })
-      ).toBe(state)
-      expect(
-        tabsReducer(state, {
-          type: 'reorder',
-          sourceId: a.id,
-          targetId: unknown.id,
-          insertAfter: true
-        })
-      ).toBe(state)
+      expect(tabsReducer(state, onto(a))).toBe(state)
+      expect(tabsReducer(state, onto(folderTab('x')))).toBe(state)
     })
   })
 
@@ -223,16 +219,19 @@ describe('tabsReducer', () => {
       expect(removed.tabs.map((tab) => tab.groupId)).toEqual([null, 'G', 'G', null])
     })
 
-    it('joins the group a tab is dragged into the middle of', () => {
-      const state = tabsReducer(grouped(), {
-        type: 'reorder',
-        sourceId: b.id,
-        targetId: g1.id,
-        insertAfter: true
+    it('drags a tab onto another to make a group, and a group past a tab', () => {
+      const grouping = tabsReducer(grouped(), {
+        type: 'moveTab',
+        tabId: b.id,
+        target: { kind: 'tab', tabId: a.id, place: 'onto' },
+        newGroupId: 'N'
       })
 
-      expect(titles(state)).toEqual(['a', 'g1', 'b', 'g2'])
-      expect(state.tabs.map((tab) => tab.groupId)).toEqual([null, 'G', 'G', 'G'])
+      expect(titles(grouping)).toEqual(['a', 'b', 'g1', 'g2'])
+      expect(grouping.tabs.map((tab) => tab.groupId)).toEqual(['N', 'N', 'G', 'G'])
+      expect(
+        titles(tabsReducer(grouping, { type: 'moveGroup', groupId: 'N', target: { kind: 'end' } }))
+      ).toEqual(['g1', 'g2', 'a', 'b'])
     })
 
     it('passes over a collapsed group when activating the next tab', () => {

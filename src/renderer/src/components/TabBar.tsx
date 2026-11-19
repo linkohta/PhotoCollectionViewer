@@ -1,10 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { TabGroup } from '../../../shared/types'
+import { useTabDragAndDrop } from '../hooks/useTabDragAndDrop'
 import type { TabGroupActions } from '../hooks/useTabs'
 import { findGroup } from '../state/tabGroups'
+import { makesGroup, type GroupDropTarget, type TabDropTarget } from '../state/tabMoves'
 import { findTab } from '../state/tabTransitions'
 import type { TabState } from '../types/tab'
 import { buildTabBarEntries } from '../utils/tabBarEntries'
+import { groupDropMark, tabDropMark } from '../utils/tabDrop'
 import { tabMenuItems } from '../utils/tabMenu'
 import { PopupMenu } from './PopupMenu'
 import { TabGroupLabel } from './TabGroupLabel'
@@ -20,11 +23,12 @@ interface TabBarProps {
   onCloseTab: (tabId: string) => void
   onNewTab: () => void
   onRestoreClosedTab: () => void
-  onReorderTabs: (sourceId: string, targetId: string, insertAfter: boolean) => void
+  // Returns the id of the group made when the tab is dropped onto another.
+  onMoveTab: (tabId: string, target: TabDropTarget) => string
+  onMoveGroup: (groupId: string, target: GroupDropTarget) => void
   groupActions: TabGroupActions
 }
 
-type DropHint = { tabId: string; insertAfter: boolean }
 type TabMenu = { tabId: string; x: number; y: number }
 type GroupPanel = { groupId: string; isNew: boolean }
 
@@ -37,14 +41,14 @@ export function TabBar({
   onCloseTab,
   onNewTab,
   onRestoreClosedTab,
-  onReorderTabs,
+  onMoveTab,
+  onMoveGroup,
   groupActions
 }: TabBarProps): JSX.Element {
-  const [draggingId, setDraggingId] = useState<string | null>(null)
-  const [dropHint, setDropHint] = useState<DropHint | null>(null)
   const [tabMenu, setTabMenu] = useState<TabMenu | null>(null)
   const [groupPanel, setGroupPanel] = useState<GroupPanel | null>(null)
-  // The element of each group shown, which its panel opens below.
+  // The element of each group shown: its panel opens below it, and a dragged
+  // group goes before or after it.
   const groupElements = useRef(new Map<string, HTMLDivElement>())
 
   const entries = useMemo(
@@ -55,102 +59,73 @@ export function TabBar({
   const closeTabMenu = useCallback(() => setTabMenu(null), [])
   const closeGroupPanel = useCallback(() => setGroupPanel(null), [])
 
-  const clearDragState = useCallback(() => {
-    setDraggingId(null)
-    setDropHint(null)
-  }, [])
-
-  const updateDropHint = useCallback((event: React.DragEvent<HTMLElement>, tabId: string) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const insertAfter = event.clientX > rect.left + rect.width / 2
-    setDropHint((current) =>
-      current?.tabId === tabId && current.insertAfter === insertAfter
-        ? current
-        : { tabId, insertAfter }
-    )
-  }, [])
-
-  const handleDragStart = useCallback((event: React.DragEvent<HTMLDivElement>, tabId: string) => {
-    event.dataTransfer.effectAllowed = 'move'
-    event.dataTransfer.setData('text/plain', tabId)
-    setDraggingId(tabId)
-  }, [])
-
-  const handleDragOver = useCallback(
-    (event: React.DragEvent<HTMLDivElement>, tabId: string) => {
-      event.preventDefault()
-      event.dataTransfer.dropEffect = 'move'
-      if (draggingId && draggingId !== tabId) {
-        updateDropHint(event, tabId)
-      }
+  const drag = useTabDragAndDrop({
+    getGroupElement: (groupId) => groupElements.current.get(groupId),
+    onMoveTab: (tabId, target) => {
+      // A group made by dropping a tab onto another opens its panel, as one
+      // made from the menu does.
+      const newGroup = makesGroup(tabs, target)
+      const groupId = onMoveTab(tabId, target)
+      if (newGroup) setGroupPanel({ groupId, isNew: true })
     },
-    [draggingId, updateDropHint]
-  )
-
-  const handleDrop = useCallback(
-    (event: React.DragEvent<HTMLDivElement>, targetId: string) => {
-      event.preventDefault()
-      const sourceId = event.dataTransfer.getData('text/plain')
-      if (!sourceId || sourceId === targetId) {
-        clearDragState()
-        return
-      }
-
-      const rect = event.currentTarget.getBoundingClientRect()
-      const insertAfter = event.clientX > rect.left + rect.width / 2
-      onReorderTabs(sourceId, targetId, insertAfter)
-      clearDragState()
-    },
-    [clearDragState, onReorderTabs]
-  )
+    onMoveGroup
+  })
 
   const renderTab = (tab: TabState): JSX.Element => (
     <TabItem
       key={tab.id}
       tab={tab}
       isActive={tab.id === activeTabId}
-      isDragging={tab.id === draggingId}
-      dropHint={dropHint?.tabId === tab.id ? (dropHint.insertAfter ? 'after' : 'before') : null}
+      isDragging={drag.source?.kind === 'tab' && drag.source.tabId === tab.id}
+      dropMark={tabDropMark(drag.hint, tab.id)}
+      dragProps={drag.tabDragProps(tab)}
       onSelect={() => onSelectTab(tab.id)}
       onClose={() => onCloseTab(tab.id)}
       onContextMenu={(event) => {
         event.preventDefault()
         setTabMenu({ tabId: tab.id, x: event.clientX, y: event.clientY })
       }}
-      onDragStart={(event) => handleDragStart(event, tab.id)}
-      onDragOver={(event) => handleDragOver(event, tab.id)}
-      onDrop={(event) => handleDrop(event, tab.id)}
-      onDragEnd={clearDragState}
     />
   )
+
+  const renderGroup = (group: TabGroup, groupTabs: TabState[], tabCount: number): JSX.Element => {
+    const mark = groupDropMark(drag.hint, group.id)
+    const isDragging = drag.source?.kind === 'group' && drag.source.groupId === group.id
+    return (
+      <div
+        key={group.id}
+        ref={(element) => {
+          if (element) groupElements.current.set(group.id, element)
+          else groupElements.current.delete(group.id)
+        }}
+        className={`tab-group tab-group-color-${group.color} ${group.collapsed ? 'collapsed' : ''} ${isDragging ? 'dragging' : ''} ${mark === 'before' || mark === 'after' ? `drop-${mark}` : ''}`}
+      >
+        <TabGroupLabel
+          group={group}
+          tabCount={tabCount}
+          isDropTarget={mark === 'into'}
+          dragProps={drag.labelDragProps(group)}
+          onToggleCollapsed={() => groupActions.toggleGroupCollapsed(group.id)}
+          onOpenPanel={() => setGroupPanel({ groupId: group.id, isNew: false })}
+        />
+        {groupTabs.map(renderTab)}
+      </div>
+    )
+  }
 
   const menuTab = tabMenu ? findTab(tabs, tabMenu.tabId) : undefined
   const panelGroup = groupPanel ? findGroup(groups, groupPanel.groupId) : undefined
 
   return (
     <div className="tab-bar">
-      <div className="tab-list" onDragLeave={clearDragState}>
+      <div
+        className={`tab-list ${drag.hint?.target.kind === 'end' ? 'drop-end' : ''}`}
+        {...drag.listDropProps}
+      >
         {entries.map((entry) =>
-          entry.kind === 'tab' ? (
-            renderTab(entry.tab)
-          ) : (
-            <div
-              key={entry.group.id}
-              ref={(element) => {
-                if (element) groupElements.current.set(entry.group.id, element)
-                else groupElements.current.delete(entry.group.id)
-              }}
-              className={`tab-group tab-group-color-${entry.group.color} ${entry.group.collapsed ? 'collapsed' : ''}`}
-            >
-              <TabGroupLabel
-                group={entry.group}
-                tabCount={entry.tabCount}
-                onToggleCollapsed={() => groupActions.toggleGroupCollapsed(entry.group.id)}
-                onOpenPanel={() => setGroupPanel({ groupId: entry.group.id, isNew: false })}
-              />
-              {entry.tabs.map(renderTab)}
-            </div>
-          )
+          entry.kind === 'tab'
+            ? renderTab(entry.tab)
+            : renderGroup(entry.group, entry.tabs, entry.tabCount)
         )}
       </div>
       <button

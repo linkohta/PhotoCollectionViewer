@@ -29,13 +29,19 @@
   cursor: grab;
 }
 
-.tab-item.dragging {
+.tab-item.dragging,
+.tab-group.dragging {
   opacity: 0.45;
   cursor: grabbing;
 }
 
+/* Where a dragged tab or group would go: a line before or after a tab or a
+   group, the end of the list, a tab to make a group with, or a label to go
+   first in its group. */
 .tab-item.drop-before::before,
-.tab-item.drop-after::after {
+.tab-item.drop-after::after,
+.tab-group.drop-before::before,
+.tab-group.drop-after::after {
   content: '';
   position: absolute;
   top: 4px;
@@ -46,12 +52,26 @@
   pointer-events: none;
 }
 
-.tab-item.drop-before::before {
+.tab-item.drop-before::before,
+.tab-group.drop-before::before {
   left: 0;
 }
 
-.tab-item.drop-after::after {
+.tab-item.drop-after::after,
+.tab-group.drop-after::after {
   right: 0;
+}
+
+.tab-item.drop-onto {
+  background: var(--color-accent-subtle);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.tab-list.drop-end::after {
+  content: '';
+  flex: 0 0 2px;
+  margin: 4px 0 4px 2px;
+  background: var(--color-accent);
 }
 
 .tab-item:hover {
@@ -123,6 +143,7 @@
 
 /* Tab groups: a label, then the group's tabs, underlined in its colour */
 .tab-group {
+  position: relative;
   display: flex;
   align-items: stretch;
   border-bottom: 2px solid var(--tab-group-color);
@@ -149,6 +170,10 @@
 
 .tab-group-label:hover {
   filter: brightness(1.15);
+}
+
+.tab-group-label.drop-into {
+  box-shadow: 0 0 0 2px var(--color-text-strong);
 }
 
 .tab-group.collapsed .tab-group-label {
