@@ -1,14 +1,12 @@
-import { MAX_CLOSED_TABS } from '../../../shared/constants'
-import type { TabGroup, TabSnapshot } from '../../../shared/types'
-import { hasRestorableContent, tabToSnapshot, type TabState, type TabUpdater } from '../types/tab'
+import type { ClosedTab, TabGroup } from '../../../shared/types'
+import type { TabState, TabUpdater } from '../types/tab'
+import { closeGroup, closeTab, restoreClosedGroup } from './closedTabs'
 import {
   addTabToGroup,
   createGroup,
   insertTab,
-  removeTab,
   removeTabFromGroup,
   restoreGroups,
-  tabAfterClosing,
   ungroupTabs,
   updateGroup,
   type TabGroupChanges,
@@ -21,8 +19,9 @@ export interface TabsState {
   // The groups the tabs are in (see tabGroups.ts for the rules they keep).
   groups: TabGroup[]
   activeTabId: string
-  // Most recently closed first, brought back by Ctrl+Shift+T.
-  closedTabs: TabSnapshot[]
+  // Most recently closed first, brought back by Ctrl+Shift+T (see
+  // closedTabs.ts).
+  closedTabs: ClosedTab[]
 }
 
 // The reducer must stay pure - React runs it twice in development
@@ -40,7 +39,11 @@ export type TabsAction =
   | { type: 'moveGroup'; groupId: string; target: GroupDropTarget }
   // replacement takes the place of the last tab, so there is always one.
   | { type: 'close'; tabId: string; replacement: TabState }
-  | { type: 'forgetClosedTab'; snapshot: TabSnapshot }
+  | { type: 'closeGroup'; groupId: string; replacement: TabState }
+  | { type: 'forgetClosedTab'; entry: ClosedTab }
+  // A closed group brought back: the group as it was saved, and its tabs
+  // rebuilt. newGroupId is used if its old id has been taken meanwhile.
+  | { type: 'restoreGroup'; group: unknown; tabs: TabState[]; newGroupId: string }
   | { type: 'createGroup'; tabId: string; groupId: string }
   | { type: 'addTabToGroup'; tabId: string; groupId: string }
   | { type: 'removeTabFromGroup'; tabId: string }
@@ -52,7 +55,7 @@ export type TabsAction =
       type: 'restoreSession'
       tabs: TabState[]
       activeTabIndex: number
-      closedTabs: TabSnapshot[]
+      closedTabs: ClosedTab[]
       // As saved: restoring checks them.
       groups: readonly unknown[]
     }
@@ -63,29 +66,6 @@ export function initialTabsState(tab: TabState): TabsState {
 
 const withLayout = (state: TabsState, { tabs, groups }: TabLayout): TabsState =>
   tabs === state.tabs && groups === state.groups ? state : { ...state, tabs, groups }
-
-// Closing the active tab activates the one that slides into its place, or the
-// new last tab when it was the last one (passing over collapsed groups).
-const closeTab = (state: TabsState, tabId: string, replacement: TabState): TabsState => {
-  const index = state.tabs.findIndex((tab) => tab.id === tabId)
-  const closing = state.tabs[index]
-  if (!closing) return state
-
-  const closedTabs = hasRestorableContent(closing)
-    ? [tabToSnapshot(closing), ...state.closedTabs].slice(0, MAX_CLOSED_TABS)
-    : state.closedTabs
-
-  if (state.tabs.length === 1) {
-    return { tabs: [replacement], groups: [], activeTabId: replacement.id, closedTabs }
-  }
-
-  const { tabs, groups } = removeTab(state, tabId)
-  const activeTabId =
-    tabId === state.activeTabId
-      ? (tabAfterClosing(tabs, groups, index)?.id ?? state.activeTabId)
-      : state.activeTabId
-  return { tabs, groups, activeTabId, closedTabs }
-}
 
 const restoreSession = (
   state: TabsState,
@@ -119,11 +99,15 @@ export function tabsReducer(state: TabsState, action: TabsAction): TabsState {
       return withLayout(state, moveGroup(state, action.groupId, action.target))
     case 'close':
       return closeTab(state, action.tabId, action.replacement)
+    case 'closeGroup':
+      return closeGroup(state, action.groupId, action.replacement)
     case 'forgetClosedTab':
       return {
         ...state,
-        closedTabs: state.closedTabs.filter((snapshot) => snapshot !== action.snapshot)
+        closedTabs: state.closedTabs.filter((entry) => entry !== action.entry)
       }
+    case 'restoreGroup':
+      return restoreClosedGroup(state, action.group, action.tabs, action.newGroupId)
     case 'createGroup':
       return withLayout(state, createGroup(state, action.tabId, action.groupId))
     case 'addTabToGroup':

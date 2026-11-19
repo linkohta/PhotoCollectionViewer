@@ -171,6 +171,10 @@ export function TabBar({
             groupActions.ungroup(panelGroup.id)
             closeGroupPanel()
           }}
+          onCloseGroup={() => {
+            groupActions.closeGroup(panelGroup.id)
+            closeGroupPanel()
+          }}
           onClose={closeGroupPanel}
         />
       )}

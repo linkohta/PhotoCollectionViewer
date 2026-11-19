@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useReducer } from 'react'
-import type { TabSnapshot } from '../../../shared/types'
+import type { ClosedTab } from '../../../shared/types'
+import { closedGroupTabs, isClosedGroup } from '../state/closedTabs'
 import type { TabGroupChanges } from '../state/tabGroups'
 import type { GroupDropTarget, TabDropTarget } from '../state/tabMoves'
 import { findTab } from '../state/tabTransitions'
@@ -18,6 +19,8 @@ export interface TabGroupActions {
   ungroup: (groupId: string) => void
   // An empty tab at the end of the group, activated.
   addNewTabToGroup: (groupId: string) => void
+  // Closes all its tabs; Ctrl+Shift+T brings the group back as a whole.
+  closeGroup: (groupId: string) => void
 }
 
 export function useTabs() {
@@ -59,11 +62,18 @@ export function useTabs() {
   }, [])
 
   const restoreClosedTab = useCallback(async () => {
-    const snapshot = closedTabs[0]
-    if (!snapshot) return
+    const entry = closedTabs[0]
+    if (!entry) return
 
-    dispatch({ type: 'forgetClosedTab', snapshot })
-    const tab = await restoreTabFromSnapshot(snapshot)
+    dispatch({ type: 'forgetClosedTab', entry })
+    if (isClosedGroup(entry)) {
+      const tabs = await Promise.all(
+        closedGroupTabs(entry).map((snapshot) => restoreTabFromSnapshot(snapshot))
+      )
+      dispatch({ type: 'restoreGroup', group: entry.group, tabs, newGroupId: crypto.randomUUID() })
+      return
+    }
+    const tab = await restoreTabFromSnapshot(entry)
     dispatch({ type: 'add', tab })
   }, [closedTabs])
 
@@ -71,7 +81,7 @@ export function useTabs() {
     (
       restoredTabs: TabState[],
       activeTabIndex: number,
-      restoredClosedTabs: TabSnapshot[],
+      restoredClosedTabs: ClosedTab[],
       restoredGroups: readonly unknown[]
     ) => {
       dispatch({
@@ -97,7 +107,9 @@ export function useTabs() {
       updateGroup: (groupId, changes) => dispatch({ type: 'updateGroup', groupId, changes }),
       toggleGroupCollapsed: (groupId) => dispatch({ type: 'toggleGroupCollapsed', groupId }),
       ungroup: (groupId) => dispatch({ type: 'ungroup', groupId }),
-      addNewTabToGroup: (groupId) => dispatch({ type: 'add', tab: createEmptyTab(groupId) })
+      addNewTabToGroup: (groupId) => dispatch({ type: 'add', tab: createEmptyTab(groupId) }),
+      closeGroup: (groupId) =>
+        dispatch({ type: 'closeGroup', groupId, replacement: createEmptyTab() })
     }),
     []
   )

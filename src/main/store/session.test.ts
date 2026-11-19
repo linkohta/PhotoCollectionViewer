@@ -3,7 +3,7 @@ import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_CLOSED_TABS } from '../../shared/constants'
-import type { SessionData, TabGroup, TabSnapshot } from '../../shared/types'
+import type { ClosedTab, SessionData, TabGroup, TabSnapshot } from '../../shared/types'
 import { getSession, saveSession } from './session'
 
 const env = vi.hoisted(() => ({ appRootDir: '' }))
@@ -88,6 +88,14 @@ describe('saveSession', () => {
     const saved = JSON.parse(readFileSync(storePath(), 'utf-8')).session
     expect(saved.closedTabs).toHaveLength(MAX_CLOSED_TABS)
     expect(getSession().closedTabs).toEqual(closedTabs.slice(0, MAX_CLOSED_TABS))
+  })
+
+  it('keeps groups closed as a whole among the closed tabs', () => {
+    const closedTabs: ClosedTab[] = [{ kind: 'group', group, tabs: [snapshot] }, snapshot]
+
+    saveSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs, groups: [] })
+
+    expect(getSession().closedTabs).toEqual(closedTabs)
   })
 
   it('keeps the tab groups', () => {

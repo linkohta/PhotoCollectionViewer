@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { TabGroup, TabSnapshot } from '../../../shared/types'
+import type { ClosedTab, TabGroup } from '../../../shared/types'
 import { tabToSnapshot, type TabState } from '../types/tab'
 import { restoreTabFromSnapshot } from '../utils/restoreTab'
 
@@ -9,11 +9,11 @@ interface UseSessionPersistenceArgs {
   tabs: TabState[]
   groups: TabGroup[]
   activeTabId: string
-  closedTabs: TabSnapshot[]
+  closedTabs: ClosedTab[]
   restoreSession: (
     tabs: TabState[],
     activeTabIndex: number,
-    closedTabs: TabSnapshot[],
+    closedTabs: ClosedTab[],
     groups: readonly unknown[]
   ) => void
 }

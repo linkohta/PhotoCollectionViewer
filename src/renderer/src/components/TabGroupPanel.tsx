@@ -19,6 +19,8 @@ interface TabGroupPanelProps {
   onChange: (changes: TabGroupChanges) => void
   onAddTab: () => void
   onUngroup: () => void
+  // Closes the group's tabs (Ctrl+Shift+T brings them back).
+  onCloseGroup: () => void
   onClose: () => void
 }
 
@@ -30,6 +32,7 @@ export function TabGroupPanel({
   onChange,
   onAddTab,
   onUngroup,
+  onCloseGroup,
   onClose
 }: TabGroupPanelProps): JSX.Element {
   const panelRef = useRef<HTMLDivElement>(null)
@@ -106,6 +109,9 @@ export function TabGroupPanel({
           </button>
           <button type="button" className="context-menu-item" onClick={onUngroup}>
             グループを解除
+          </button>
+          <button type="button" className="context-menu-item danger" onClick={onCloseGroup}>
+            グループを閉じる
           </button>
         </div>
       )}

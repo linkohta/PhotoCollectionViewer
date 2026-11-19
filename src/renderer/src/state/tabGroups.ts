@@ -133,7 +133,7 @@ const isTabGroupColor = (value: unknown): value is TabGroupColor =>
   (TAB_GROUP_COLORS as readonly unknown[]).includes(value)
 
 // A group as read from the saved session, which may hold anything.
-const toTabGroup = (value: unknown): TabGroup | null => {
+export const toTabGroup = (value: unknown): TabGroup | null => {
   if (typeof value !== 'object' || value === null) return null
   const { id, name, color, collapsed } = value as Record<string, unknown>
   if (typeof id !== 'string') return null
