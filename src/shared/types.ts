@@ -68,12 +68,16 @@ export interface TabSnapshot {
   groupId?: string | null
 }
 
-// A group closed as a whole (or along with its last tab), which Ctrl+Shift+T
-// brings back as one, with its name and colour.
-export interface ClosedTabGroup {
-  kind: 'group'
+// A group with its tabs, kept while it is closed.
+export interface TabGroupSnapshot {
   group: TabGroup
   tabs: TabSnapshot[]
+}
+
+// A group closed as a whole (or along with its last tab), which Ctrl+Shift+T
+// brings back as one, with its name and colour.
+export interface ClosedTabGroup extends TabGroupSnapshot {
+  kind: 'group'
 }
 
 // What Ctrl+Shift+T brings back. Sessions saved before tab groups hold only
@@ -86,6 +90,9 @@ export interface SessionData {
   // Most recently closed first; a group counts as one.
   closedTabs: ClosedTab[]
   groups: TabGroup[]
+  // Groups closed with 「グループを保存して閉じる」, newest first, listed in
+  // the sidebar to be opened again.
+  savedGroups: TabGroupSnapshot[]
 }
 
 // Which confirmation dialogs are shown. false means the action proceeds

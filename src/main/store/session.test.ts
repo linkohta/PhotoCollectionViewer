@@ -28,7 +28,13 @@ const snapshot: TabSnapshot = {
 
 const group: TabGroup = { id: 'group-1', name: 'Trips', color: 'blue', collapsed: false }
 
-const EMPTY_SESSION: SessionData = { tabs: [], activeTabIndex: 0, closedTabs: [], groups: [] }
+const EMPTY_SESSION: SessionData = {
+  tabs: [],
+  activeTabIndex: 0,
+  closedTabs: [],
+  groups: [],
+  savedGroups: []
+}
 
 const storePath = (): string => join(env.appRootDir, 'app-state.json')
 const writeSavedSession = (session: unknown): void =>
@@ -54,7 +60,8 @@ describe('getSession', () => {
       tabs: [{ ...snapshot, groupId: group.id }],
       activeTabIndex: 0,
       closedTabs: [snapshot],
-      groups: [group]
+      groups: [group],
+      savedGroups: [{ group, tabs: [snapshot] }]
     }
     writeSavedSession(saved)
 
@@ -64,7 +71,13 @@ describe('getSession', () => {
   it.each([
     [{ activeTabIndex: 2 }, { ...EMPTY_SESSION, activeTabIndex: 2 }],
     [
-      { tabs: [snapshot], activeTabIndex: '1', closedTabs: 'none', groups: 'none' },
+      {
+        tabs: [snapshot],
+        activeTabIndex: '1',
+        closedTabs: 'none',
+        groups: 'none',
+        savedGroups: 'none'
+      },
       { ...EMPTY_SESSION, tabs: [snapshot] }
     ],
     ['not a session', EMPTY_SESSION],
@@ -83,7 +96,7 @@ describe('saveSession', () => {
       title: `${i}`
     }))
 
-    saveSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs, groups: [] })
+    saveSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs, groups: [], savedGroups: [] })
 
     const saved = JSON.parse(readFileSync(storePath(), 'utf-8')).session
     expect(saved.closedTabs).toHaveLength(MAX_CLOSED_TABS)
@@ -93,16 +106,17 @@ describe('saveSession', () => {
   it('keeps groups closed as a whole among the closed tabs', () => {
     const closedTabs: ClosedTab[] = [{ kind: 'group', group, tabs: [snapshot] }, snapshot]
 
-    saveSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs, groups: [] })
+    saveSession({ tabs: [snapshot], activeTabIndex: 0, closedTabs, groups: [], savedGroups: [] })
 
     expect(getSession().closedTabs).toEqual(closedTabs)
   })
 
-  it('keeps the tab groups', () => {
+  it('keeps the tab groups, open and saved', () => {
     const tabs = [{ ...snapshot, groupId: group.id }]
+    const savedGroups = [{ group: { ...group, id: 'group-2' }, tabs: [snapshot] }]
 
-    saveSession({ tabs, activeTabIndex: 0, closedTabs: [], groups: [group] })
+    saveSession({ tabs, activeTabIndex: 0, closedTabs: [], groups: [group], savedGroups })
 
-    expect(getSession()).toMatchObject({ tabs, groups: [group] })
+    expect(getSession()).toMatchObject({ tabs, groups: [group], savedGroups })
   })
 })

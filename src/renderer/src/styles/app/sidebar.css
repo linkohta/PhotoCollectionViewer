@@ -102,3 +102,16 @@
   word-break: break-all;
   line-height: 1.4;
 }
+
+/* SavedTabGroups: a dot of the group's colour, its name and how many tabs */
+.saved-group-item .tab-group-dot {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.saved-group-count {
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-muted);
+}

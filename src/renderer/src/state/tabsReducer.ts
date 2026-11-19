@@ -1,6 +1,6 @@
-import type { ClosedTab, TabGroup } from '../../../shared/types'
+import type { ClosedTab, TabGroup, TabGroupSnapshot } from '../../../shared/types'
 import type { TabState, TabUpdater } from '../types/tab'
-import { closeGroup, closeTab, restoreClosedGroup } from './closedTabs'
+import { closeGroup, closeTab, readSavedGroups, restoreClosedGroup, saveGroup } from './closedTabs'
 import {
   addTabToGroup,
   createGroup,
@@ -22,6 +22,8 @@ export interface TabsState {
   // Most recently closed first, brought back by Ctrl+Shift+T (see
   // closedTabs.ts).
   closedTabs: ClosedTab[]
+  // Groups closed with 「グループを保存して閉じる」, newest first.
+  savedGroups: TabGroupSnapshot[]
 }
 
 // The reducer must stay pure - React runs it twice in development
@@ -41,8 +43,11 @@ export type TabsAction =
   | { type: 'close'; tabId: string; replacement: TabState }
   | { type: 'closeGroup'; groupId: string; replacement: TabState }
   | { type: 'forgetClosedTab'; entry: ClosedTab }
-  // A closed group brought back: the group as it was saved, and its tabs
-  // rebuilt. newGroupId is used if its old id has been taken meanwhile.
+  | { type: 'saveGroup'; groupId: string; replacement: TabState }
+  // Opened again or deleted from the sidebar.
+  | { type: 'forgetSavedGroup'; entry: TabGroupSnapshot }
+  // A closed or saved group brought back: the group as it was kept, and its
+  // tabs rebuilt. newGroupId is used if its old id has been taken meanwhile.
   | { type: 'restoreGroup'; group: unknown; tabs: TabState[]; newGroupId: string }
   | { type: 'createGroup'; tabId: string; groupId: string }
   | { type: 'addTabToGroup'; tabId: string; groupId: string }
@@ -58,10 +63,11 @@ export type TabsAction =
       closedTabs: ClosedTab[]
       // As saved: restoring checks them.
       groups: readonly unknown[]
+      savedGroups: readonly unknown[]
     }
 
 export function initialTabsState(tab: TabState): TabsState {
-  return { tabs: [tab], groups: [], activeTabId: tab.id, closedTabs: [] }
+  return { tabs: [tab], groups: [], activeTabId: tab.id, closedTabs: [], savedGroups: [] }
 }
 
 const withLayout = (state: TabsState, { tabs, groups }: TabLayout): TabsState =>
@@ -71,14 +77,18 @@ const restoreSession = (
   state: TabsState,
   action: Extract<TabsAction, { type: 'restoreSession' }>
 ): TabsState => {
-  if (action.tabs.length === 0) return { ...state, closedTabs: action.closedTabs }
+  const closed = {
+    closedTabs: action.closedTabs,
+    savedGroups: readSavedGroups(action.savedGroups)
+  }
+  if (action.tabs.length === 0) return { ...state, ...closed }
   const { tabs, groups } = restoreGroups(action.tabs, action.groups)
   const activeIndex = Math.min(Math.max(action.activeTabIndex, 0), tabs.length - 1)
   return {
     tabs,
     groups,
     activeTabId: tabs[activeIndex]!.id,
-    closedTabs: action.closedTabs
+    ...closed
   }
 }
 
@@ -105,6 +115,13 @@ export function tabsReducer(state: TabsState, action: TabsAction): TabsState {
       return {
         ...state,
         closedTabs: state.closedTabs.filter((entry) => entry !== action.entry)
+      }
+    case 'saveGroup':
+      return saveGroup(state, action.groupId, action.replacement)
+    case 'forgetSavedGroup':
+      return {
+        ...state,
+        savedGroups: state.savedGroups.filter((entry) => entry !== action.entry)
       }
     case 'restoreGroup':
       return restoreClosedGroup(state, action.group, action.tabs, action.newGroupId)

@@ -1,6 +1,12 @@
 import { useState } from 'react'
-import type { ConfirmationKind, ConfirmationSettings, FavoriteFolder } from '../../../shared/types'
+import type {
+  ConfirmationKind,
+  ConfirmationSettings,
+  FavoriteFolder,
+  TabGroupSnapshot
+} from '../../../shared/types'
 import { ContextMenu } from './ContextMenu'
+import { SavedTabGroups } from './SavedTabGroups'
 
 interface SidebarProps {
   favorites: FavoriteFolder[]
@@ -16,6 +22,9 @@ interface SidebarProps {
   onImportSettings: () => void
   confirmations: ConfirmationSettings | null
   onChangeConfirmation: (kind: ConfirmationKind, enabled: boolean) => void
+  savedGroups: TabGroupSnapshot[]
+  onOpenSavedGroup: (entry: TabGroupSnapshot) => void
+  onDeleteSavedGroup: (entry: TabGroupSnapshot) => void
 }
 
 const CONFIRMATION_LABELS: Record<ConfirmationKind, string> = {
@@ -44,7 +53,10 @@ export function Sidebar({
   onExportSettings,
   onImportSettings,
   confirmations,
-  onChangeConfirmation
+  onChangeConfirmation,
+  savedGroups,
+  onOpenSavedGroup,
+  onDeleteSavedGroup
 }: SidebarProps): JSX.Element {
   const [favoriteMenu, setFavoriteMenu] = useState<FavoriteMenuState | null>(null)
 
@@ -109,6 +121,12 @@ export function Sidebar({
             </ul>
           )}
         </div>
+
+        <SavedTabGroups
+          savedGroups={savedGroups}
+          onOpen={onOpenSavedGroup}
+          onDelete={onDeleteSavedGroup}
+        />
 
         {currentFolder && (
           <div className="sidebar-section current-path">

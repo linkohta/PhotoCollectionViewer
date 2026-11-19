@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type { TabGroup } from '../../../shared/types'
 import { useTabDragAndDrop } from '../hooks/useTabDragAndDrop'
 import type { TabGroupActions } from '../hooks/useTabs'
+import { canSaveGroup } from '../state/closedTabs'
 import { findGroup } from '../state/tabGroups'
 import { makesGroup, type GroupDropTarget, type TabDropTarget } from '../state/tabMoves'
 import { findTab } from '../state/tabTransitions'
@@ -175,6 +176,11 @@ export function TabBar({
             groupActions.closeGroup(panelGroup.id)
             closeGroupPanel()
           }}
+          onSaveGroup={() => {
+            groupActions.saveGroup(panelGroup.id)
+            closeGroupPanel()
+          }}
+          canSave={canSaveGroup(tabs, panelGroup.id)}
           onClose={closeGroupPanel}
         />
       )}
