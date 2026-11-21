@@ -28,7 +28,7 @@ npm run test:e2e     # E2E（ビルドしてから Playwright で実際のアプ
 
 CI（`.github/workflows/ci.yml`、windows-latest）が PR と `master` への push ごとに lint・format:check・typecheck・test・build:vite と、別ジョブで E2E を実行する。
 
-ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer-Setup-*.exe`）が生成される。
+ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer Setup <バージョン>.exe`）が生成される。
 
 ## アプリの機能・要件
 
@@ -90,6 +90,26 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
   - `components/` から `window.photoCollection` を直接呼ばない（`no-restricted-syntax`）。メインプロセスとのやり取りはフック（`hooks/`）に置き、取得の手順そのものは `utils/thumbnailSource.ts` のように API を引数で受け取る純粋な関数にしてテストする。
 - 型チェックは `strict` に加えて `noUncheckedIndexedAccess` を有効にしている（`tsconfig.node.json`・`tsconfig.web.json`）。配列や Record の要素は無い場合（`undefined`）がある型になるので、分割代入して `undefined` を確かめるか `?? 既定値` で扱う。範囲を確かめたあとで `!` を使うときは、なぜ必ずあるのかが分かるように書く。
 - **ユーザーとの応対は必ず日本語で行うこと**。
+
+## バージョン
+
+`package.json` の `version` は [Semantic Versioning](https://semver.org/lang/ja/)（`MAJOR.MINOR.PATCH`）で付ける。このアプリには外から呼ばれる API がないため、互換性は「利用者から見た機能・操作」と「保存済みの設定（`app-state.json`）を引き継げるか」で判断する。バージョンはインストーラーのファイル名と、Windows の「インストールされているアプリ」の表示に使われる。
+
+- **バージョンは PR ごとには上げず、リリースするときに専用の PR で上げる**。並行して開いている PR どうしが `package.json`・`package-lock.json` で衝突しないようにするため。リリースはユーザーの指示があったときに行う。
+- 上げ幅は、前回のリリースのタグ以降に `master` へマージされた PR（`git log --first-parent --oneline v<前回のバージョン>..master`）のうち、最も大きい区分に合わせる。同じ区分の PR が何本あっても1つだけ上げる（MINOR の PR が3本なら 1.1.0 → 1.2.0）。
+- 区分は PR の中身で決める。ブランチ名の prefix（`feature/` → MINOR、`fix/` → PATCH、`refactor/` → 上げない）は目安にすぎない。たとえば #35（`fix/`）は既存の機能を削除したので MAJOR、#29（`fix/`）はキー操作を足したので MINOR に当たる。
+  - **MAJOR**: 更新すると、それまでできたことができなくなる、または利用者に対応が要る変更。既存の機能・設定項目の削除、キーやマウスの操作の意味の変更、保存済みの設定を引き継げない変更（自動の移行で引き継げるなら当たらない）、動作する Windows のバージョンの打ち切り、入れ直しが要る配布形式の変更。
+  - **MINOR**: 互換性を保ったまま機能を足す変更。機能・ボタン・メニュー項目・キー操作の追加、扱える画像・動画の形式の追加、`app-state.json` への項目の追加（その項目が無い既存のファイルも既定値で読めること）。
+  - **PATCH**: 互換性を保った修正。不具合の修正、速度・表示の改善、セキュリティの修正、配布物（インストーラー・`app.asar`）の中身が変わる依存関係の更新（`devDependencies` にあっても実行時に同梱される Electron を含む）。
+  - **上げない**: 配布物の挙動が変わらない変更。`refactor/`、テスト・CI・lint・ドキュメントだけの変更、配布物の中身が変わらない開発用ツールの更新。前回のリリース以降にこれしか無ければリリースしない。
+- サムネイルのキャッシュが作り直されるだけの変更は MAJOR にしない（自動で生成し直され、失われるものが無いため）。新しいバージョンで保存した設定を古いバージョンで読めること（ダウングレード）は保証しないので、それが壊れる変更も MAJOR にしない。
+- 区分に迷ったら大きい方にする。
+
+リリースの手順:
+
+1. `master` から `chore/release-<バージョン>` を切り、`npm version <バージョン> --no-git-tag-version` で `package.json` と `package-lock.json`（2か所）を書き換える。バージョン以外の変更は混ぜない。PR は squash マージされ、タグはマージ後の `master` のコミットに付けるため、`npm version` にコミットとタグを作らせない。
+2. PR の説明に、前回のリリース以降にマージされた PR を区分ごとに並べ、その上げ幅にした理由（MAJOR・MINOR なら、どの PR が当たるか）を書く。
+3. マージしたら、`master` のマージコミットに注釈付きタグ `v<バージョン>` を付けて push する（`git tag -a v<バージョン> -m "v<バージョン>" <マージコミット>` → `git push <リモート名> v<バージョン>`）。次のリリースはこのタグからの差分で判断する。
 
 ## テスト
 
