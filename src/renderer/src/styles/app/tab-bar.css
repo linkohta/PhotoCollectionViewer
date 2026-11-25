@@ -17,12 +17,14 @@
   min-width: 0;
 }
 
+/* Every tab is as wide as fits the list, worked out by useTabWidth; the
+   fallback is the widest a tab gets (TAB_MAX_WIDTH). */
 .tab-item {
   position: relative;
   display: flex;
   align-items: center;
-  max-width: 220px;
-  min-width: 120px;
+  flex: none;
+  width: var(--tab-width, 220px);
   border-right: 1px solid var(--color-border-subtle);
   background: var(--color-surface-panel);
   transition: background 0.15s;
@@ -67,10 +69,14 @@
   box-shadow: inset 0 0 0 2px var(--color-accent);
 }
 
+/* Drawn over the right edge of the last tab or group rather than after it, so
+   that it doesn't make the tabs, sized to fit the list, overflow it. */
 .tab-list.drop-end::after {
   content: '';
+  position: relative;
+  z-index: 1;
   flex: 0 0 2px;
-  margin: 4px 0 4px 2px;
+  margin: 4px 0 4px -2px;
   background: var(--color-accent);
 }
 
@@ -92,7 +98,9 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 8px 8px 12px;
+  /* Kept narrow, with .tab-close's, so that the narrowest tab still shows
+     three characters of its name. */
+  padding: 8px 6px 8px 10px;
   min-width: 0;
   text-align: left;
 }
@@ -113,6 +121,23 @@
   }
 }
 
+/* Before the name of a tab showing the viewer */
+.tab-viewer-mark {
+  flex-shrink: 0;
+  color: var(--color-accent);
+}
+
+.tab-viewer-mark rect {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.tab-viewer-mark path,
+.tab-viewer-mark circle {
+  fill: currentColor;
+}
+
 .tab-title {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,8 +146,8 @@
 }
 
 .tab-close {
-  padding: 4px 8px;
-  margin-right: 4px;
+  padding: 4px 6px;
+  margin-right: 2px;
   border-radius: 4px;
   color: var(--color-text-muted);
   font-size: 16px;
