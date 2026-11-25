@@ -1,0 +1,158 @@
+name: Release
+
+# Builds the NSIS installer and publishes it as a GitHub release asset (the
+# installer, over 100 MB, is too large to keep in the repository):
+#
+# - push to master: replaces the installer of the "latest-build" pre-release,
+#   which README links to, so the newest master build is always downloadable.
+# - push of a v<version> tag (see "バージョン" in CLAUDE.md): creates the
+#   release of that version with its installer.
+# - run by hand with a tag: does the same for a tag pushed before this
+#   workflow existed, or builds the release of a tag again.
+# - pull requests that change the build: only builds, so a broken build shows
+#   up before it is merged. The installer is kept as a workflow artifact.
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - package.json
+      - package-lock.json
+      - resources/**
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'リリースを作るバージョンのタグ（例: v2.0.0）。空なら master の最新ビルドを差し替える'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+# Builds of master wait for one another instead of cancelling, so that an
+# older build never replaces a newer one and no upload is cut off halfway.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  LATEST_TAG: latest-build
+  # The name README links to, the same for every version.
+  LATEST_ASSET: PhotoCollectionViewer-Setup.exe
+
+jobs:
+  installer:
+    runs-on: windows-latest
+    permissions:
+      # Creating releases and moving the latest-build tag
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Empty builds the commit the workflow runs for.
+          ref: ${{ inputs.tag }}
+
+      - name: Decide what to publish
+        id: target
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$INPUT_TAG" ]; then
+            tag=$INPUT_TAG
+          elif [ "$GITHUB_REF_TYPE" = tag ]; then
+            tag=$GITHUB_REF_NAME
+          else
+            tag=
+          fi
+
+          if [ -n "$tag" ]; then
+            if [ "$tag" != "v$version" ]; then
+              echo "::error::タグ $tag が package.json のバージョン $version と合いません"
+              exit 1
+            fi
+            echo "mode=version" >> "$GITHUB_OUTPUT"
+            echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" != pull_request ] && [ "$GITHUB_REF" = refs/heads/master ]; then
+            echo "mode=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Find the installer
+        id: installer
+        env:
+          VERSION: ${{ steps.target.outputs.version }}
+        run: |
+          path="release/PhotoCollectionViewer-Setup-$VERSION.exe"
+          if [ ! -f "$path" ]; then
+            echo "::error::$path がありません"
+            ls release
+            exit 1
+          fi
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+
+      - name: Keep the installer of a pull request
+        if: steps.target.outputs.mode == 'none'
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: ${{ steps.installer.outputs.path }}
+          retention-days: 7
+
+      - name: Publish the release of the version
+        if: steps.target.outputs.mode == 'version'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
+          INSTALLER: ${{ steps.installer.outputs.path }}
+        run: |
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            gh release upload "$TAG" "$INSTALLER" --clobber
+          else
+            gh release create "$TAG" "$INSTALLER" --verify-tag --title "$TAG" --generate-notes
+          fi
+
+      - name: Publish the latest build of master
+        if: steps.target.outputs.mode == 'latest'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.target.outputs.version }}
+          INSTALLER: ${{ steps.installer.outputs.path }}
+        run: |
+          cp "$INSTALLER" "$LATEST_ASSET"
+
+          # The tag follows master, so the release shows the commit it was built from.
+          git tag -f "$LATEST_TAG" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$LATEST_TAG"
+
+          short_sha=${GITHUB_SHA::7}
+          notes="master の最新のコミット（[$short_sha]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA)）からビルドしたインストーラーです。master にマージされるたびに差し替わります。
+
+          - バージョン: $VERSION（バージョンはリリースのときにだけ上げるため、前回のリリース以降の変更も同じバージョンのまま入ります）
+          - ビルド日時: $(date -u '+%Y-%m-%d %H:%M') UTC
+
+          リリースしたバージョンのインストーラーは、それぞれのバージョンのリリースにあります。"
+
+          title="最新ビルド（master）"
+          if gh release view "$LATEST_TAG" > /dev/null 2>&1; then
+            gh release edit "$LATEST_TAG" --title "$title" --notes "$notes" --prerelease
+            gh release upload "$LATEST_TAG" "$LATEST_ASSET" --clobber
+          else
+            gh release create "$LATEST_TAG" "$LATEST_ASSET" --verify-tag --title "$title" --notes "$notes" --prerelease
+          fi

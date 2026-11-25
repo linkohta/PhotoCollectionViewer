@@ -2,6 +2,15 @@
 
 フォルダ単位で画像を管理・表示する Windows 向けデスクトップアプリです。
 
+## ダウンロード
+
+**[最新版のインストーラーをダウンロード（PhotoCollectionViewer-Setup.exe）](https://github.com/linkohta/PhotoCollectionViewer/releases/download/latest-build/PhotoCollectionViewer-Setup.exe)**
+
+- `master` にマージされるたびに自動でビルドされる、最新のインストーラーです。
+- リリースしたバージョンごとのインストーラーは [Releases](https://github.com/linkohta/PhotoCollectionViewer/releases) にあります。
+- 実行すると確認なしでインストールされ、そのまま起動します（ユーザーごとのインストールのため、管理者権限は要りません）。前のバージョンが入っていても上書きでき、設定は引き継がれます。
+- インストーラーにはコード署名をしていないため、「Windows によって PC が保護されました」と表示されることがあります。「詳細情報」→「実行」で続けられます。
+
 ## 機能
 
 ### 画像ビューワー
@@ -112,7 +121,7 @@ npm run build
 npm start
 ```
 
-ビルド後、`PhotoCollectionViewer-win32-x64/PhotoCollectionViewer.exe` が生成されます。
+ビルド後、`release/` にインストーラー `PhotoCollectionViewer-Setup-<バージョン>.exe` が生成されます。`npm start` は、インストーラーを作らずにビルドしたアプリを起動します。
 
 ## 操作
 

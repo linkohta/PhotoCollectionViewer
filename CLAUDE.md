@@ -28,7 +28,13 @@ npm run test:e2e     # E2E（ビルドしてから Playwright で実際のアプ
 
 CI（`.github/workflows/ci.yml`、windows-latest）が PR と `master` への push ごとに lint・format:check・typecheck・test・build:vite と、別ジョブで E2E を実行する。
 
-ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer Setup <バージョン>.exe`）が生成される。
+ビルド後、`release/` に electron-builder 製の NSIS インストーラー（`PhotoCollectionViewer-Setup-<バージョン>.exe`。名前は `package.json` の `build.nsis.artifactName`）が生成される。
+
+インストーラーの配布は `.github/workflows/release.yml` が GitHub Releases で行う。インストーラーは100MBを超え、GitHub の1ファイルの上限に当たるため、リポジトリには入れない。
+
+- `master` への push ごとに、プレリリース「最新ビルド（master）」（タグ `latest-build`。タグは `master` に合わせて動かす）のインストーラーを差し替える。README のダウンロードのリンクは、このリリースの `PhotoCollectionViewer-Setup.exe`（バージョンの付かない名前）を指す。
+- `v<バージョン>` のタグの push で、そのバージョンのリリースを作る。タグと `package.json` のバージョンが合わなければ失敗する。手動実行（`gh workflow run release.yml -f tag=v<バージョン>`）でも、指定したタグのリリースを作れる（作り直しも可）。
+- ビルドに関わるファイル（このワークフロー、`package.json`、`package-lock.json`、`resources/`）を変える PR では、配布はせずにビルドだけを行い、インストーラーを Actions の成果物（7日間）に残す。
 
 ## アプリの機能・要件
 
@@ -109,7 +115,7 @@ Electron の 3プロセス構成（`electron-vite` でビルド、`electron-buil
 
 1. `master` から `chore/release-<バージョン>` を切り、`npm version <バージョン> --no-git-tag-version` で `package.json` と `package-lock.json`（2か所）を書き換える。バージョン以外の変更は混ぜない。PR は squash マージされ、タグはマージ後の `master` のコミットに付けるため、`npm version` にコミットとタグを作らせない。
 2. PR の説明に、前回のリリース以降にマージされた PR を区分ごとに並べ、その上げ幅にした理由（MAJOR・MINOR なら、どの PR が当たるか）を書く。
-3. マージしたら、`master` のマージコミットに注釈付きタグ `v<バージョン>` を付けて push する（`git tag -a v<バージョン> -m "v<バージョン>" <マージコミット>` → `git push <リモート名> v<バージョン>`）。次のリリースはこのタグからの差分で判断する。
+3. マージしたら、`master` のマージコミットに注釈付きタグ `v<バージョン>` を付けて push する（`git tag -a v<バージョン> -m "v<バージョン>" <マージコミット>` → `git push <リモート名> v<バージョン>`）。次のリリースはこのタグからの差分で判断する。タグの push で `release.yml` がそのバージョンのリリースを作り、インストーラーを添付する。
 
 ## テスト
 
