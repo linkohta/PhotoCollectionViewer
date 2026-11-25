@@ -9,8 +9,13 @@ const renderedWidth = (image: Locator) => async (): Promise<number> =>
 test('steps through the images with the arrow keys, wrapping at both ends', async ({ app }) => {
   const { window } = app
 
+  // The tab marks that it shows the viewer while it does.
+  const viewerMark = window.locator('.tab-item.active').getByRole('img', {
+    name: 'ビューワーで表示中'
+  })
   await window.locator('.thumbnail-card', { hasText: '01.png' }).click()
   await expect(window.locator('.viewer-counter')).toHaveText('1 / 4')
+  await expect(viewerMark).toBeVisible()
 
   await window.keyboard.press('ArrowLeft')
   await expect(window.locator('.viewer-counter')).toHaveText('4 / 4')
@@ -22,6 +27,7 @@ test('steps through the images with the arrow keys, wrapping at both ends', asyn
 
   await window.keyboard.press('Escape')
   await expect(window.locator('.thumbnail-card.highlighted .thumbnail-name')).toHaveText('01.png')
+  await expect(viewerMark).toHaveCount(0)
 })
 
 test('switches between fit, actual size and zoom', async ({ app }) => {

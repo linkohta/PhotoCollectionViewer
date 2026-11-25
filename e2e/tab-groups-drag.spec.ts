@@ -24,14 +24,14 @@ const tabNamed = (window: Page, title: string): Locator =>
   window.locator('.tab-item', { has: window.locator('.tab-title', { hasText: title }) })
 
 // library, Albums and 2024, the last two opened from the library's grid (2024
-// holds only images, so its tab shows the viewer: "2024 · 表示中").
+// holds only images, so its tab shows the viewer).
 const openThreeTabs = async (window: Page): Promise<void> => {
   for (const folder of ['Albums', '2024']) {
     await tabNamed(window, 'library').locator('.tab-label').click()
     await window.locator('.folder-card', { hasText: folder }).click({ button: 'right' })
     await window.locator('.context-menu-item', { hasText: '新しいタブで開く' }).click()
   }
-  await expect(window.locator('.tab-title')).toHaveText(['library', 'Albums', /^2024/])
+  await expect(window.locator('.tab-title')).toHaveText(['library', 'Albums', '2024'])
 }
 
 test('makes a group by holding a tab over the middle of another', async ({ app }) => {
@@ -55,7 +55,7 @@ test('makes a group by holding a tab over the middle of another', async ({ app }
   await expect(tabNamed(window, 'library')).toHaveClass(/drop-onto/)
   await window.mouse.up()
 
-  await expect(window.locator('.tab-group .tab-title')).toHaveText(['library', /^2024/])
+  await expect(window.locator('.tab-group .tab-title')).toHaveText(['library', '2024'])
   await expect(window.getByRole('dialog', { name: 'タブグループを作成' })).toBeVisible()
 })
 
@@ -77,10 +77,10 @@ test('drags tabs into and out of a group, and the group past a tab', async ({ ap
   const list = await pointIn(window.locator('.tab-list'), 0.95)
   await dragTo(window, await pointIn(tabNamed(window, 'Albums'), 0.3), list)
   await expect(groupTitles).toHaveText(['library'])
-  await expect(looseTitles).toHaveText([/^2024/, 'Albums'])
+  await expect(looseTitles).toHaveText(['2024', 'Albums'])
 
   // The label carries the whole group.
   await dragTo(window, await pointIn(label), await pointIn(tabNamed(window, 'Albums'), 0.9))
-  await expect(window.locator('.tab-title')).toHaveText([/^2024/, 'Albums', 'library'])
+  await expect(window.locator('.tab-title')).toHaveText(['2024', 'Albums', 'library'])
   await expect(groupTitles).toHaveText(['library'])
 })

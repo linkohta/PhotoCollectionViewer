@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import type { TabGroup } from '../../../shared/types'
 import { useTabDragAndDrop } from '../hooks/useTabDragAndDrop'
 import type { TabGroupActions } from '../hooks/useTabs'
+import { useTabWidth } from '../hooks/useTabWidth'
 import { canSaveGroup } from '../state/closedTabs'
 import { findGroup } from '../state/tabGroups'
 import { makesGroup, type GroupDropTarget, type TabDropTarget } from '../state/tabMoves'
@@ -51,11 +52,13 @@ export function TabBar({
   // The element of each group shown: its panel opens below it, and a dragged
   // group goes before or after it.
   const groupElements = useRef(new Map<string, HTMLDivElement>())
+  const listRef = useRef<HTMLDivElement>(null)
 
   const entries = useMemo(
     () => buildTabBarEntries(tabs, groups, activeTabId),
     [tabs, groups, activeTabId]
   )
+  useTabWidth(listRef, entries)
 
   const closeTabMenu = useCallback(() => setTabMenu(null), [])
   const closeGroupPanel = useCallback(() => setGroupPanel(null), [])
@@ -120,6 +123,7 @@ export function TabBar({
   return (
     <div className="tab-bar">
       <div
+        ref={listRef}
         className={`tab-list ${drag.hint?.target.kind === 'end' ? 'drop-end' : ''}`}
         {...drag.listDropProps}
       >
