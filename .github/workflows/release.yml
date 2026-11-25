@@ -98,12 +98,23 @@ jobs:
         id: installer
         env:
           VERSION: ${{ steps.target.outputs.version }}
+        # The installer is the only .exe electron-builder leaves in release/.
+        # Its name comes from build.nsis.artifactName, which commits from
+        # before it was set (v2.0.0) leave at electron-builder's default,
+        # "PhotoCollectionViewer Setup <version>.exe" - so it is renamed, and
+        # every version is published under a name of the same form.
         run: |
-          path="release/PhotoCollectionViewer-Setup-$VERSION.exe"
-          if [ ! -f "$path" ]; then
-            echo "::error::$path がありません"
+          shopt -s nullglob
+          found=(release/*.exe)
+          if [ ${#found[@]} -ne 1 ]; then
+            echo "::error::release/ にインストーラーが1つだけあるはずが、${#found[@]} 個ありました"
             ls release
             exit 1
+          fi
+
+          path="release/PhotoCollectionViewer-Setup-$VERSION.exe"
+          if [ "${found[0]}" != "$path" ]; then
+            mv "${found[0]}" "$path"
           fi
           echo "path=$path" >> "$GITHUB_OUTPUT"
 
